@@ -534,7 +534,17 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .btn-export:hover{background:#f0fafc}
 .gov-export-hint{display:block;color:rgba(255,255,255,.9);font-size:11.5px;margin-top:9px;line-height:1.6}
 .edit-phase{margin-bottom:14px;padding:12px;background:var(--cyan-soft);border-radius:10px;border:1px solid var(--line)}
-.ephase-t{font-size:12.5px;font-weight:800;color:var(--nile-700);margin-bottom:8px}
+.ephase-t{font-size:13.5px;font-weight:800;color:var(--nile-700);margin-bottom:10px}
+.efield{margin-bottom:10px}
+.efield label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.efield input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px;font-weight:700;background:var(--card);color:var(--ink);text-align:center;font-family:'IBM Plex Mono'}
+.efield input:focus{outline:none;border-color:var(--nile-accent);box-shadow:0 0 0 3px rgba(57,197,224,.15)}
+/* حقل دار الهندسة — مميّز لأنه المسار الإلزامي */
+.efield-hl{background:var(--cyan-soft);border-radius:10px;padding:9px 11px;border:1px solid rgba(20,135,164,.25)}
+.efield-hl label{color:var(--nile-700);font-weight:800}
+.efield-hl label::before{content:"◆ ";color:var(--nile-500);font-size:10px}
+.efield-hl input{border-color:var(--nile-400,var(--nile-500));background:var(--card)}
+html[data-theme="dark"] .efield-hl{background:#0f3a45}
 html[data-theme="dark"] .edit-phase{background:#0f3a45}
 @media print{
   body *{visibility:hidden!important}
@@ -6668,18 +6678,16 @@ function openDrawer(id){
   </div>`;
   html+=`<div class="sec"><div class="sec-t">تحديث موقف الاستلام</div>
     <div class="edit-block">
-      ${p1?`<div class="edit-phase"><div class="ephase-t">المرحلة الأولى — منفّذة / دار الهندسة / استثماري</div>
-        <div class="row r3">
-          <input id="e1-exec" type="number" min="0" value="${p1.executed||0}" placeholder="منفّذة">
-          <input id="e1-dar" type="number" min="0" value="${p1.dar||0}" placeholder="دار الهندسة">
-          <input id="e1-inv" type="number" min="0" value="${p1.invest||0}" placeholder="استثماري">
-        </div></div>`:''}
-      ${p2?`<div class="edit-phase"><div class="ephase-t">المرحلة الثانية — منفّذة / دار الهندسة / استثماري</div>
-        <div class="row r3">
-          <input id="e2-exec" type="number" min="0" value="${p2.executed||0}" placeholder="منفّذة">
-          <input id="e2-dar" type="number" min="0" value="${p2.dar||0}" placeholder="دار الهندسة">
-          <input id="e2-inv" type="number" min="0" value="${p2.invest||0}" placeholder="استثماري">
-        </div></div>`:''}
+      ${p1?`<div class="edit-phase"><div class="ephase-t">المرحلة الأولى</div>
+        <div class="efield"><label>عدد المنفّذة</label><input id="e1-exec" type="number" min="0" value="${p1.executed||0}"></div>
+        <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e1-dar" type="number" min="0" value="${p1.dar||0}"></div>
+        <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e1-inv" type="number" min="0" value="${p1.invest||0}"></div>
+        </div>`:''}
+      ${p2?`<div class="edit-phase"><div class="ephase-t">المرحلة الثانية</div>
+        <div class="efield"><label>عدد المنفّذة</label><input id="e2-exec" type="number" min="0" value="${p2.executed||0}"></div>
+        <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e2-dar" type="number" min="0" value="${p2.dar||0}"></div>
+        <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e2-inv" type="number" min="0" value="${p2.invest||0}"></div>
+        </div>`:''}
       <div class="field"><label>المستحقات المعلّقة (مليون جنيه)</label>
         <input id="e-dues" type="number" step="0.001" min="0" value="${g.duesOutstanding||0}"></div>
       <div class="save-row">
