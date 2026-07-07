@@ -6446,7 +6446,11 @@ function liveTotals(){
   const baseInv2=PROJECT.govs.reduce((a,g)=>a+((g.phase2&&g.phase2.invest)||0),0);
   const p1={dar:dtl.p1.dar+(sum('phase1','dar')-baseDar1), invest:dtl.p1.invest+(sum('phase1','invest')-baseInv1)};
   const p2={dar:dtl.p2.dar+(sum('phase2','dar')-baseDar2), invest:dtl.p2.invest+(sum('phase2','invest')-baseInv2)};
-  return {p1,p2};
+  // فرق إجمالي الترع (لو عُدّل) مطبّق على الإجمالي الرسمي
+  const baseCan1=PROJECT.govs.reduce((a,g)=>a+((g.phase1&&g.phase1.canals)||0),0);
+  const baseCan2=PROJECT.govs.reduce((a,g)=>a+((g.phase2&&g.phase2.canals)||0),0);
+  const totalCanals=off.phase1.total+off.phase2.total+(sum('phase1','canals')-baseCan1)+(sum('phase2','canals')-baseCan2);
+  return {p1,p2,totalCanals};
 }
 // عدّاد متحرّك للأرقام (count-up) — لمسة مبهرة عند عرض المؤشرات
 function animateCounts(){
@@ -6478,7 +6482,7 @@ function renderOverview(){
   const totDar=dt.p1.dar+dt.p2.dar;
   const totInv=dt.p1.invest+dt.p2.invest;
   const totDeliv=totDar+totInv;
-  const totAll=of.phase1.total+of.phase2.total;
+  const totAll=dt.totalCanals;
   document.getElementById('gateFlow').innerHTML=`
     <div class="gate-step"><div class="n">${totAll}</div><div class="t">إجمالي الترع</div></div>
     <span class="gate-arrow">←</span>
@@ -6679,11 +6683,13 @@ function openDrawer(id){
   html+=`<div class="sec"><div class="sec-t">تحديث موقف الاستلام</div>
     <div class="edit-block">
       ${p1?`<div class="edit-phase"><div class="ephase-t">المرحلة الأولى</div>
+        <div class="efield"><label>إجمالي الترع</label><input id="e1-canals" type="number" min="0" value="${p1.canals||0}"></div>
         <div class="efield"><label>عدد المنفّذة</label><input id="e1-exec" type="number" min="0" value="${p1.executed||0}"></div>
         <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e1-dar" type="number" min="0" value="${p1.dar||0}"></div>
         <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e1-inv" type="number" min="0" value="${p1.invest||0}"></div>
         </div>`:''}
       ${p2?`<div class="edit-phase"><div class="ephase-t">المرحلة الثانية</div>
+        <div class="efield"><label>إجمالي الترع</label><input id="e2-canals" type="number" min="0" value="${p2.canals||0}"></div>
         <div class="efield"><label>عدد المنفّذة</label><input id="e2-exec" type="number" min="0" value="${p2.executed||0}"></div>
         <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e2-dar" type="number" min="0" value="${p2.dar||0}"></div>
         <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e2-inv" type="number" min="0" value="${p2.invest||0}"></div>
@@ -6772,14 +6778,16 @@ function saveGov(id){
   // المرحلة الأولى (إن وُجدت حقولها)
   if(document.getElementById('e1-dar')){
     const dar=val('e1-dar'),inv=val('e1-inv');
-    o.phase1={executed:val('e1-exec'),dar:dar,invest:inv,delivered:dar+inv};
-    o.phase1.remaining=Math.max(0,(g.phase1.canals)-o.phase1.delivered);
+    const canals=val('e1-canals');
+    o.phase1={canals:canals,executed:val('e1-exec'),dar:dar,invest:inv,delivered:dar+inv};
+    o.phase1.remaining=Math.max(0,canals-o.phase1.delivered);
   }
   // المرحلة الثانية (إن وُجدت حقولها)
   if(document.getElementById('e2-dar')){
     const dar=val('e2-dar'),inv=val('e2-inv');
-    o.phase2={executed:val('e2-exec'),dar:dar,invest:inv,delivered:dar+inv};
-    o.phase2.remaining=Math.max(0,(g.phase2.canals)-o.phase2.delivered);
+    const canals=val('e2-canals');
+    o.phase2={canals:canals,executed:val('e2-exec'),dar:dar,invest:inv,delivered:dar+inv};
+    o.phase2.remaining=Math.max(0,canals-o.phase2.delivered);
   }
   o.duesOutstanding=val('e-dues');
   o.lastUpdate=new Date().toISOString().slice(0,10);
