@@ -463,6 +463,11 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-address{margin-top:30px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
 .doc-cc{margin-top:18px;font-size:11.5px;line-height:1.9;color:#222}
 .doc-cc .cc-t{font-weight:800;text-decoration:underline;margin-top:8px}
+.doc-sec-h{font-family:'Cairo';font-weight:800;font-size:15px;margin:18px 0 4px;color:#0d5a6e;border-bottom:2px solid #d4dde0;padding-bottom:4px}
+.gov-export{background:linear-gradient(120deg,var(--nile-800),var(--nile-600));border-radius:14px;padding:16px;margin-bottom:18px;text-align:center}
+.btn-export{background:#fff;color:var(--nile-800);font-weight:800;border:none;width:100%;justify-content:center;padding:12px}
+.btn-export:hover{background:#f0fafc}
+.gov-export-hint{display:block;color:rgba(255,255,255,.9);font-size:11.5px;margin-top:9px;line-height:1.6}
 @media print{
   body *{visibility:hidden!important}
   .doc-overlay,.doc-overlay *{visibility:visible!important}
@@ -6504,6 +6509,10 @@ function openDrawer(id){
     (g.duesOutstanding>0?`<span class="st-badge" style="background:rgba(201,79,79,.3);color:#fff">مستحقات معلّقة: ${g.duesOutstanding.toFixed(2)} م.ج</span>`:'');
   const p1=g.phase1,p2=g.phase2,ops=g.operations||[];
   let html='';
+  html+=`<div class="gov-export"><button class="btn btn-export" onclick="openGovDoc('${id}')">
+    <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>
+    تصدير تقرير الإدارة الرسمي</button>
+    <span class="gov-export-hint">تقرير رسمي بترويسة المشروع، يعكس أحدث الأرقام المعتمدة لهذه الإدارة تلقائياً.</span></div>`;
   if(p1)html+=`<div class="sec"><div class="sec-t">المرحلة الأولى</div>
     <div class="dstat">
       <div class="c"><div class="n">${p1.canals}</div><div class="l">إجمالي الترع</div></div>
@@ -7163,12 +7172,15 @@ function letterhead(){
   </div>
   <div class="lh-rule"></div>`;
 }
-function docFooter(){
+function docFooter(sign){
+  // التوقيع الافتراضي = مفوّض الوزارة (لتقارير المشروع العامة)
+  // يمكن تمرير توقيع مخصّص (مثل رئيس الإدارة المركزية) لتقرير إدارة بعينها
+  const s=sign||{l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
   return `<div class="doc-foot"><div class="doc-sign">
-      <div>مستشار مصلحة الري</div>
-      <div>مفوض الوزارة بمشروع حياة كريمة</div>
+      <div>${s.l1}</div>
+      <div>${s.l2}</div>
       <div class="sign-space">م /</div>
-      <div class="sign-name">سلوى عبد الغني عثمان</div>
+      <div class="sign-name">${s.name}</div>
     </div></div>
   <div class="doc-address">الحي الحكومي بالعاصمة الإدارية — وزارة الموارد المائية والري — مبنى مصلحة الري - الدور الرابع - غرفة 307</div>`;
 }
@@ -7192,6 +7204,46 @@ function renderDocs(){
 function openDoc(id){document.getElementById('docPage').innerHTML=buildDoc(id);document.getElementById('docOverlay').classList.add('on');}
 function closeDoc(){document.getElementById('docOverlay').classList.remove('on');}
 function printDoc(){window.print();}
+// تقرير إدارة مركزية واحدة — يعكس أحدث أرقامها المعدّلة
+function openGovDoc(govId){
+  document.getElementById('docPage').innerHTML=buildGovDoc(govId);
+  document.getElementById('docOverlay').classList.add('on');
+}
+function buildGovDoc(govId){
+  const g=gov(govId);
+  const p1=g.phase1,p2=g.phase2,ops=g.operations||[];
+  const duesRows=ops.filter(o=>o.outstanding>0).sort((a,b)=>b.outstanding-a.outstanding);
+  const duesTot=duesRows.reduce((s,o)=>s+o.outstanding,0);
+  const govReports=loadReports().filter(r=>r.govId===govId);
+  const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  const phaseTbl=(ph,label)=>ph?`
+    <tr><td>${label}</td><td>${ph.canals||0}</td><td>${ph.executed||0}</td><td>${ph.dar||0}</td><td>${ph.invest||0}</td><td>${ph.delivered||0}</td><td>${(ph.canals||0)-(ph.delivered||0)}</td></tr>`:'';
+  let body=`
+    <div class="doc-title-main">تقرير الموقف التنفيذي — ${g.name}</div>
+    <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
+    <div class="doc-body">
+      <p>فيما يلي موقف استلامات الإدارة المركزية بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
+      <table class="doc-tbl"><thead><tr>
+        <th>المرحلة</th><th>إجمالي الترع</th><th>المنفّذ</th><th>دار الهندسة</th><th>استثماري</th><th>المُسلّم</th><th>المتبقّي</th></tr></thead>
+        <tbody>${phaseTbl(p1,'الأولى')}${phaseTbl(p2,'الثانية')}</tbody></table>`;
+  if(duesRows.length){
+    body+=`<div class="doc-sec-h">المستحقات المعلّقة لحين استلام دار الهندسة</div>
+      <table class="doc-tbl sm"><thead><tr><th>م</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>المعلّق (م.ج)</th></tr></thead>
+      <tbody>${duesRows.map((o,i)=>`<tr><td>${i+1}</td><td>${o.name}</td><td>${o.contractor}</td><td>${o.detail||'—'}</td><td>${o.outstanding.toFixed(2)}</td></tr>`).join('')}
+      <tr class="doc-total"><td colspan="4">الإجمالي</td><td>${duesTot.toFixed(2)}</td></tr></tbody></table>`;
+  }
+  if(govReports.length){
+    body+=`<div class="doc-sec-h">بلاغات الاستلام المُرسلة لدار الهندسة</div>
+      <table class="doc-tbl sm"><thead><tr><th>م</th><th>الترعة</th><th>أُرسل</th><th>الاستلام المقرر</th><th>النتيجة</th></tr></thead>
+      <tbody>${govReports.map((r,i)=>`<tr><td>${i+1}</td><td>${r.canalName}</td><td>${fmt(r.sentDate)}</td><td>${fmt(r.dueDate)}</td><td>${REPORT_OUTCOMES[r.outcome].label}</td></tr>`).join('')}</tbody></table>`;
+  }
+  body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
+      <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
+    </div>`;
+  // توقيع رئيس الإدارة المركزية التابع له التقرير
+  const govSign={l1:'رئيس الإدارة المركزية',l2:`للموارد المائية والري بـ${g.name}`,name:'.........................'};
+  return letterhead()+body+docFooter(govSign);
+}
 function buildDoc(id){
   const of=PROJECT.official,dt=PROJECT.detailTotals;
   if(id==='monthly'){
