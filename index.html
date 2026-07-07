@@ -468,6 +468,9 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .btn-export{background:#fff;color:var(--nile-800);font-weight:800;border:none;width:100%;justify-content:center;padding:12px}
 .btn-export:hover{background:#f0fafc}
 .gov-export-hint{display:block;color:rgba(255,255,255,.9);font-size:11.5px;margin-top:9px;line-height:1.6}
+.edit-phase{margin-bottom:14px;padding:12px;background:var(--cyan-soft);border-radius:10px;border:1px solid var(--line)}
+.ephase-t{font-size:12.5px;font-weight:800;color:var(--nile-700);margin-bottom:8px}
+html[data-theme="dark"] .edit-phase{background:#0f3a45}
 @media print{
   body *{visibility:hidden!important}
   .doc-overlay,.doc-overlay *{visibility:visible!important}
@@ -6543,7 +6546,6 @@ function openDrawer(id){
       <div id="canalList" class="canal-list"></div>
     </div>`;
   }
-  const pe=p1||p2, phk=p1?'phase1':'phase2';
   // ── بلاغات الاستلام لهذه الإدارة ──
   const canalOpts=(canals.length?canals:[]);
   const govReports=loadReports().filter(r=>r.govId===id);
@@ -6573,16 +6575,22 @@ function openDrawer(id){
   </div>`;
   html+=`<div class="sec"><div class="sec-t">تحديث موقف الاستلام</div>
     <div class="edit-block">
-      <div class="field"><label>المرحلة ${p1?'الأولى':'الثانية'} — منفّذة / دار الهندسة / استثماري</label>
+      ${p1?`<div class="edit-phase"><div class="ephase-t">المرحلة الأولى — منفّذة / دار الهندسة / استثماري</div>
         <div class="row r3">
-          <input id="e-exec" type="number" min="0" value="${pe.executed||0}" placeholder="منفّذة">
-          <input id="e-dar" type="number" min="0" value="${pe.dar||0}" placeholder="دار الهندسة">
-          <input id="e-inv" type="number" min="0" value="${pe.invest||0}" placeholder="استثماري">
-        </div></div>
+          <input id="e1-exec" type="number" min="0" value="${p1.executed||0}" placeholder="منفّذة">
+          <input id="e1-dar" type="number" min="0" value="${p1.dar||0}" placeholder="دار الهندسة">
+          <input id="e1-inv" type="number" min="0" value="${p1.invest||0}" placeholder="استثماري">
+        </div></div>`:''}
+      ${p2?`<div class="edit-phase"><div class="ephase-t">المرحلة الثانية — منفّذة / دار الهندسة / استثماري</div>
+        <div class="row r3">
+          <input id="e2-exec" type="number" min="0" value="${p2.executed||0}" placeholder="منفّذة">
+          <input id="e2-dar" type="number" min="0" value="${p2.dar||0}" placeholder="دار الهندسة">
+          <input id="e2-inv" type="number" min="0" value="${p2.invest||0}" placeholder="استثماري">
+        </div></div>`:''}
       <div class="field"><label>المستحقات المعلّقة (مليون جنيه)</label>
         <input id="e-dues" type="number" step="0.001" min="0" value="${g.duesOutstanding||0}"></div>
       <div class="save-row">
-        <button class="btn btn-primary" onclick="saveGov('${id}','${phk}')">
+        <button class="btn btn-primary" onclick="saveGov('${id}')">
           <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>حفظ التحديث</button>
         ${g._edited?`<button class="btn" onclick="resetGov('${id}')">إلغاء التعديلات</button>`:''}
         <span class="saved-flag" id="savedFlag">✓ تم الحفظ محلياً</span>
@@ -6654,21 +6662,33 @@ function opCard(o){
     ${o.outstanding>0?`<div class="odue">${o.outstanding.toFixed(2)} م.ج</div>`:''}</div>
     <div class="op-chips">${ch.join('')}</div>${o.detail?`<div class="op-detail">${o.detail}</div>`:''}</div>`;
 }
-function saveGov(id,phk){
+function saveGov(id){
   const g=PROJECT.govs.find(x=>x.id===id);
-  const prev=gov(id);const pbefore=prev[phk]||{};
+  const prev=gov(id);
   const o=ov[id]||{};
-  const dar=+document.getElementById('e-dar').value, inv=+document.getElementById('e-inv').value;
-  o[phk]={executed:+document.getElementById('e-exec').value,dar:dar,invest:inv,delivered:dar+inv};
-  const base=g[phk];
-  o[phk].remaining=Math.max(0,base.canals-o[phk].delivered);
-  o.duesOutstanding=+document.getElementById('e-dues').value;
+  const val=eid=>{const el=document.getElementById(eid);return el?+el.value:null;};
+  const before1=prev.phase1||{}, before2=prev.phase2||{};
+  // المرحلة الأولى (إن وُجدت حقولها)
+  if(document.getElementById('e1-dar')){
+    const dar=val('e1-dar'),inv=val('e1-inv');
+    o.phase1={executed:val('e1-exec'),dar:dar,invest:inv,delivered:dar+inv};
+    o.phase1.remaining=Math.max(0,(g.phase1.canals)-o.phase1.delivered);
+  }
+  // المرحلة الثانية (إن وُجدت حقولها)
+  if(document.getElementById('e2-dar')){
+    const dar=val('e2-dar'),inv=val('e2-inv');
+    o.phase2={executed:val('e2-exec'),dar:dar,invest:inv,delivered:dar+inv};
+    o.phase2.remaining=Math.max(0,(g.phase2.canals)-o.phase2.delivered);
+  }
+  o.duesOutstanding=val('e-dues');
   o.lastUpdate=new Date().toISOString().slice(0,10);
   ov[id]=o;saveOv(ov);
-  logAudit({gov:g.name,phase:phk==='phase1'?'المرحلة الأولى':'المرحلة الثانية',
-    field:'موقف الاستلام',
-    before:`دار الهندسة ${pbefore.dar||0} / استثماري ${pbefore.invest||0} / مستحقات ${prev.duesOutstanding||0}`,
-    after:`دار الهندسة ${dar} / استثماري ${inv} / مستحقات ${o.duesOutstanding}`});
+  // سجل التغييرات — يوثّق المرحلتين
+  const parts=[];
+  if(o.phase1)parts.push(`م1: دار الهندسة ${before1.dar||0}→${o.phase1.dar} / استثماري ${before1.invest||0}→${o.phase1.invest}`);
+  if(o.phase2)parts.push(`م2: دار الهندسة ${before2.dar||0}→${o.phase2.dar} / استثماري ${before2.invest||0}→${o.phase2.invest}`);
+  parts.push(`مستحقات ${prev.duesOutstanding||0}→${o.duesOutstanding}`);
+  logAudit({gov:g.name,phase:'—',field:'موقف الاستلام',before:'—',after:parts.join(' • ')});
   pushOverride(id,g.name,o);
   document.getElementById('savedFlag').classList.add('show');
   setTimeout(()=>{openDrawer(id);refreshAll();},700);
