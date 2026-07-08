@@ -682,6 +682,22 @@ html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
 .asst-chip{font-family:'Cairo';font-size:12px;font-weight:700;color:var(--nile-700);background:var(--card);border:1.4px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .asst-chip:hover{border-color:var(--gold,#c9b67c);background:var(--cyan-soft);transform:translateY(-1px)}
 .asst-chip .ci{opacity:.6;margin-inline-end:5px}
+.asst-insights{margin:2px 0}
+.asst-ins-h{font-size:12px;font-weight:800;color:var(--nile-700);margin:2px 0 8px}
+.asst-ins-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.asst-ins-card{text-align:start;font-family:'Cairo';background:var(--card);border:1.4px solid var(--line);border-inline-start-width:4px;border-radius:14px;padding:11px 13px;cursor:pointer;transition:all .15s}
+.asst-ins-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.10)}
+.asst-ins-card .ins-ic{font-size:18px;margin-bottom:3px}
+.asst-ins-card .ins-t{font-size:11px;color:var(--muted);font-weight:600}
+.asst-ins-card .ins-v{font-size:15px;font-weight:800;color:var(--nile-700);margin:2px 0}
+.asst-ins-card .ins-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.ins-warn{border-inline-start-color:#c9a84c}.ins-stop{border-inline-start-color:#c0392b}.ins-wait{border-inline-start-color:#2d7d6a}
+.nlu-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.nlu-chip{font-size:11px;font-weight:700;background:var(--cyan-soft,#e6f4f1);color:var(--nile-700);border-radius:999px;padding:3px 10px}
+.ab-followups{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+.ab-followups .fu-lbl{font-size:11px;color:var(--muted);font-weight:700}
+.fu-chip{font-family:'Cairo';font-size:11.5px;font-weight:700;color:var(--nile-700);background:transparent;border:1.3px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;transition:all .15s}
+.fu-chip:hover{border-color:var(--gold,#c9b67c);background:var(--cyan-soft);transform:translateY(-1px)}
 .asst-chat{display:flex;flex-direction:column;gap:14px;min-height:280px;max-height:56vh;overflow-y:auto;padding:8px 4px;scroll-behavior:smooth}
 .asst-msg{display:flex;gap:10px;max-width:92%;animation:asstIn .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes asstIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -720,9 +736,6 @@ html[data-theme="dark"] .ab-act.ghost{color:var(--gold-bright,#e6cf8f)}
 .asst-send:hover{transform:scale(1.05)}
 .asst-send svg{width:19px;height:19px;transform:scaleX(-1)}
 .asst-foot-note{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 4px}
-.asst-export-btn{font-family:'Cairo';font-size:12px;font-weight:800;color:var(--nile-700);background:var(--cyan-soft);border:1.4px solid var(--gold,#c9b67c);border-radius:10px;padding:9px 15px;cursor:pointer;transition:all .15s}
-.asst-export-btn:hover{background:var(--gold,#c9b67c);color:#0a1f1a}
-html[data-theme="dark"] .asst-export-btn{color:var(--gold-bright,#e6cf8f)}
 .asst-typing{display:inline-flex;gap:4px;padding:4px 0}
 .asst-typing i{width:7px;height:7px;border-radius:50%;background:var(--gold-deep,#a8904f);animation:asstBlink 1.2s infinite both}
 .asst-typing i:nth-child(2){animation-delay:.2s}.asst-typing i:nth-child(3){animation-delay:.4s}
@@ -1311,6 +1324,8 @@ table.tbl td{background-clip:padding-box}
 
           <div class="asst-chips" id="asstChips"></div>
 
+          <div class="asst-insights" id="asstInsights"></div>
+
           <div class="asst-chat" id="asstChat"></div>
 
           <div class="asst-bar">
@@ -1321,7 +1336,6 @@ table.tbl td{background-clip:padding-box}
             </button>
           </div>
           <div class="asst-foot-note">
-            <button class="asst-export-btn" onclick="exportAssistant()">⬇ تصدير نسخة المساعد المستقلة (HTML)</button>
             <span>كل الإجابات مبنية على البيانات الحيّة داخل التطبيق وتعكس آخر تعديلاتك فوراً.</span>
           </div>
         </div>
@@ -1641,6 +1655,8 @@ function refreshAll(){
       else _ctDirty=true;                                    // غير نشط: علّمه ليُعاد بناؤه عند فتحه
     }
     updateReportBadge();   // شارة التأخّر في القائمة الجانبية
+    // تحديث الرؤى الاستباقية للمساعد إن كان مفتوحاً
+    try{if(typeof asstRenderInsights==='function'&&document.getElementById('v-assistant')&&document.getElementById('v-assistant').classList.contains('on'))asstRenderInsights();}catch(_){}
   }catch(e){console.warn('refresh',e);try{toast&&toast('تعذّر تحديث بعض العناصر — راجع وحدة التحكم',true);}catch(_){}}
 }
 
@@ -2910,145 +2926,356 @@ function asstMetrics(items){
   return '<div class="ab-metrics">'+items.map(m=>`<div class="ab-metric"><div class="m-v">${m.v}</div><div class="m-l">${m.l}</div></div>`).join('')+'</div>';
 }
 // المحرّك: يحوّل السؤال إلى إجابة هندسية
-function asstAnswer(q){
-  const s=asstSnapshot();
-  const t=q.trim();
-  const has=(...ws)=>ws.some(w=>t.includes(w));
-  let acts=[];  // أزرار إجراءات (تصدير/تقرير)
-
-  // 1) سؤال عن إدارة بعينها
-  const g=asstMatchGov(t);
-  if(g&&has('موقف','حالة','وضع','ملخص','بيانات','تفاصيل','ايه','إيه','كام','عن')){
-    const p1=g.phase1,p2=g.phase2;
-    let body=`<span class="ab-h">📍 الموقف التنفيذي — ${g.name}</span>`;
-    const mets=[];
-    if(p1){mets.push({v:AR_NUM(p1.canals),l:'ترع م.أولى'});mets.push({v:p1.donePct+'%',l:'نسبة النهو (أولى)'});mets.push({v:p1.delivPct+'%',l:'تسليم دار الهندسة'});}
-    if(p2&&p2.canals){mets.push({v:AR_NUM(p2.canals),l:'ترع م.ثانية'});mets.push({v:(p2.donePct||0)+'%',l:'نسبة النهو (ثانية)'});}
-    body+=asstMetrics(mets);
-    // تصنيف ترعها إن وُجد تفصيل
-    const gc=(g.canals||[]);
-    if(gc.length){
-      const bc={};gc.forEach(c=>bc[c.statusCode]=(bc[c.statusCode]||0)+1);
-      const rows=Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[ASST_CODE_AR[k]||k,AR_NUM(v)]);
-      body+=`<div style="margin-top:6px"><b>تصنيف الترع المرصودة (${gc.length} ترعة):</b></div>`;
-      body+=asstTable(['الموقف','العدد'],rows,'تصنيف ترع '+g.name);
-    }
-    if((g.duesOutstanding||0)>0)body+=`<div style="margin-top:6px">💰 <b>مستحقات معلّقة:</b> ${g.duesOutstanding.toFixed(3)} مليون جنيه</div>`;
-    body+=`<div style="margin-top:5px;font-size:12px;color:var(--muted)">حالة دار الهندسة: <b>${g.darStatus}</b>${g._edited?' • تحتوي تعديلات محليّة ✎':''}</div>`;
-    acts=[{l:'📄 تقرير رسمي بترويسة المشروع',fn:`openGovDoc('${g.id}')`},{l:'⬇ تصدير ترع '+g.name+' (CSV)',fn:`asstExportGov('${g.id}')`}];
-    return {body,acts};
-  }
-
-  // 2) الترع المتأخرة / المؤجلة / المتوقفة
-  if(has('متأخر','مؤجل','متوقف','معطل','معوق','سحب','متعثر')){
-    const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));
-    const rows=bad.slice(0,40).map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']);
-    let body=`<span class="ab-h">⏳ الترع خارج مسار الإنجاز</span>`;
-    body+=asstMetrics([{v:AR_NUM(bad.length),l:'إجمالي (مؤجلة/متوقفة/ملغاة)'},
-      {v:AR_NUM(bad.filter(c=>c.statusCode==='deferred').length),l:'مؤجلة/سحب'},
-      {v:AR_NUM(bad.filter(c=>c.statusCode==='stopped').length),l:'متوقفة'}]);
-    if(rows.length)body+=asstTable(['الترعة','الإدارة','الموقف','التنفيذ'],rows,'الترع المتأخرة والمتوقفة');
-    if(bad.length>40)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${bad.length-40} ترعة أخرى في ملف التصدير الكامل.</div>`;
-    acts=[{l:'⬇ تصدير القائمة كاملة (CSV)',fn:`asstExportList('bad')`}];
-    return {body,acts};
-  }
-
-  // 3) المستحقات المالية
-  if(has('مستحق','مبالغ','فلوس','مالي','محتجز','مليون','مديوني','دفعات')){
-    let body=`<span class="ab-h">💰 المستحقات المعلّقة</span>`;
-    body+=asstMetrics([{v:s.duesTotal.toFixed(2),l:'إجمالي المعلّق (م.ج)'},{v:AR_NUM(s.dues.length),l:'عملية'},{v:AR_NUM(s.govDues.length),l:'إدارة'}]);
-    const rows=s.govDues.map(d=>[d.name,d.v.toFixed(3)]);
-    if(rows.length)body+=asstTable(['الإدارة','المعلّق (م.ج)'],rows,'المستحقات المعلّقة بالإدارة');
-    acts=[{l:'💰 كشف المستحقات الرسمي',fn:`openDoc('dues')`},{l:'⬇ تصدير المستحقات (CSV)',fn:`asstExportList('dues')`}];
-    return {body,acts};
-  }
-
-  // 4) دار الهندسة / التسليم / الاستلام
-  if(has('دار الهندسة','تسليم','استلام','مسلم','سلّم','سلمت')){
-    const submitted=s.canals.filter(c=>['submitted','accepted','accepted_partial'].includes(c.statusCode));
-    let body=`<span class="ab-h">🏛️ موقف الاستلام عبر دار الهندسة</span>`;
-    const totDar=s.dt.p1.dar+s.dt.p2.dar;
-    body+=asstMetrics([{v:AR_NUM(totDar),l:'مستلمة عبر دار الهندسة'},
-      {v:AR_NUM(s.canals.filter(c=>c.statusCode==='submitted').length),l:'سُلّمت وبانتظار المعاينة'},
-      {v:AR_NUM(s.canals.filter(c=>c.statusCode==='inspecting').length),l:'تحت المعاينة'}]);
-    // أعلى الإدارات تسليماً
-    const rows=s.gs.filter(x=>x.phase1).map(x=>[x.name,(x.phase1.delivPct||0)+'%',(x.phase2&&x.phase2.delivPct!=null?x.phase2.delivPct+'%':'—')]).slice(0,20);
-    body+=asstTable(['الإدارة','تسليم م.أولى','تسليم م.ثانية'],rows,'نسب التسليم لدار الهندسة');
-    acts=[{l:'📊 تقرير الموقف التنفيذي',fn:`openDoc('exec')`},{l:'📄 خطاب تصعيد للتأخير',fn:`openDoc('escalation')`}];
-    return {body,acts};
-  }
-
-  // 5) الإجمالي / نظرة عامة / المشروع كله
-  if(has('اجمالي','إجمالي','المشروع','كله','عام','نظرة','ملخص','الكل','احصائ','إحصائ','مؤشر','نسب')){
-    const p1=s.p1,p2=s.p2;
-    let body=`<span class="ab-h">🗂️ الملخص التنفيذي لمشروع حياة كريمة</span>`;
-    body+=asstMetrics([{v:AR_NUM(p1.total+p2.total),l:'إجمالي الترع'},
-      {v:PCT(p1.done+p2.done,p1.total+p2.total)+'%',l:'نسبة النهو الكلي'},
-      {v:AR_NUM(s.dt.p1.dar+s.dt.p2.dar),l:'مستلمة دار الهندسة'},
-      {v:s.duesTotal.toFixed(1),l:'مستحقات معلّقة (م.ج)'}]);
-    body+=asstTable(['المرحلة','إجمالي','منفّذ','% نهو','مسلّم','% تسليم','متبقٍّ'],
-      [['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%',p1.remainingDeliver],
-       ['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%',p2.remainingDeliver]],'الملخص التنفيذي للمرحلتين');
-    body+=`<div style="margin-top:6px;font-size:12px;color:var(--muted)">${s.gs.length} إدارة مركزية • ${s.canals.length} ترعة مرصودة تفصيلياً${s.edited?` • ${s.edited} إدارة بها تعديلات ✎`:''}</div>`;
-    acts=[{l:'📄 خطاب التقرير الشهري',fn:`openDoc('monthly')`},{l:'📊 تقرير تنفيذي شامل',fn:`openDoc('exec')`},{l:'⬇ تصدير كل الترع (CSV)',fn:`asstExportList('all')`}];
-    return {body,acts};
-  }
-
-  // 6) التحديثات / التعديلات الأخيرة (متابعة التغيرات)
-  if(has('تحديث','تعديل','تغيير','آخر','اخر','سجل','جديد','حصل')){
-    const a=s.audit.slice(0,15);
-    let body=`<span class="ab-h">🔄 آخر التحديثات على المشروع</span>`;
-    if(!a.length){body+='<div>لا توجد تعديلات مسجّلة بعد على هذا الجهاز. كل الأرقام مطابقة للبيانات الرسمية المعتمدة.</div>';}
-    else{
-      body+=`<div style="margin-bottom:5px">آخر ${a.length} تعديل مسجّل:</div>`;
-      const rows=a.map(e=>[e.gov||'—',e.field||'—',(e.before||'—')+' ← '+(e.after||'—'),(e.ts||'').slice(0,10)]);
-      body+=asstTable(['الإدارة','الحقل','التغيير','التاريخ'],rows,'سجل آخر التحديثات');
-    }
-    acts=[{l:'🔄 فتح سجل التغييرات',fn:`document.querySelector('.nav a[data-view=audit]').click()`}];
-    return {body,acts};
-  }
-
-  // 7) بحث نصّي عام — يشمل اسم الترعة والعملية والمقاول والإدارة معاً
-  // (يلتقط استعلامات مثل اسم مقاول «المخابرات» أو جزء من اسم عملية)
-  const normT=s2=>String(s2).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\u200f|\u200e/g,'');
-  // كلمات تُستبعد من البحث (وصل/استفهام + كلمات المشروع العامة التي تطابق كل شيء)
-  const stop=['موقف','عن','ما','ماهو','ايه','اظهر','كل','ترعه','فرع','التي','الذي','عايز','عاوز','هات','قائمه','بتاع','بتاعه','ترع','مقاول','عمليه','عمليات','تاهيل','تبطين','هندسه','ري','والصرف','الصرف','وتبطين','بزمام','بطول','زمام','الاداره','العامه','بمحافظه','محافظه'];
-  const stripLead=w=>w.replace(/^و/,'').replace(/^ال/,'');
-  let terms=normT(t).split(/\s+/).map(stripLead).filter(w=>w.length>=3&&!stop.includes(w));
-  if(terms.length){
-    const hit=c=>{
-      const hay=normT([c.name,c.op,c.contractor,c.govName].filter(Boolean).join(' '));
-      // نطابق المصطلح كما هو أو بعد إسقاط «ال» التعريف في بداية كلمات النص
-      return terms.some(w=>hay.includes(w)||hay.replace(/(^|\s)ال/g,'$1').includes(w));
-    };
-    const found=s.canals.filter(hit);
-    if(found.length){
-      let body=`<span class="ab-h">🔎 نتائج البحث</span>`;
-      const byC={};found.forEach(c=>byC[c.statusCode]=(byC[c.statusCode]||0)+1);
-      const topCode=Object.entries(byC).sort((a,b)=>b[1]-a[1])[0];
-      body+=asstMetrics([{v:AR_NUM(found.length),l:'ترعة مطابِقة'},
-        {v:AR_NUM(new Set(found.map(c=>c.govName)).size),l:'إدارة'},
-        {v:topCode?(ASST_CODE_AR[topCode[0]]||topCode[0]):'—',l:'الموقف الأغلب'}]);
-      const rows=found.slice(0,40).map(c=>[c.name,c.govName,c.contractor||'—',ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']);
-      body+=asstTable(['الترعة','الإدارة','المقاول','الموقف','التنفيذ'],rows,'نتائج البحث');
-      if(found.length>40)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${found.length-40} ترعة أخرى. صيّغ البحث بدقة أكبر أو صدّر القائمة.</div>`;
-      window._asstFound=found;
-      return {body,acts:[{l:'⬇ تصدير نتائج البحث (CSV)',fn:`asstExportFound()`}]};
-    }
-  }
-
-  // افتراضي: إرشاد — يوضّح عدم وجود نتيجة إن كان هناك مصطلح بحث فعلي
-  const noResult=terms.length>0;
-  return {body:`<span class="ab-h">${noResult?'🔍 لم أجد نتيجة مطابِقة':'👋 تحت أمر سيادتك'}</span>${noResult?`لم أعثر على ترع أو عمليات أو مقاولين يطابقون «${t.replace(/</g,'&lt;')}». تأكّد من الاسم أو `:'يمكنني الإجابة عن أي استفسار عن المشروع وإعداد الجداول والتقارير. '}جرّب أن تسأل:<ul>
-    <li>«ما موقف <b>الجيزة</b>؟» أو أي إدارة</li>
-    <li>«ترع مقاول <b>المخابرات</b>» أو أي مقاول</li>
-    <li>«أظهر الترع <b>المتأخرة</b> والمتوقفة»</li>
-    <li>«ما إجمالي <b>المستحقات</b> المعلّقة؟»</li>
-    <li>«موقف <b>دار الهندسة</b> والتسليم»</li>
-    <li>«<b>ملخص</b> المشروع بالكامل»</li>
-    <li>«ما <b>آخر التحديثات</b>؟»</li></ul>`,acts:[]};
+// ═══════════════════════════════════════════════════════════════════
+//  محرّك الفهم اللغوي العربي المحلي (NLU) — offline بالكامل
+//  يحوّل السؤال الحر إلى: نيّة + كيانات + فلاتر، ثم يستدل على الإجابة
+// ═══════════════════════════════════════════════════════════════════
+// تطبيع عربي موحّد
+function nluNorm(s){return String(s||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/[\u064B-\u0652\u200f\u200e]/g,'').replace(/\s+/g,' ').trim();}
+// قاموس مرادفات الموقف → كود
+const NLU_STATUS_SYN={
+  accepted:['مقبول','مقبوله','قبول نهائي','استلمت','مستلمه','تم الاستلام','منتهيه ومستلمه'],
+  accepted_partial:['اكتفاء','اكتفاء بما تم','قبول جزئي','جزئي'],
+  submitted:['سلمت','مسلمه','سلمت لدار الهندسه','تم التسليم','بانتظار المعاينه'],
+  inspecting:['معاينه','تحت المعاينه','قيد المعاينه'],
+  done:['منفذه','تم النهو','جاهزه','منتهيه','بانتظار التسليم'],
+  progress:['جاري','جاري التنفيذ','شغاله','تحت التنفيذ'],
+  investment:['استثماري','مسار مباشر'],
+  deferred:['مؤجله','مؤجل','سحب','جاري سحب','مسحوبه'],
+  stopped:['متوقفه','متوقف','واقفه','معطله','متعثره'],
+  obstacles:['معوقات','بها معوقات','عوائق'],
+  cancelled:['ملغاه','ملغي','ملغيه'],
+  unknown:['غير محدد','غير محدده'],
+  uncoded:['غير مكوده','مش مكوده']
+};
+// نيّات مع كلماتها المفتاحية
+const NLU_INTENTS=[
+  ['rank',   ['رتب','ترتيب','اعلى','أعلى','اكبر','أكبر','اقل','أقل','اكثر','أكثر','افضل','أفضل','اسوا','top','ترتيبي','الاولى','الأوائل']],
+  ['compare',['قارن','مقارنه','مقابل','الفرق بين','بين','vs','ضد']],
+  ['count',  ['كم عدد','كام','عدد','احصاء','إحصاء','كمية']],
+  ['dues',   ['مستحق','مستحقات','مبالغ','فلوس','مالي','محتجز','مليون','مديوني','دفعات','متبقي مالي']],
+  ['late',   ['متاخر','متأخر','مؤجل','متوقف','معطل','معوق','سحب','متعثر','مشاكل','خارج المسار']],
+  ['dar',    ['دار الهندسه','تسليم','استلام','مسلم','سلم','سلمت','المعاينه']],
+  ['updates',['تحديث','تعديل','تغيير','اخر','آخر','سجل','جديد','حصل ايه','مستجدات']],
+  ['summary',['ملخص','اجمالي','إجمالي','المشروع كله','نظره عامه','الكل','احصائيات','مؤشرات','الوضع العام']],
+  ['letter', ['خطاب','مذكره','مكاتبه','رساله','اكتب خطاب','تصعيد','مخاطبه','افادة','إفادة']],
+];
+// استخلاص كيان الإدارة
+function nluGov(nq){
+  const gs=allGovs();let best=null;
+  gs.forEach(g=>{const ng=nluNorm(g.name).replace(/^ال/,'');
+    if(ng.length>=3&&nq.replace(/^ال/,'').includes(ng)){if(!best||ng.length>nluNorm(best.name).length)best=g;}});
+  return best;
 }
-// تصدير نتائج آخر بحث كـ CSV
+// استخلاص كل الإدارات المذكورة (للمقارنة)
+function nluGovs(nq){
+  const gs=allGovs();const out=[];
+  gs.forEach(g=>{const ng=nluNorm(g.name).replace(/^ال/,'');
+    if(ng.length>=3&&nq.replace(/^ال/,'').includes(ng))out.push(g);});
+  return out;
+}
+// استخلاص كود الموقف من نص السؤال
+function nluStatusCode(nq){
+  for(const[code,syns]of Object.entries(NLU_STATUS_SYN)){
+    if(syns.some(w=>nq.includes(nluNorm(w))))return code;
+  }
+  return null;
+}
+// استخلاص المرحلة
+function nluPhase(nq){
+  if(/(مرحله|م)\s*(الاولى|اولى|1|الأولى)/.test(nq)||nq.includes('الاولى'))return 1;
+  if(/(مرحله|م)\s*(الثانيه|ثانيه|2|الثانية)/.test(nq)||nq.includes('الثانيه'))return 2;
+  return null;
+}
+// استخلاص عدد مطلوب (top N)
+function nluTopN(nq){
+  const m=nq.match(/(اعلى|أعلى|اكبر|أكبر|اقل|أقل|اول|أول|top)\s*(\d+)/)||nq.match(/(\d+)\s*(اداره|ادارات|إدارة|ترعه|ترع|مقاول)/);
+  if(m){const num=[m[1],m[2]].find(x=>/^\d+$/.test(x));const n=parseInt(num,10);if(n>0&&n<200)return n;}
+  const words={'خمس':5,'خمسه':5,'عشر':10,'عشره':10,'ثلاث':3,'ثلاثه':3,'اربع':4,'اربعه':4};
+  for(const[w,n]of Object.entries(words))if(nq.includes(w))return n;
+  return null;
+}
+// استخلاص شرط رقمي على الطول أو النسبة أو المبلغ
+function nluNumFilter(nq){
+  // "اكثر من 5 كم" / "اقل من 50%" / "فوق 3 مليون"
+  const m=nq.match(/(اكثر من|أكثر من|فوق|اعلى من|أعلى من|اطول من|أطول من|طولها اكثر|>=?|اقل من|أقل من|تحت|اصغر من|اقصر من|أقصر من|طولها اقل|<=?)\s*([\d.]+)\s*(كم|%|مليون|م\.?ج|فدان)?/);
+  if(!m)return null;
+  const dir=/اقل|أقل|تحت|اصغر|اقصر|</.test(m[1])?'lt':'gt';
+  const val=parseFloat(m[2]);
+  let field='length';
+  if(m[3]==='%'||nq.includes('نسبه')||nq.includes('تنفيذ'))field='pct';
+  else if(m[3]==='مليون'||/م\.?ج/.test(m[3]||'')||nq.includes('مستحق'))field='dues';
+  else if(m[3]==='كم'||nq.includes('طول'))field='length';
+  return {dir,val,field};
+}
+// استخلاص مقاول محتمل (كلمات غير مصروفة كنيّة/إدارة/موقف)
+function nluContractorTerms(nq){
+  const stop=['موقف','عن','ما','ماهو','ايه','اظهر','كل','ترعه','فرع','عايز','عاوز','هات','ترع','مقاول','عمليه','عمليات','تاهيل','تبطين','هندسه','ري','والصرف','الصرف','وتبطين','بزمام','بطول','زمام','الاداره','العامه','بمحافظه','محافظه','في','من','التي','الذي','مليون','كم','اكثر','اقل','فوق','تحت','نسبه','نسبتها','تنفيذ','طول','طولها','مرحله','الاولى','الثانيه','اعلى','اكبر','اطول','اقصر','اعرض','اصغر','رتب','ترتيب','قارن','مقارنه','بين','عدد','فدان','التنفيذ'];
+  return nluNorm(nq).split(' ').map(w=>w.replace(/^و/,'').replace(/^ال/,'')).filter(w=>w.length>=3&&stop.indexOf(w)<0);
+}
+// المحلّل الرئيسي: يفكّك السؤال
+function nluParse(q){
+  const nq=nluNorm(q);
+  let intent=null;
+  for(const[name,kws]of NLU_INTENTS){if(kws.some(k=>nq.includes(nluNorm(k)))){intent=name;break;}}
+  // أولوية صريحة لكتابة الخطابات متى ذُكر فعل الكتابة/المخاطبة
+  if(/خطاب|اكتب|مذكره|مكاتبه|مخاطبه|افاده|رساله|تصعيد/.test(nq))intent='letter';
+  const gov=nluGov(nq), govs=nluGovs(nq), status=nluStatusCode(nq),
+        phase=nluPhase(nq), topN=nluTopN(nq), numF=nluNumFilter(nq);
+  return {q,nq,intent,gov,govs,status,phase,topN,numF};
+}
+// جمع كل الترع مع بيانات الإدارة
+function nluAllCanals(){
+  const out=[];allGovs().forEach(g=>(g.canals||[]).forEach(c=>out.push({...c,govId:g.id,govName:g.name,region:g.region})));
+  return out;
+}
+// تطبيق الفلاتر المستخلصة على قائمة الترع
+function nluFilterCanals(p){
+  let rows=nluAllCanals();
+  if(p.gov)rows=rows.filter(c=>c.govId===p.gov.id);
+  if(p.status)rows=rows.filter(c=>c.statusCode===p.status);
+  if(p.phase!=null)rows=rows.filter(c=>c.phase===p.phase);
+  if(p.numF&&p.numF.field!=='dues'){
+    const f=p.numF.field;
+    rows=rows.filter(c=>c[f]!=null&&(p.numF.dir==='gt'?c[f]>p.numF.val:c[f]<p.numF.val));
+  }
+  // مصطلحات المقاول/الاسم الحرة (لو تبقّى بعد استخلاص الكيانات)
+  const terms=nluContractorTerms(p.nq).filter(w=>{
+    // تجاهل كلمات ابتلعتها الكيانات
+    if(p.gov&&nluNorm(p.gov.name).replace(/^ال/,'').includes(w))return false;
+    return true;
+  });
+  if(terms.length&&!p.status){ // لا نطبّق النص لو كان الموقف هو الفلتر الأساسي
+    // عند غياب أي إشارة أخرى (إدارة/موقف/مرحلة/رقم) نشترط طول كلمة ≥4 لتقليل التطابق العرضي
+    const weakOnly=!p.gov&&!p.status&&p.phase==null&&!p.numF;
+    const eff=weakOnly?terms.filter(w=>w.length>=4):terms;
+    if(eff.length)rows=rows.filter(c=>{const hay=nluNorm([c.name,c.op,c.contractor].filter(Boolean).join(' '));
+      return eff.some(w=>hay.includes(w));});
+    else rows=[];
+  }
+  return rows;
+}
+
+// ═══ دوال الإجابة المشتركة (مُعاد تنظيمها من المحرّك القديم) ═══
+function asstGovCard(g){
+  const p1=g.phase1,p2=g.phase2;
+  let body=`<span class="ab-h">📍 الموقف التنفيذي — ${g.name}</span>`;
+  const mets=[];
+  if(p1){mets.push({v:AR_NUM(p1.canals),l:'ترع م.أولى'});mets.push({v:p1.donePct+'%',l:'نسبة النهو (أولى)'});mets.push({v:p1.delivPct+'%',l:'تسليم دار الهندسة'});}
+  if(p2&&p2.canals){mets.push({v:AR_NUM(p2.canals),l:'ترع م.ثانية'});mets.push({v:(p2.donePct||0)+'%',l:'نسبة النهو (ثانية)'});}
+  body+=asstMetrics(mets);
+  const gc=(g.canals||[]);
+  if(gc.length){
+    const bc={};gc.forEach(c=>bc[c.statusCode]=(bc[c.statusCode]||0)+1);
+    const rows=Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[ASST_CODE_AR[k]||k,AR_NUM(v)]);
+    body+=`<div style="margin-top:6px"><b>تصنيف الترع المرصودة (${gc.length} ترعة):</b></div>`;
+    body+=asstTable(['الموقف','العدد'],rows,'تصنيف ترع '+g.name);
+  }
+  if((g.duesOutstanding||0)>0)body+=`<div style="margin-top:6px">💰 <b>مستحقات معلّقة:</b> ${g.duesOutstanding.toFixed(3)} مليون جنيه</div>`;
+  body+=`<div style="margin-top:5px;font-size:12px;color:var(--muted)">حالة دار الهندسة: <b>${g.darStatus}</b>${g._edited?' • تحتوي تعديلات محليّة ✎':''}</div>`;
+  return {body,acts:[{l:'📄 تقرير رسمي بترويسة المشروع',fn:`openGovDoc('${g.id}')`},{l:'⬇ تصدير ترع '+g.name+' (CSV)',fn:`asstExportGov('${g.id}')`}]};
+}
+function asstLateAnswer(s){
+  const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));
+  let body=`<span class="ab-h">⏳ الترع خارج مسار الإنجاز</span>`;
+  body+=asstMetrics([{v:AR_NUM(bad.length),l:'إجمالي (مؤجلة/متوقفة/ملغاة)'},
+    {v:AR_NUM(bad.filter(c=>c.statusCode==='deferred').length),l:'مؤجلة/سحب'},
+    {v:AR_NUM(bad.filter(c=>c.statusCode==='stopped').length),l:'متوقفة'}]);
+  const rows=bad.slice(0,45).map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']);
+  if(rows.length)body+=asstTable(['الترعة','الإدارة','الموقف','التنفيذ'],rows,'الترع المتأخرة والمتوقفة');
+  if(bad.length>45)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${bad.length-45} ترعة أخرى في ملف التصدير.</div>`;
+  window._asstFound=bad;
+  return {body,acts:[{l:'⬇ تصدير القائمة (CSV)',fn:`asstExportFound()`},{l:'⚠️ خطاب تصعيد',fn:`openDoc('escalation')`}]};
+}
+function asstDuesAnswer(s){
+  let body=`<span class="ab-h">💰 المستحقات المعلّقة</span>`;
+  body+=asstMetrics([{v:s.duesTotal.toFixed(2),l:'إجمالي المعلّق (م.ج)'},{v:AR_NUM(s.dues.length),l:'عملية'},{v:AR_NUM(s.govDues.length),l:'إدارة'}]);
+  const rows=s.govDues.map(d=>[d.name,d.v.toFixed(3)]);
+  if(rows.length)body+=asstTable(['الإدارة','المعلّق (م.ج)'],rows,'المستحقات المعلّقة بالإدارة');
+  return {body,acts:[{l:'💰 كشف المستحقات الرسمي',fn:`openDoc('dues')`},{l:'⬇ تصدير المستحقات (CSV)',fn:`asstExportList('dues')`}]};
+}
+function asstDarAnswer(s){
+  let body=`<span class="ab-h">🏛️ موقف الاستلام عبر دار الهندسة</span>`;
+  const totDar=s.dt.p1.dar+s.dt.p2.dar;
+  body+=asstMetrics([{v:AR_NUM(totDar),l:'مستلمة عبر دار الهندسة'},
+    {v:AR_NUM(s.canals.filter(c=>c.statusCode==='submitted').length),l:'سُلّمت وبانتظار المعاينة'},
+    {v:AR_NUM(s.canals.filter(c=>c.statusCode==='inspecting').length),l:'تحت المعاينة'}]);
+  const rows=s.gs.filter(x=>x.phase1).map(x=>[x.name,(x.phase1.delivPct||0)+'%',(x.phase2&&x.phase2.delivPct!=null?x.phase2.delivPct+'%':'—')]).slice(0,20);
+  body+=asstTable(['الإدارة','تسليم م.أولى','تسليم م.ثانية'],rows,'نسب التسليم لدار الهندسة');
+  return {body,acts:[{l:'📊 تقرير الموقف التنفيذي',fn:`openDoc('exec')`},{l:'📄 خطاب تصعيد للتأخير',fn:`openDoc('escalation')`}]};
+}
+function asstUpdatesAnswer(s){
+  const a=s.audit.slice(0,15);
+  let body=`<span class="ab-h">🔄 آخر التحديثات على المشروع</span>`;
+  if(!a.length){body+='<div>لا توجد تعديلات مسجّلة بعد على هذا الجهاز. كل الأرقام مطابقة للبيانات الرسمية المعتمدة.</div>';}
+  else{body+=`<div style="margin-bottom:5px">آخر ${a.length} تعديل مسجّل:</div>`;
+    const rows=a.map(e=>[e.gov||'—',e.field||'—',(e.before||'—')+' ← '+(e.after||'—'),(e.ts||'').slice(0,10)]);
+    body+=asstTable(['الإدارة','الحقل','التغيير','التاريخ'],rows,'سجل آخر التحديثات');}
+  return {body,acts:[{l:'🔄 فتح سجل التغييرات',fn:`document.querySelector('.nav a[data-view=audit]').click()`}]};
+}
+function asstSummaryAnswer(s){
+  const p1=s.p1,p2=s.p2;
+  let body=`<span class="ab-h">🗂️ الملخص التنفيذي لمشروع حياة كريمة</span>`;
+  body+=asstMetrics([{v:AR_NUM(p1.total+p2.total),l:'إجمالي الترع'},
+    {v:PCT(p1.done+p2.done,p1.total+p2.total)+'%',l:'نسبة النهو الكلي'},
+    {v:AR_NUM(s.dt.p1.dar+s.dt.p2.dar),l:'مستلمة دار الهندسة'},
+    {v:s.duesTotal.toFixed(1),l:'مستحقات معلّقة (م.ج)'}]);
+  body+=asstTable(['المرحلة','إجمالي','منفّذ','% نهو','مسلّم','% تسليم','متبقٍّ'],
+    [['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%',p1.remainingDeliver],
+     ['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%',p2.remainingDeliver]],'الملخص التنفيذي للمرحلتين');
+  body+=`<div style="margin-top:6px;font-size:12px;color:var(--muted)">${s.gs.length} إدارة مركزية • ${s.canals.length} ترعة مرصودة تفصيلياً${s.edited?` • ${s.edited} إدارة بها تعديلات ✎`:''}</div>`;
+  return {body,acts:[{l:'📄 خطاب التقرير الشهري',fn:`openDoc('monthly')`},{l:'📊 تقرير تنفيذي شامل',fn:`openDoc('exec')`},{l:'⬇ تصدير كل الترع (CSV)',fn:`asstExportList('all')`}]};
+}
+function asstGuide(p){
+  const had=p&&(p.intent||p.gov||p.status||(p.numF&&p.numF.field));
+  return {body:`<span class="ab-h">${had?'🔍 لم أجد نتيجة مطابِقة':'👋 تحت أمر سيادتك'}</span>${had?`لم أعثر على بيانات تطابق سؤالك تماماً. حاول صياغته بشكل أوضح، أو `:'أفهم أسئلتك الحرة وأحلّل بيانات المشروع لحظياً. '}جرّب مثلاً:<ul>
+    <li>«رتّب لي <b>أعلى ٥ إدارات</b> في المستحقات»</li>
+    <li>«ترع <b>المخابرات المتوقفة</b> في المرحلة الثانية»</li>
+    <li>«<b>قارن</b> الجيزة بالقليوبية»</li>
+    <li>«ترع أطول من <b>٥ كم</b> ولم تُنفَّذ»</li>
+    <li>«اكتب <b>خطاب تصعيد</b> عن الترع المتأخرة»</li>
+    <li>«ما <b>ملخص</b> المشروع؟» / «ما <b>آخر التحديثات</b>؟»</li></ul>`,acts:[]};
+}
+// تصدير آخر جدول عرضه المساعد (للمقارنات/الترتيب)
+function asstExportLastTable(){
+  if(!_asstLastTable||!_asstLastTable.rows.length){toast&&toast('لا يوجد جدول للتصدير');return;}
+  const esc=v=>{v=(v==null?'':String(v));return '"'+v.replace(/"/g,'""')+'"';};
+  const lines=[_asstLastTable.head.map(esc).join(',')];
+  _asstLastTable.rows.forEach(r=>lines.push(r.map(esc).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=(_asstLastTitle||'جدول')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(a.href);
+  toast&&toast('تم تصدير الجدول');
+}
+// ═══ أولوية 2: الرؤى الاستباقية — بطاقات ذكية تُستنبط تلقائياً ═══
+function asstInsights(){
+  const s=asstSnapshot();const cards=[];
+  // 1) أعلى إدارة مستحقات
+  if(s.govDues.length){const t=s.govDues[0];
+    cards.push({ic:'💰',tone:'warn',t:'أعلى إدارة مستحقات معلّقة',v:t.name,sub:t.v.toFixed(2)+' مليون جنيه محتجزة',q:'مستحقات '+t.name});}
+  // 2) أكبر تكتّل ترع خارج المسار
+  const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));
+  if(bad.length){const byG={};bad.forEach(c=>byG[c.govName]=(byG[c.govName]||0)+1);
+    const top=Object.entries(byG).sort((a,b)=>b[1]-a[1])[0];
+    cards.push({ic:'⏳',tone:'stop',t:'أكثر إدارة ترعاً متعثّرة',v:top[0],sub:top[1]+' ترعة مؤجلة/متوقفة',q:'الترع المتوقفة في '+top[0]});}
+  // 3) إدارات لم تسلّم أي ترعة في م2
+  const noP2=allGovs().filter(g=>g.phase2&&g.phase2.canals>0&&(g.phase2.delivPct||0)===0);
+  if(noP2.length)cards.push({ic:'🏛️',tone:'wait',t:'لم تُسلَّم أي ترعة (م.ثانية)',v:noP2.length+' إدارة',sub:noP2.slice(0,3).map(g=>g.name).join('، ')+(noP2.length>3?'…':''),q:'رتّب أقل الإدارات تسليماً في المرحلة الثانية'});
+  // 4) أدنى إدارة نسبة تسليم (م1)
+  const gl=allGovs().filter(g=>g.phase1).map(g=>({name:g.name,v:g.phase1.delivPct||0})).sort((a,b)=>a.v-b.v);
+  if(gl.length)cards.push({ic:'📉',tone:'wait',t:'أدنى نسبة تسليم (م.أولى)',v:gl[0].name,sub:gl[0].v+'% فقط مسلّمة لدار الهندسة',q:'موقف '+gl[0].name});
+  return cards;
+}
+
+// ═══ مُركّب الإجابة الذكي: يقرأ نتيجة nluParse ويبني ردّاً هندسياً ═══
+function nluAnswer(q){
+  const p=nluParse(q);
+  const s=asstSnapshot();
+
+  // (أولوية 1) — مقارنة بين إدارتين أو أكثر
+  if(p.intent==='compare'&&p.govs.length>=2){
+    const phaseKey=p.phase===2?'phase2':'phase1';
+    const rows=p.govs.map(g=>{const ph=g[phaseKey]||g.phase1||{};
+      return [g.name,AR_NUM(ph.canals),AR_NUM(ph.dar),(ph.delivPct!=null?ph.delivPct+'%':'—'),(g.duesOutstanding>0?g.duesOutstanding.toFixed(2):'—')];});
+    let body=`<span class="ab-h">⚖️ مقارنة الإدارات (${p.phase===2?'م.ثانية':'م.أولى'})</span>`;
+    body+=asstTable(['الإدارة','الترع','دار الهندسة','% التسليم','مستحقات م.ج'],rows,'مقارنة إدارات');
+    return {body,acts:[{l:'⬇ تصدير المقارنة (CSV)',fn:`asstExportLastTable()`}]};
+  }
+
+  // فلتر رقمي على الطول/النسبة → قائمة ترع (له أولوية على الترتيب وبطاقة الإدارة)
+  if(p.numF&&(p.numF.field==='length'||p.numF.field==='pct')){
+    return nluCanalResult(nluFilterCanals(p),p);
+  }
+
+  // (أولوية 1) — ترتيب top-N حسب معيار
+  if(p.intent==='rank'){
+    const asc=/اقل|أقل|اصغر|اسوا/.test(p.nq);
+    const n=p.topN||5;
+    // ترتيب حسب المستحقات
+    if(p.numF&&p.numF.field==='dues'||p.intent==='rank'&&(p.nq.includes('مستحق')||s._rankDues)){
+      const gd=s.govDues.slice();gd.sort((a,b)=>asc?a.v-b.v:b.v-a.v);
+      const rows=gd.slice(0,n).map((d,i)=>[i+1,d.name,d.v.toFixed(3)]);
+      let body=`<span class="ab-h">🏅 ترتيب الإدارات حسب المستحقات (${asc?'الأقل':'الأعلى'} — أول ${n})</span>`;
+      body+=asstTable(['#','الإدارة','المعلّق (م.ج)'],rows,'ترتيب المستحقات');
+      return {body,acts:[{l:'💰 كشف المستحقات الرسمي',fn:`openDoc('dues')`}]};
+    }
+    // ترتيب حسب نسبة التسليم أو النهو
+    const metric=p.nq.includes('نهو')||p.nq.includes('تنفيذ')?'donePct':'delivPct';
+    const key=p.phase===2?'phase2':'phase1';
+    const gl=allGovs().filter(g=>g[key]).map(g=>({name:g.name,v:g[key][metric]||0,canals:g[key].canals}));
+    gl.sort((a,b)=>asc?a.v-b.v:b.v-a.v);
+    const rows=gl.slice(0,n).map((g,i)=>[i+1,g.name,g.v+'%',AR_NUM(g.canals)]);
+    let body=`<span class="ab-h">🏅 ترتيب الإدارات حسب ${metric==='donePct'?'نسبة النهو':'نسبة التسليم'} (${asc?'الأقل':'الأعلى'} — أول ${n})</span>`;
+    body+=asstTable(['#','الإدارة',metric==='donePct'?'% النهو':'% التسليم','الترع'],rows,'ترتيب الإدارات');
+    return {body,acts:[{l:'⬇ تصدير الترتيب (CSV)',fn:`asstExportLastTable()`}]};
+  }
+
+  // (أولوية 3) — توليد خطاب رسمي من السؤال
+  if(p.intent==='letter'){
+    if(p.gov){ // خطاب خاص بإدارة → تقرير الإدارة الرسمي
+      return {body:`<span class="ab-h">📄 خطاب رسمي — ${p.gov.name}</span>سيُفتح تقرير الإدارة الرسمي بالترويسة والتوقيع المعتمد، مملوءاً بالأرقام الحيّة الحالية جاهزاً للطباعة.`,
+        acts:[{l:'📄 فتح خطاب '+p.gov.name,fn:`openGovDoc('${p.gov.id}')`}]};
+    }
+    // خطاب تصعيد إن ذُكر التأخير/دار الهندسة، وإلا الخطاب الشهري
+    const esc=p.nq.includes('تصعيد')||p.nq.includes('متاخر')||p.nq.includes('دار الهندسه');
+    return {body:`<span class="ab-h">📄 إعداد خطاب رسمي</span>${esc?'خطاب تصعيد لدار الهندسة بشأن الترع المتأخّرة عن موعد الاستلام':'خطاب التقرير الشهري بموقف المرحلتين'} — بترويسة المشروع والتوقيع المعتمد.`,
+      acts:[{l:esc?'⚠️ فتح خطاب التصعيد':'📄 فتح الخطاب الشهري',fn:`openDoc('${esc?'escalation':'monthly'}')`},{l:'📊 تقرير تنفيذي شامل',fn:`openDoc('exec')`}]};
+  }
+
+  // إدارة بعينها (موقف/ملخص)
+  if(p.gov&&!p.status&&(p.intent==='summary'||p.intent==='dar'||p.intent==='dues'||p.intent==null||p.nq.includes('موقف'))){
+    return asstGovCard(p.gov);
+  }
+
+  // فلترة مركّبة على الترع (موقف/مرحلة/طول/مقاول/إدارة مجتمعة)
+  if(p.status||p.numF&&p.numF.field!=='dues'||p.gov&&p.status){
+    const rows=nluFilterCanals(p);
+    return nluCanalResult(rows,p);
+  }
+
+  // نيّات عامة
+  if(p.intent==='late')return asstLateAnswer(s);
+  if(p.intent==='dues')return asstDuesAnswer(s);
+  if(p.intent==='dar')return asstDarAnswer(s);
+  if(p.intent==='updates')return asstUpdatesAnswer(s);
+  if(p.intent==='summary')return asstSummaryAnswer(s);
+
+  // بحث حر أخير (اسم/مقاول/عمليه)
+  const rows=nluFilterCanals(p);
+  if(rows.length)return nluCanalResult(rows,p);
+
+  // لا نتيجة → إرشاد
+  return asstGuide(p);
+}
+// عرض نتيجة ترع مفلترة مع وصف الفلاتر المطبّقة
+function nluCanalResult(rows,p){
+  const chips=[];
+  if(p.gov)chips.push('الإدارة: '+p.gov.name);
+  if(p.status)chips.push('الموقف: '+(ASST_CODE_AR[p.status]||p.status));
+  if(p.phase!=null)chips.push('المرحلة '+(p.phase===1?'الأولى':'الثانية'));
+  if(p.numF&&p.numF.field!=='dues')chips.push((p.numF.field==='length'?'الطول':'التنفيذ')+(p.numF.dir==='gt'?' > ':' < ')+p.numF.val+(p.numF.field==='pct'?'%':' كم'));
+  let body=`<span class="ab-h">🔎 نتائج مطابِقة (${AR_NUM(rows.length)})</span>`;
+  if(chips.length)body+=`<div class="nlu-chips">${chips.map(c=>`<span class="nlu-chip">${c}</span>`).join('')}</div>`;
+  if(!rows.length)return {body:body+'<div>لا توجد ترع تطابق هذه الشروط.</div>',acts:[]};
+  const byC={};rows.forEach(c=>byC[c.statusCode]=(byC[c.statusCode]||0)+1);
+  const top=Object.entries(byC).sort((a,b)=>b[1]-a[1])[0];
+  body+=asstMetrics([{v:AR_NUM(rows.length),l:'ترعة'},{v:AR_NUM(new Set(rows.map(r=>r.govName)).size),l:'إدارة'},{v:top?(ASST_CODE_AR[top[0]]||top[0]):'—',l:'الأغلب'}]);
+  const tr=rows.slice(0,45).map(c=>[c.name,c.govName,c.contractor||'—',ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—',c.length!=null?c.length:'—']);
+  body+=asstTable(['الترعة','الإدارة','المقاول','الموقف','التنفيذ','الطول'],tr,'نتائج البحث');
+  if(rows.length>45)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${rows.length-45} ترعة أخرى في ملف التصدير.</div>`;
+  window._asstFound=rows;
+  return {body,acts:[{l:'⬇ تصدير النتائج (CSV)',fn:`asstExportFound()`}]};
+}
+
+// المدخل الموحّد: يفوّض إلى محرّك الفهم اللغوي، مع حارس أمان يرجع للإرشاد
+function asstAnswer(q){
+  try{
+    const r=nluAnswer(q);
+    if(r&&r.body)return r;
+  }catch(e){console.warn('nlu',e);}
+  return asstGuide(nluParse(q));
+}
+
 function asstExportFound(){
   const rows=window._asstFound||[];if(!rows.length){toast&&toast('لا نتائج للتصدير');return;}
   const head=['الترعة','الإدارة','المقاول','العملية','الموقف','التنفيذ %','الطول'];
@@ -3069,6 +3296,17 @@ const ASST_CHIPS=[
   ['🏛️','موقف دار الهندسة','موقف دار الهندسة والتسليم'],
   ['🔄','آخر التحديثات','ما آخر التحديثات على المشروع؟']
 ];
+function asstRenderInsights(){
+  const box=document.getElementById('asstInsights');if(!box)return;
+  const cards=asstInsights();
+  if(!cards.length){box.innerHTML='';return;}
+  box.innerHTML='<div class="asst-ins-h">🎯 رؤى استباقية من بياناتك الآن</div><div class="asst-ins-row">'+
+    cards.map(c=>`<button class="asst-ins-card ins-${c.tone}" onclick="asstAsk('${String(c.q).replace(/'/g,"\\'")}')">
+      <div class="ins-ic">${c.ic}</div>
+      <div class="ins-t">${c.t}</div>
+      <div class="ins-v">${c.v}</div>
+      <div class="ins-sub">${c.sub}</div></button>`).join('')+'</div>';
+}
 function asstInit(){
   const live=document.getElementById('asstLive');
   if(live){const s=asstSnapshot();live.textContent=`متصل بالبيانات الحيّة • ${s.gs.length} إدارة • ${s.canals.length} ترعة مرصودة`;}
@@ -3076,9 +3314,10 @@ function asstInit(){
   if(chips&&!chips.children.length){
     chips.innerHTML=ASST_CHIPS.map(c=>`<button class="asst-chip" onclick="asstAsk('${c[2].replace(/'/g,"\\'")}')"><span class="ci">${c[0]}</span>${c[1]}</button>`).join('');
   }
+  asstRenderInsights();
   if(!_asstReady){
     _asstReady=true;
-    asstPush('bot',`<span class="ab-h">مرحباً بسيادتك 👋</span>أنا المساعد الهندسي لمشروع تبطين الترع — حياة كريمة. أقرأ كل بيانات المشروع لحظياً وأعكس أي تعديل فور حدوثه. اسألني عن أي إدارة أو ترعة أو رقم، وسأعدّ لك الجداول والتقارير والخطابات جاهزة للطباعة أو التصدير.`);
+    asstPush('bot',`<span class="ab-h">مرحباً بسيادتك 👋</span>أنا المساعد الهندسي لمشروع تبطين الترع — حياة كريمة. أفهم أسئلتك الحرّة وأحلّل كل بيانات المشروع لحظياً. جرّب: «رتّب أعلى ٥ إدارات مستحقات»، «ترع المخابرات المتوقفة في المرحلة الثانية»، «قارن الجيزة بالقليوبية»، أو «اكتب خطاب تصعيد».`);
   }
 }
 function asstPush(who,html){
@@ -3089,6 +3328,16 @@ function asstPush(who,html){
   box.appendChild(el);box.scrollTop=box.scrollHeight;return el;
 }
 function asstAsk(q){document.getElementById('asstInput').value=q;asstSend();}
+function asstFollowups(q){
+  let p;try{p=nluParse(q);}catch(e){return[];}
+  const f=[];
+  if(p.gov){f.push('اكتب خطاب لـ'+p.gov.name);f.push('ترع '+p.gov.name+' المتوقفة');}
+  if(p.intent==='dues'||p.nq.includes('مستحق')){f.push('رتّب أعلى ٥ إدارات مستحقات');f.push('كشف المستحقات الرسمي');}
+  if(p.intent==='late'||p.status==='stopped'||p.status==='deferred'){f.push('اكتب خطاب تصعيد');f.push('قارن الإدارات في التسليم');}
+  if(p.intent==='summary'){f.push('رتّب أدنى إدارات تسليماً');f.push('الترع المتأخرة والمتوقفة');}
+  if(!f.length){f.push('ملخص المشروع','الترع المتأخرة','المستحقات المعلّقة');}
+  return [...new Set(f)].slice(0,3);
+}
 function asstSend(){
   const inp=document.getElementById('asstInput');const q=(inp.value||'').trim();if(!q)return;
   asstPush('me',q.replace(/</g,'&lt;'));inp.value='';
@@ -3098,6 +3347,9 @@ function asstSend(){
     const {body,acts}=asstAnswer(q);
     let html=body;
     if(acts&&acts.length)html+='<div class="ab-actions">'+acts.map((a,i)=>`<button class="ab-act${i>0?' ghost':''}" onclick="${a.fn}">${a.l}</button>`).join('')+'</div>';
+    // اقتراحات متابعة سياقية
+    const fu=asstFollowups(q);
+    if(fu.length)html+='<div class="ab-followups"><span class="fu-lbl">متابعة:</span>'+fu.map(x=>`<button class="fu-chip" onclick="asstAsk('${String(x).replace(/'/g,"\\'")}')">${x}</button>`).join('')+'</div>';
     typing.querySelector('.asst-bubble').innerHTML=html;
     document.getElementById('asstChat').scrollTop=document.getElementById('asstChat').scrollHeight;
   },420);
@@ -3124,87 +3376,6 @@ function asstExportList(kind){
     s.canals.map(c=>[c.id,c.govName,c.name,c.op||'',c.contractor||'',c.length,c.pct,c.status]),'كل_ترع_المشروع');
 }
 
-// ═══════ تصدير نسخة المساعد المستقلة (HTML) ═══════
-function exportAssistant(){
-  const s=asstSnapshot();
-  // نُصدّر البيانات الحيّة الحالية داخل ملف HTML مستقل يعمل بالكامل offline
-  const data={
-    generated:new Date().toISOString(),
-    official:s.of,
-    govs:s.gs.map(g=>({id:g.id,name:g.name,region:g.region,phase1:g.phase1,phase2:g.phase2,
-      darStatus:g.darStatus,duesOutstanding:g.duesOutstanding,operations:g.operations,
-      canals:(g.canals||[]).map(c=>({id:c.id,name:c.name,op:c.op,contractor:c.contractor,length:c.length,pct:c.pct,statusCode:c.statusCode,status:c.status}))}))
-  };
-  const html=asstStandaloneHTML(data);
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='المساعد_الذكي_حياة_كريمة_'+new Date().toISOString().slice(0,10)+'.html';a.click();URL.revokeObjectURL(a.href);
-  toast&&toast('تم تصدير نسخة المساعد المستقلة');
-}
-function asstStandaloneHTML(data){
-  const codeAr=JSON.stringify(ASST_CODE_AR);
-  // ملف مستقل: نفس محرّك القواعد لكن يقرأ من نسخة البيانات المضمّنة
-  return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'+
-'<meta name="viewport" content="width=device-width,initial-scale=1">'+
-'<title>المساعد الذكي — حياة كريمة</title>'+
-'<style>'+
-'@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap");'+
-'*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cairo,sans-serif;background:#0a1f1a;color:#e8f0ed;min-height:100vh;display:flex;flex-direction:column}'+
-'.hd{background:linear-gradient(120deg,#103831,#1d4d4e);border-bottom:2px solid #c9b67c;padding:18px 20px;text-align:center}'+
-'.hd h1{color:#e6cf8f;font-size:19px}.hd p{font-size:12px;opacity:.85;margin-top:4px}'+
-'.wrap{max-width:900px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;padding:14px;gap:12px}'+
-'.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{font-family:Cairo;font-size:12px;font-weight:700;background:#15463d;color:#e6cf8f;border:1.4px solid #2d7d6a;border-radius:999px;padding:7px 13px;cursor:pointer}'+
-'.chip:hover{background:#1d4d4e}'+
-'.chat{flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:300px;padding:6px}'+
-'.msg{display:flex;gap:9px;max-width:92%}.msg.me{flex-direction:row-reverse}.msg.bot{align-self:flex-end}.msg.me{align-self:flex-start}'+
-'.av{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto}.msg.me .av{background:#1d4d4e}.msg.bot .av{background:linear-gradient(135deg,#e6cf8f,#a8904f);color:#0a1f1a}'+
-'.bub{background:#103831;border:1px solid #1d4d4e;border-radius:14px;padding:11px 14px;font-size:13.5px;line-height:1.8}.msg.me .bub{background:#1d4d4e}'+
-'.bub b{color:#e6cf8f}.ab-h{display:block;font-weight:800;color:#e6cf8f;margin-bottom:6px}'+
-'table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}th,td{border:1px solid #2d7d6a;padding:6px 8px;text-align:center}th{background:#15463d;color:#e6cf8f}td:first-child{text-align:right}'+
-'.mets{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0}.met{flex:1 1 100px;background:#15463d;border-radius:10px;padding:8px;text-align:center}.met .v{font-family:"JetBrains Mono";font-size:17px;font-weight:800;color:#e6cf8f}.met .l{font-size:10px;opacity:.8;margin-top:2px}'+
-'.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.act{font-family:Cairo;font-size:11.5px;font-weight:700;background:#c9b67c;color:#0a1f1a;border:none;border-radius:8px;padding:7px 12px;cursor:pointer}'+
-'.bar{display:flex;gap:8px;background:#103831;border:1.5px solid #1d4d4e;border-radius:14px;padding:8px;position:sticky;bottom:0}'+
-'.bar input{flex:1;background:transparent;border:none;color:#e8f0ed;font-family:Cairo;font-size:14px;outline:none;padding:6px}'+
-'.bar button{width:40px;height:40px;border-radius:11px;border:none;background:linear-gradient(135deg,#236b5c,#103831);color:#fff;cursor:pointer;font-size:17px}'+
-'.foot{text-align:center;font-size:10.5px;opacity:.6;padding:8px}'+
-'</style></head><body>'+
-'<div class="hd"><h1>🛰️ المساعد الذكي — مشروع حياة كريمة</h1><p>نسخة مستقلة تعمل بالكامل دون إنترنت • بيانات بتاريخ '+new Date(data.generated).toLocaleDateString('ar-EG')+'</p></div>'+
-'<div class="wrap"><div class="chips" id="chips"></div><div class="chat" id="chat"></div>'+
-'<div class="bar"><input id="inp" placeholder="اسأل عن أي شيء في المشروع…" onkeydown="if(event.key===\'Enter\')send()"><button onclick="send()">➤</button></div></div>'+
-'<div class="foot">وزارة الموارد المائية والري — مفوض الوزارة لمشروع حياة كريمة</div>'+
-'<script>\nconst DATA='+JSON.stringify(data)+';\nconst CODE_AR='+codeAr+';\n'+asstStandaloneEngine()+'\n<\/script>'+
-'</body></html>';
-}
-// محرّك النسخة المستقلة (نص مضمّن) — نسخة مبسّطة مكتفية ذاتياً
-function asstStandaloneEngine(){
-  return `
-const N=n=>n==null?'—':Number(n).toLocaleString('en');
-function snap(){const gs=DATA.govs;const canals=[];gs.forEach(g=>(g.canals||[]).forEach(c=>canals.push({...c,govName:g.name})));
- let dues=[];gs.forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0)dues.push({gov:g.name,name:o.name,contractor:o.contractor,outstanding:o.outstanding,detail:o.detail||''})}));
- return {gs,canals,dues,duesTotal:dues.reduce((a,d)=>a+d.outstanding,0),of:DATA.official};}
-function matchGov(q){const norm=s=>String(s).replace(/[أإآ]/g,'ا').replace(/\\s+/g,'').replace(/^ال/,'');const nq=norm(q);let b=null;DATA.govs.forEach(g=>{const ng=norm(g.name);if(nq.includes(ng)&&ng.length>=2){if(!b||ng.length>norm(b.name).length)b=g;}});return b;}
-function tbl(h,r){return '<table><thead><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+r.map(x=>'<tr>'+x.map(c=>'<td>'+(c==null?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
-function mets(a){return '<div class="mets">'+a.map(m=>'<div class="met"><div class="v">'+m.v+'</div><div class="l">'+m.l+'</div></div>').join('')+'</div>';}
-function answer(q){const s=snap();const has=(...w)=>w.some(x=>q.includes(x));const g=matchGov(q);
- if(g&&has('موقف','حالة','وضع','ملخص','بيانات','تفاصيل','عن','كام','ايه','إيه')){let b='<span class="ab-h">📍 '+g.name+'</span>';const m=[];if(g.phase1){m.push({v:N(g.phase1.canals),l:'ترع م.أولى'});m.push({v:g.phase1.donePct+'%',l:'نهو أولى'});m.push({v:g.phase1.delivPct+'%',l:'تسليم دار الهندسة'});}if(g.phase2&&g.phase2.canals){m.push({v:N(g.phase2.canals),l:'ترع م.ثانية'});}b+=mets(m);const gc=g.canals||[];if(gc.length){const bc={};gc.forEach(c=>bc[c.statusCode]=(bc[c.statusCode]||0)+1);b+=tbl(['الموقف','العدد'],Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[CODE_AR[k]||k,N(v)]));}if(g.duesOutstanding>0)b+='<div>💰 مستحقات معلّقة: <b>'+g.duesOutstanding.toFixed(3)+'</b> م.ج</div>';return b;}
- if(has('متأخر','مؤجل','متوقف','معطل','سحب','متعثر')){const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));let b='<span class="ab-h">⏳ الترع المتأخرة والمتوقفة</span>'+mets([{v:N(bad.length),l:'الإجمالي'}]);b+=tbl(['الترعة','الإدارة','الموقف','التنفيذ'],bad.slice(0,50).map(c=>[c.name,c.govName,CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));return b;}
- if(has('مستحق','مبالغ','مالي','محتجز','مليون')){let b='<span class="ab-h">💰 المستحقات المعلّقة</span>'+mets([{v:s.duesTotal.toFixed(2),l:'الإجمالي (م.ج)'},{v:N(s.dues.length),l:'عملية'}]);b+=tbl(['الإدارة','العملية','المعلّق'],s.dues.map(d=>[d.gov,d.name,d.outstanding.toFixed(3)]));return b;}
- if(has('اجمالي','إجمالي','المشروع','كله','عام','نظرة','ملخص','الكل','مؤشر')){const p1=s.of.phase1,p2=s.of.phase2;let b='<span class="ab-h">🗂️ الملخص التنفيذي</span>'+mets([{v:N(p1.total+p2.total),l:'إجمالي الترع'},{v:Math.round((p1.done+p2.done)/(p1.total+p2.total)*100)+'%',l:'نسبة النهو'},{v:s.duesTotal.toFixed(1),l:'مستحقات (م.ج)'}]);b+=tbl(['المرحلة','إجمالي','منفّذ','%نهو','مسلّم','%تسليم'],[['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%'],['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%']]);return b;}
- const nT=x=>String(x).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي');
- const stopW=['موقف','عن','ما','ماهو','ايه','اظهر','كل','ترعه','فرع','عايز','عاوز','هات','ترع','مقاول','عمليه','عمليات','تاهيل','تبطين','هندسه','ري','والصرف','الصرف','وتبطين','بزمام','بطول','زمام','الاداره','العامه','بمحافظه','محافظه'];
- const terms=nT(q).split(/\\s+/).map(w=>w.replace(/^و/,'').replace(/^ال/,'')).filter(w=>w.length>=3&&stopW.indexOf(w)<0);
- if(terms.length){const fc=s.canals.filter(c=>{const hay=nT([c.name,c.op,c.contractor,c.govName].filter(Boolean).join(' '));return terms.some(w=>hay.indexOf(w)>=0||hay.replace(/(^|\\s)ال/g,'$1').indexOf(w)>=0);});
-   if(fc.length){let b='<span class="ab-h">🔎 نتائج البحث ('+N(fc.length)+')</span>';b+=tbl(['الترعة','الإدارة','المقاول','الموقف','التنفيذ'],fc.slice(0,50).map(c=>[c.name,c.govName,c.contractor||'—',CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));if(fc.length>50)b+='<div style="font-size:11px;opacity:.7">…و'+(fc.length-50)+' ترعة أخرى</div>';return b;}
-   return '<span class="ab-h">🔍 لم أجد نتيجة</span>لم أعثر على ترع أو مقاولين يطابقون «'+q.replace(/</g,'&lt;')+'». جرّب اسم إدارة أو مقاول أو ترعة.';}
- return '<span class="ab-h">👋 تحت أمرك</span>اسألني: «موقف الجيزة»، «ترع مقاول المخابرات»، «الترع المتأخرة»، «المستحقات المعلّقة»، «ملخص المشروع»، أو ابحث باسم أي ترعة أو مقاول.';}
-function push(who,html){const c=document.getElementById('chat');const av=who==='me'?'👤':'🛰️';const e=document.createElement('div');e.className='msg '+who;e.innerHTML='<div class="av">'+av+'</div><div class="bub">'+html+'</div>';c.appendChild(e);c.scrollTop=c.scrollHeight;}
-function ask(q){document.getElementById('inp').value=q;send();}
-function send(){const i=document.getElementById('inp');const q=(i.value||'').trim();if(!q)return;push('me',q);i.value='';setTimeout(()=>push('bot',answer(q)),200);}
-const CHIPS=[['📊','ملخص المشروع','ملخص المشروع بالكامل'],['⏳','الترع المتأخرة','الترع المتأخرة والمتوقفة'],['💰','المستحقات','المستحقات المعلّقة'],['🗂️','مؤشرات عامة','مؤشرات المشروع']];
-document.getElementById('chips').innerHTML=CHIPS.map(c=>'<button class="chip" onclick="ask(\\''+c[2]+'\\')">'+c[0]+' '+c[1]+'</button>').join('');
-push('bot','<span class="ab-h">مرحباً 👋</span>أنا المساعد الهندسي لمشروع حياة كريمة — نسخة مستقلة تعمل دون إنترنت. اسألني عن أي إدارة أو ترعة أو رقم.');
-`;
-}
 
 // عند بدء التشغيل: لو التزامن مُفعّل، اسحب أحدث البلاغات تلقائياً
 if(getSyncUrl()){setTimeout(()=>pullReports(true),400);}
