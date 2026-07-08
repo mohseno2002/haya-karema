@@ -424,6 +424,14 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .ccd-row{display:flex;justify-content:space-between;gap:12px;background:var(--card);padding:9px 13px}
 .ccd-l{font-size:12.5px;color:var(--muted)}
 .ccd-v{font-size:13px;font-weight:600;color:var(--ink);text-align:end}
+.ccd-row-edit{background:linear-gradient(90deg,rgba(201,182,124,.14),var(--card) 60%);align-items:center}
+.ccd-edit-wrap{display:flex;align-items:center;gap:8px}
+.ccd-sel{font-family:'Cairo';font-size:12.5px;font-weight:700;color:var(--ink);background:var(--card);border:1.4px solid var(--gold,#c9b67c);border-radius:9px;padding:6px 9px;max-width:190px;cursor:pointer;outline:none}
+.ccd-sel:focus{border-color:var(--nile-500)}
+.ccd-save{font-family:'Cairo';font-size:12px;font-weight:800;color:#0a1f1a;background:var(--gold,#c9b67c);border:none;border-radius:9px;padding:7px 15px;cursor:pointer;white-space:nowrap;transition:filter .15s}
+.ccd-save:hover{filter:brightness(1.08)}
+.ccd-save:active{transform:translateY(1px)}
+html[data-theme="dark"] .ccd-sel{background:#0f3a45}
 .ccd-pipe-t{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:9px}
 html[data-theme="dark"] .ccd-close{background:#0a2b34;color:var(--ink)}
 html[data-theme="dark"] .ccd-desc,html[data-theme="dark"] .ccd-bar{background:#0f3a45}
@@ -1317,6 +1325,13 @@ function gov(id){
     duesOutstanding:o.duesOutstanding!=null?o.duesOutstanding:g.duesOutstanding};
   if(o.phase1&&g.phase1)m.phase1={...g.phase1,...o.phase1};
   if(o.phase2&&g.phase2)m.phase2={...g.phase2,...o.phase2};
+  // دمج تعديلات مواقف الترع الفردية (o.canals = { canalId: {statusCode,status,stage,_edited} })
+  if(o.canals&&g.canals&&g.canals.length){
+    m.canals=g.canals.map(c=>{
+      const co=o.canals[c.id];
+      return co?{...c,statusCode:co.statusCode,status:co.status,stage:(co.stage!=null?co.stage:c.stage),_edited:true}:c;
+    });
+  }
   return m;
 }
 const allGovs=()=>PROJECT.govs.map(g=>gov(g.id));
@@ -1421,9 +1436,9 @@ function ctTable(rows,showGov){
 }
 function ctWire(){}
 function openCanalCardFlat(govId,cid){
-  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
+  const g=gov(govId);if(!g)return;
   const list=g.canals||[];
-  window._canalIndex={};list.forEach(c=>{window._canalIndex[c.id]=c;});
+  window._canalIndex={};list.forEach(c=>{window._canalIndex[c.id]={...c,govId};});
   openCanalCard(cid);
 }
 function exportCanalTable(){
@@ -1780,7 +1795,7 @@ function openDrawer(id){
       </div>
     </div></div>`;
   document.getElementById('drawerBody').innerHTML=html;
-  if((g.canals||[]).length){renderCanals(g.canals);fillCanalMeta(id);}
+  if((g.canals||[]).length){renderCanals(g.canals,id);fillCanalMeta(id);}
   document.getElementById('drawer').classList.add('on');
 }
 // خريطة كود الحالة → لون + مرحلة المسار
@@ -1801,9 +1816,9 @@ function gateStep(code,pct){
   if(['deferred','cancelled','stopped','obstacles'].includes(code))return -2;
   return 0;
 }
-function renderCanals(list){
+function renderCanals(list,govId){
   const el=document.getElementById('canalList');if(!el)return;
-  window._canalIndex={};list.forEach(c=>{window._canalIndex[c.id]=c;});
+  window._canalIndex={};list.forEach(c=>{window._canalIndex[c.id]=govId?{...c,govId}:c;});
   el.innerHTML=list.map(c=>{
     const tone=toneOf(c.statusCode);
     const step=gateStep(c.statusCode,c.pct);
@@ -1835,6 +1850,22 @@ const STATUS_DESC={
   obstacles:'بها معوّقات تحول دون استكمالها',
   unknown:'غير محدّدة',uncoded:'غير مصنّفة'
 };
+// خيارات الموقف المتاحة للتعديل بواسطة الإدارة (الكود ← التسمية الرسمية)
+const STATUS_OPTIONS=[
+  ['progress','جارٍ التنفيذ'],
+  ['done','منفّذة (بانتظار التسليم)'],
+  ['inspecting','تحت/بانتظار المعاينة'],
+  ['submitted','سُلّمت لدار الهندسة'],
+  ['accepted','مقبولة نهائياً (استُلمت)'],
+  ['accepted_partial','اكتفاء بما تم (دار الهندسة)'],
+  ['investment','استثماري (مسار مباشر)'],
+  ['stopped','متوقفة'],
+  ['deferred','مؤجلة / سحب'],
+  ['obstacles','بها معوّقات'],
+  ['cancelled','ملغاة'],
+  ['uncoded','غير مكودة'],
+  ['unknown','غير محدّد']
+];
 function openCanalCard(cid){
   const c=(window._canalIndex||{})[cid];if(!c)return;
   const tone=toneOf(c.statusCode);
@@ -1848,14 +1879,20 @@ function openCanalCard(cid){
   R('المقاول',c.contractor);
   R('الطول',c.length!=null?c.length+' كم':null);
   R('نسبة التنفيذ',c.pct!=null?c.pct+'%':null);
-  R('الموقف',c.status);
+  // صف الموقف القابل للتعديل — قائمة اختيار + زر حفظ
+  const opts=STATUS_OPTIONS.map(([code,lbl])=>`<option value="${code}"${code===c.statusCode?' selected':''}>${lbl}</option>`).join('');
+  rows.push(`<div class="ccd-row ccd-row-edit"><span class="ccd-l">الموقف</span>
+    <span class="ccd-v ccd-edit-wrap">
+      <select id="ccdStatusSel" class="ccd-sel">${opts}</select>
+      <button class="ccd-save" onclick="saveCanalStatus('${c.govId||''}','${c.id}')">حفظ</button>
+    </span></div>`);
   if(c.stage!=null&&c.stage>=0)R('خطوة المسار',(c.stage>0?c.stage:'—')+' من '+GATE_STAGES.length);
   const pipe=step>=0?gatePipeline(step):`<div class="cr-special" style="margin:0">${c.statusCode==='investment'?'مسار استثماري مباشر — لا تمرّ على دار الهندسة':'خارج مسار الاستلام (مؤجلة/متوقفة/ملغاة)'}</div>`;
   const bar=c.pct!=null?`<div class="ccd-bar"><i style="width:${Math.min(100,c.pct)}%"></i></div>`:'';
   document.getElementById('canalCardBody').innerHTML=
     `<div class="ccd-head t-${tone}">
        <div class="ccd-id">${c.id}</div>
-       <div class="ccd-name">${c.name}</div>
+       <div class="ccd-name">${c.name}${c._edited?' <span style="font-size:13px;opacity:.75">✎</span>':''}</div>
        <span class="cr-st st-${tone}" style="align-self:flex-start">${c.status}</span>
      </div>
      <div class="ccd-desc">${desc}</div>
@@ -1864,6 +1901,33 @@ function openCanalCard(cid){
      <div class="ccd-pipe-t">مسار بوابة الاستلام</div>
      ${pipe}`;
   document.getElementById('canalCard').classList.add('on');
+}
+// حفظ تعديل موقف الترعة — ينعكس على كل الأماكن المرتبطة
+function saveCanalStatus(govId,cid){
+  if(!govId){toast&&toast('تعذّر تحديد الإدارة');return;}
+  const sel=document.getElementById('ccdStatusSel');if(!sel)return;
+  const newCode=sel.value;
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
+  const baseC=(g.canals||[]).find(x=>x.id===cid);if(!baseC)return;
+  const merged=gov(govId).canals.find(x=>x.id===cid)||baseC;
+  const oldCode=merged.statusCode, oldLabel=merged.status;
+  const label=(STATUS_OPTIONS.find(o=>o[0]===newCode)||[])[1]||newCode;
+  const stage=gateStep(newCode,merged.pct);
+  if(newCode===oldCode){toast&&toast('لا تغيير في الموقف');closeCanalCard();return;}
+  // خزّن التعديل ضمن أوفررايد الإدارة
+  const o=ov[govId]||{};
+  o.canals=o.canals||{};
+  o.canals[cid]={statusCode:newCode,status:label,stage};
+  o.lastUpdate=new Date().toISOString().slice(0,10);
+  ov[govId]=o;saveOv(ov);
+  // سجّل في سجل التغييرات
+  logAudit({gov:g.name,phase:cid+' — '+(baseC.name||''),field:'موقف الترعة',before:oldLabel||'—',after:label});
+  // زامن التعديل للسحابة إن وُجدت دالة الدفع
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  refreshAll();
+  // أعد بناء فهرس الكارت بالبيانات المدمّجة ثم أعد فتحه ليعكس التغيير فوراً
+  openCanalCardFlat(govId,cid);
+  toast&&toast('تم تحديث موقف الترعة وانعكس في كل الأماكن');
 }
 function closeCanalCard(){document.getElementById('canalCard').classList.remove('on');}
 function gatePipeline(step){
