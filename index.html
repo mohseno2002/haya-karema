@@ -1288,7 +1288,7 @@ const allGovs=()=>PROJECT.govs.map(g=>gov(g.id));
 // ═══════════ جدول الترع المصنّف ═══════════
 function ctFlatCanals(){
   const rows=[];
-  PROJECT.govs.forEach(g=>{
+  allGovs().forEach(g=>{
     (g.canals||[]).forEach(c=>{
       rows.push({govId:g.id,govName:g.name,region:g.region||'',
         id:c.id,name:c.name,op:c.op||'',contractor:c.contractor||'',
@@ -1298,18 +1298,24 @@ function ctFlatCanals(){
   });
   return rows;
 }
-let _ctInit=false;
+let _ctDirty=false;
+function ctFillSelect(sel,pairs,keepVal){
+  if(!sel)return;
+  const cur=keepVal!=null?keepVal:sel.value;
+  const first=sel.querySelector('option');           // الخيار الأول (الكل) يبقى ثابتاً
+  sel.innerHTML='';if(first)sel.appendChild(first);
+  pairs.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});
+  // استعادة اختيار المستخدم إن ظلّ موجوداً، وإلا العودة لـ "الكل"
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:(first?first.value:'all');
+}
 function initCanalTable(){
   const rows=ctFlatCanals();
-  if(!_ctInit){
-    const gsel=document.getElementById('ctGov');
-    const govs=[...new Map(rows.map(r=>[r.govId,r.govName])).entries()];
-    govs.forEach(([id,nm])=>{const o=document.createElement('option');o.value=id;o.textContent=nm;gsel.appendChild(o);});
-    const ssel=document.getElementById('ctStatus');
-    const stats=[...new Set(rows.map(r=>r.status))];
-    stats.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ssel.appendChild(o);});
-    _ctInit=true;
-  }
+  const gsel=document.getElementById('ctGov');
+  const ssel=document.getElementById('ctStatus');
+  const govs=[...new Map(rows.map(r=>[r.govId,r.govName])).entries()];
+  const stats=[...new Set(rows.map(r=>r.status))].map(s=>[s,s]);
+  ctFillSelect(gsel,govs);
+  ctFillSelect(ssel,stats);
   renderCanalTable();
 }
 function ctFiltered(){
@@ -1422,7 +1428,7 @@ document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>{
   document.getElementById('viewTitle').firstChild.textContent=titles[v][0];
   document.getElementById('viewSub').textContent=titles[v][1];
   if(v==='govs')renderGovs();
-  if(v==='canaltable')initCanalTable();
+  if(v==='canaltable'){_ctDirty=false;initCanalTable();}
   if(v==='audit')renderAudit();
   if(v==='reports')renderReports();
   if(v==='docs')renderDocs();
@@ -1441,6 +1447,12 @@ function refreshAll(){
     if(typeof renderNotifBox==='function')renderNotifBox(); // مربع إشعارات الصفحة الرئيسية
     if(typeof renderAudit==='function')renderAudit();       // سجل التغييرات
     if(typeof renderDocs==='function')renderDocs();         // كتالوج التقارير
+    // جدول الترع المصنّف — يُعاد بناؤه بالكامل (قوائم + صفوف) ليعكس أي تعديل أو استيراد
+    if(typeof initCanalTable==='function'&&document.getElementById('v-canaltable')){
+      const ctv=document.getElementById('v-canaltable');
+      if(ctv.classList.contains('on'))initCanalTable();     // نشط: أعد البناء فوراً
+      else _ctDirty=true;                                    // غير نشط: علّمه ليُعاد بناؤه عند فتحه
+    }
     updateReportBadge();   // شارة التأخّر في القائمة الجانبية
   }catch(e){console.warn('refresh',e);}
 }
