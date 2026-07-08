@@ -633,7 +633,7 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-sign{text-align:center;font-weight:700;line-height:2.1}
 .sign-space{margin-top:6px}
 .sign-name{font-weight:800;margin-top:26px}
-.doc-address{margin-top:30px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
+.doc-address{margin-top:40px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
 .doc-cc{margin-top:18px;font-size:11.5px;line-height:1.9;color:#222}
 .doc-cc .cc-t{font-weight:800;text-decoration:underline;margin-top:8px}
 .doc-sec-h{font-family:'Cairo';font-weight:800;font-size:15px;margin:18px 0 4px;color:#15463d;border-bottom:2px solid #cfe0d8;padding-bottom:4px}
@@ -660,11 +660,74 @@ html[data-theme="dark"] .edit-phase{background:#0f3a45}
   .doc-overlay{position:absolute;inset:0;background:#fff;backdrop-filter:none;display:block!important}
   .no-print,.doc-toolbar{display:none!important}
   .doc-scroll{overflow:visible;padding:0;display:block}
-  .doc-page{box-shadow:none;width:auto;min-height:auto;padding:14mm 12mm;margin:0}
+  .doc-page{box-shadow:none;width:auto;min-height:auto;padding:14mm 12mm 22mm;margin:0}
+  /* العنوان يُثبَّت أسفل كل صفحة مطبوعة */
+  .doc-address{position:fixed;bottom:0;left:0;right:0;margin:0;padding:6px 12mm 4mm;background:#fff;border-top:2px solid #111}
   @page{size:A4;margin:8mm}
 }
 html[data-theme="dark"] .rpt-card,html[data-theme="dark"] .rpt-sel,html[data-theme="dark"] .rpt-del{background:var(--card)}
 html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
+
+/* ═══════════ المساعد الذكي ═══════════ */
+.asst-wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.asst-hero{display:flex;gap:16px;align-items:center;background:linear-gradient(120deg,var(--nile-900),var(--nile-700) 70%);border:1.5px solid var(--gold);border-radius:20px;padding:20px 22px;color:#fff;box-shadow:0 14px 40px rgba(10,31,26,.22)}
+.asst-hero-badge{flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--gold-bright,#e6cf8f),var(--gold-deep,#a8904f));display:grid;place-items:center;color:#0a1f1a;box-shadow:0 6px 18px rgba(201,182,124,.4)}
+.asst-hero-badge svg{width:30px;height:30px}
+.asst-hero-txt h2{margin:0 0 5px;font-size:20px;font-weight:800;color:var(--gold-bright,#e6cf8f)}
+.asst-hero-txt p{margin:0;font-size:12.5px;line-height:1.75;color:rgba(255,255,255,.9)}
+.asst-live{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-size:11.5px;font-weight:700;color:#8ef0c6}
+.asst-live::before{content:"";width:8px;height:8px;border-radius:50%;background:#33c79c;box-shadow:0 0 0 0 rgba(51,199,156,.6);animation:asstPulse 2s infinite}
+@keyframes asstPulse{0%{box-shadow:0 0 0 0 rgba(51,199,156,.55)}70%{box-shadow:0 0 0 7px rgba(51,199,156,0)}100%{box-shadow:0 0 0 0 rgba(51,199,156,0)}}
+.asst-chips{display:flex;flex-wrap:wrap;gap:8px}
+.asst-chip{font-family:'Cairo';font-size:12px;font-weight:700;color:var(--nile-700);background:var(--card);border:1.4px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.asst-chip:hover{border-color:var(--gold,#c9b67c);background:var(--cyan-soft);transform:translateY(-1px)}
+.asst-chip .ci{opacity:.6;margin-inline-end:5px}
+.asst-chat{display:flex;flex-direction:column;gap:14px;min-height:280px;max-height:56vh;overflow-y:auto;padding:8px 4px;scroll-behavior:smooth}
+.asst-msg{display:flex;gap:10px;max-width:92%;animation:asstIn .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes asstIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.asst-msg.me{align-self:flex-start;flex-direction:row-reverse}
+.asst-msg.bot{align-self:flex-end}
+.asst-av{flex:0 0 auto;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:15px}
+.asst-msg.me .asst-av{background:var(--nile-700);color:#fff}
+.asst-msg.bot .asst-av{background:linear-gradient(135deg,var(--gold-bright,#e6cf8f),var(--gold-deep,#a8904f));color:#0a1f1a}
+.asst-bubble{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:12px 15px;font-size:13.5px;line-height:1.85;color:var(--ink);box-shadow:0 3px 12px rgba(10,31,26,.05)}
+.asst-msg.me .asst-bubble{background:var(--nile-700);color:#fff;border-color:transparent}
+.asst-bubble b{color:var(--nile-600);font-weight:800}
+.asst-msg.me .asst-bubble b{color:#fff}
+html[data-theme="dark"] .asst-bubble b{color:var(--gold-bright,#e6cf8f)}
+.asst-bubble .ab-h{font-weight:800;font-size:14px;color:var(--nile-700);margin-bottom:6px;display:block}
+html[data-theme="dark"] .asst-bubble .ab-h{color:var(--gold-bright,#e6cf8f)}
+.asst-bubble ul{margin:6px 0;padding-inline-start:18px}
+.asst-bubble li{margin-bottom:3px}
+.ab-tbl{width:100%;border-collapse:collapse;margin:9px 0;font-size:12px}
+.ab-tbl th,.ab-tbl td{border:1px solid var(--line);padding:6px 9px;text-align:center}
+.ab-tbl th{background:var(--nile-800);color:var(--gold-bright,#e6cf8f);font-weight:700}
+.ab-tbl td:first-child{text-align:right;font-weight:600}
+.ab-tbl tr:nth-child(even) td{background:var(--cyan-soft)}
+.ab-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.ab-metric{flex:1 1 110px;background:var(--cyan-soft);border:1px solid var(--line);border-radius:11px;padding:9px 11px;text-align:center}
+.ab-metric .m-v{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:19px;font-weight:800;color:var(--nile-600)}
+.ab-metric .m-l{font-size:10.5px;color:var(--muted);margin-top:2px}
+.ab-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.ab-act{font-family:'Cairo';font-size:11.5px;font-weight:700;border-radius:9px;padding:7px 13px;cursor:pointer;border:1.4px solid var(--gold,#c9b67c);background:var(--gold,#c9b67c);color:#0a1f1a;transition:filter .15s}
+.ab-act:hover{filter:brightness(1.08)}
+.ab-act.ghost{background:transparent;color:var(--nile-700);border-color:var(--line)}
+html[data-theme="dark"] .ab-act.ghost{color:var(--gold-bright,#e6cf8f)}
+.asst-bar{display:flex;gap:10px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:8px 10px;position:sticky;bottom:0;box-shadow:0 -4px 16px rgba(10,31,26,.06)}
+.asst-bar:focus-within{border-color:var(--gold,#c9b67c)}
+.asst-bar input{flex:1;border:none;background:transparent;font-family:'Cairo';font-size:14px;color:var(--ink);outline:none;padding:6px}
+.asst-send{flex:0 0 auto;width:42px;height:42px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--nile-600),var(--nile-800));color:#fff;cursor:pointer;display:grid;place-items:center;transition:transform .15s}
+.asst-send:hover{transform:scale(1.05)}
+.asst-send svg{width:19px;height:19px;transform:scaleX(-1)}
+.asst-foot-note{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 4px}
+.asst-export-btn{font-family:'Cairo';font-size:12px;font-weight:800;color:var(--nile-700);background:var(--cyan-soft);border:1.4px solid var(--gold,#c9b67c);border-radius:10px;padding:9px 15px;cursor:pointer;transition:all .15s}
+.asst-export-btn:hover{background:var(--gold,#c9b67c);color:#0a1f1a}
+html[data-theme="dark"] .asst-export-btn{color:var(--gold-bright,#e6cf8f)}
+.asst-typing{display:inline-flex;gap:4px;padding:4px 0}
+.asst-typing i{width:7px;height:7px;border-radius:50%;background:var(--gold-deep,#a8904f);animation:asstBlink 1.2s infinite both}
+.asst-typing i:nth-child(2){animation-delay:.2s}.asst-typing i:nth-child(3){animation-delay:.4s}
+@keyframes asstBlink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media(max-width:820px){.asst-hero{flex-direction:column;text-align:center}.asst-msg{max-width:100%}}
 
 @media(max-width:1050px){.kgrid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.dstat{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:820px){
@@ -1086,6 +1149,7 @@ table.tbl td{background-clip:padding-box}
       <a data-view="reports"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>بلاغات الاستلام<span class="nav-badge" id="reportNavBadge"></span></a>
       <a data-view="docs"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>التقارير والخطابات</a>
       <a data-view="audit"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>سجل التغييرات</a>
+      <a data-view="assistant"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 012 2v1h3a2 2 0 012 2v3h1a2 2 0 010 4h-1v3a2 2 0 01-2 2h-3v-1a2 2 0 00-4 0v1H7a2 2 0 01-2-2v-3H4a2 2 0 010-4h1V7a2 2 0 012-2h3V4a2 2 0 012-2z"/><circle cx="9" cy="11" r="1" fill="currentColor"/><circle cx="15" cy="11" r="1" fill="currentColor"/></svg>المساعد الذكي</a>
     </nav>
     <div class="side-foot">
       <div>وزارة الموارد المائية والري</div>
@@ -1230,6 +1294,37 @@ table.tbl td{background-clip:padding-box}
           <div style="overflow:auto;max-height:72vh"><table class="tbl" id="auditTable"></table></div>
         </div>
         <div class="disclaimer">يسجّل هذا الجدول كل تعديل تُجريه على مواقف الاستلام أو المستحقات محلياً على هذا الجهاز، مع القيمة قبل وبعد التعديل ووقته. يُصدَّر ضمن النسخة الاحتياطية (JSON).</div>
+      </section>
+
+      <section class="view" id="v-assistant">
+        <div class="asst-wrap">
+          <div class="asst-hero">
+            <div class="asst-hero-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a2 2 0 012 2v1h3a2 2 0 012 2v3h1a2 2 0 010 4h-1v3a2 2 0 01-2 2h-3v-1a2 2 0 00-4 0v1H7a2 2 0 01-2-2v-3H4a2 2 0 010-4h1V7a2 2 0 012-2h3V4a2 2 0 012-2z"/><circle cx="9" cy="11" r="1.2" fill="currentColor"/><circle cx="15" cy="11" r="1.2" fill="currentColor"/></svg>
+            </div>
+            <div class="asst-hero-txt">
+              <h2>المساعد الذكي لإدارة المشروع</h2>
+              <p>مساعد هندسي داخلي يقرأ ويحلّل كامل بيانات المشروع لحظياً — يجيب عن أي سؤال، يتابع التحديثات، ويُعِدّ الجداول والتقارير والخطابات جاهزة للتصدير. يعمل بالكامل دون اتصال بالإنترنت.</p>
+              <span class="asst-live" id="asstLive"></span>
+            </div>
+          </div>
+
+          <div class="asst-chips" id="asstChips"></div>
+
+          <div class="asst-chat" id="asstChat"></div>
+
+          <div class="asst-bar">
+            <input id="asstInput" placeholder="اسأل عن أي شيء في المشروع… مثال: ما موقف الجيزة؟ أو: أظهر الترع المتأخرة" 
+              onkeydown="if(event.key==='Enter')asstSend()" autocomplete="off">
+            <button class="asst-send" onclick="asstSend()" aria-label="إرسال">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </div>
+          <div class="asst-foot-note">
+            <button class="asst-export-btn" onclick="exportAssistant()">⬇ تصدير نسخة المساعد المستقلة (HTML)</button>
+            <span>كل الإجابات مبنية على البيانات الحيّة داخل التطبيق وتعكس آخر تعديلاتك فوراً.</span>
+          </div>
+        </div>
       </section>
     </div>
   </div>
@@ -1470,7 +1565,8 @@ const titles={overview:['النظرة العامة','الموقف التنفيذ
   deferred:['الترع المؤجلة','المرحّلة من المرحلة الأولى إلى الثانية'],
   reports:['بلاغات الاستلام','متابعة الترع المُرسلة لدار الهندسة ومواعيد استلامها'],
   docs:['التقارير والخطابات','إصدار وطباعة المستندات الرسمية بترويسة المشروع'],
-  audit:['سجل التغييرات','توثيق كل تعديل على مواقف الاستلام والمستحقات']};
+  audit:['سجل التغييرات','توثيق كل تعديل على مواقف الاستلام والمستحقات'],
+  assistant:['المساعد الذكي','مساعد هندسي داخلي يقرأ كل بيانات المشروع ويُعِدّ الجداول والتقارير والخطابات']};
 document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>{
   document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('on'));a.classList.add('on');
   const v=a.dataset.view;
@@ -1483,6 +1579,7 @@ document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>{
   if(v==='audit')renderAudit();
   if(v==='reports')renderReports();
   if(v==='docs')renderDocs();
+  if(v==='assistant')asstInit();
 });
 
 // ═══════════ تحديث مركزي — يضمن انتشار أي تعديل لكل الأماكن ═══════════
@@ -2488,9 +2585,10 @@ function letterhead(){
   </div>
   <div class="lh-rule"></div>`;
 }
-function docFooter(sign){
+function docFooter(sign,extra){
   // التوقيع الافتراضي = مفوّض الوزارة (لتقارير المشروع العامة)
   // يمكن تمرير توقيع مخصّص (مثل رئيس الإدارة المركزية) لتقرير إدارة بعينها
+  // extra = محتوى إضافي (مثل "صورة مرسلة") يظهر بعد التوقيع وقبل العنوان
   const s=sign||{l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
   return `<div class="doc-foot"><div class="doc-sign">
       <div>${s.l1}</div>
@@ -2498,6 +2596,7 @@ function docFooter(sign){
       <div class="sign-space">م /</div>
       <div class="sign-name">${s.name}</div>
     </div></div>
+  ${extra||''}
   <div class="doc-address">الحي الحكومي بالعاصمة الإدارية — وزارة الموارد المائية والري — مبنى مصلحة الري - الدور الرابع - غرفة 307</div>`;
 }
 function renderDocs(){
@@ -2620,11 +2719,11 @@ function buildDoc(id){
           </tbody></table>
         <p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
         <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
-      </div>`+docFooter()+`
+      </div>`+docFooter(null,`
       <div class="doc-cc"><div>مرفقات: صورة تقرير</div>
         <div class="cc-t">صورة مرسلة:</div>
         <div>السادة الأفاضل / رؤساء قطاعات (الري — التوسع الأفقي والمشروعات والمشرف على قطاع تطوير الري)</div>
-        <div>السادة الأفاضل / رؤساء الإدارات المركزية للموارد المائية والري بالمحافظات</div></div>`;
+        <div>السادة الأفاضل / رؤساء الإدارات المركزية للموارد المائية والري بالمحافظات</div></div>`);
   }
   if(id==='exec'){
     const rows=allGovs().map(g=>({name:g.name,region:g.region,
@@ -2689,8 +2788,319 @@ function buildDoc(id){
   return '';
 }
 
-updateReportBadge();
-renderOverview();renderGovs();renderDues();renderDeferred();
+// ═══════════════════════════════════════════════════════════════════
+//  المساعد الذكي — محرّك قواعد داخلي offline يقرأ كل بيانات المشروع
+// ═══════════════════════════════════════════════════════════════════
+let _asstReady=false, _asstLastTable=null, _asstLastTitle='';
+const AR_NUM=n=>n==null?'—':Number(n).toLocaleString('en');
+const PCT=(a,b)=>b>0?Math.round(a/b*100):0;
+
+// لقطة حيّة شاملة لكل بيانات المشروع (تعكس كل التعديلات فوراً)
+function asstSnapshot(){
+  const gs=allGovs();
+  const dt=liveTotals();
+  const of=PROJECT.official;
+  // تجميع كل الترع المرصودة تفصيلياً
+  const canals=[];
+  gs.forEach(g=>(g.canals||[]).forEach(c=>canals.push({...c,govId:g.id,govName:g.name,region:g.region})));
+  // إجماليات المرحلتين
+  const p1=of.phase1,p2=of.phase2;
+  // المستحقات
+  let dues=[];gs.forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0)dues.push({gov:g.name,govId:g.id,name:o.name,contractor:o.contractor,outstanding:o.outstanding,detail:o.detail||''})}));
+  const duesTotal=dues.reduce((a,d)=>a+d.outstanding,0);
+  // تصنيف الترع حسب الكود
+  const byCode={};canals.forEach(c=>{byCode[c.statusCode]=(byCode[c.statusCode]||0)+1});
+  // الإدارات ذات المستحقات
+  const govDues=gs.filter(g=>(g.duesOutstanding||0)>0).map(g=>({name:g.name,v:g.duesOutstanding})).sort((a,b)=>b.v-a.v);
+  return {gs,dt,of,p1,p2,canals,dues,duesTotal,byCode,govDues,
+    edited:gs.filter(g=>g._edited).length,
+    audit:(typeof loadAudit==='function'?loadAudit():[])};
+}
+// مطابقة اسم إدارة من نص السؤال
+function asstMatchGov(q){
+  const gs=allGovs();
+  // إزالة "ال" والمسافات للمطابقة المرنة
+  const norm=s=>String(s).replace(/[أإآ]/g,'ا').replace(/\s+/g,'').replace(/^ال/,'');
+  const nq=norm(q);
+  let best=null;
+  gs.forEach(g=>{const ng=norm(g.name);if(nq.includes(ng)&&ng.length>=2){if(!best||ng.length>norm(best.name).length)best=g;}});
+  return best;
+}
+// وصف الموقف بالعربي من الكود
+const ASST_CODE_AR={accepted:'مقبولة نهائياً',accepted_partial:'اكتفاء بما تم',submitted:'سُلّمت لدار الهندسة',
+  inspecting:'تحت المعاينة',done:'منفّذة بانتظار التسليم',progress:'جارٍ التنفيذ',investment:'استثماري مباشر',
+  deferred:'مؤجلة/سحب',cancelled:'ملغاة',stopped:'متوقفة',obstacles:'بها معوّقات',unknown:'غير محدّدة',uncoded:'غير مكودة'};
+
+// بناء جدول HTML + تخزينه للتصدير
+function asstTable(head,rows,title){
+  _asstLastTable={head,rows};_asstLastTitle=title||'جدول';
+  let h='<table class="ab-tbl"><thead><tr>'+head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';
+  h+=rows.map(r=>'<tr>'+r.map(c=>`<td>${c==null?'—':c}</td>`).join('')+'</tr>').join('');
+  h+='</tbody></table>';
+  return h;
+}
+function asstMetrics(items){
+  return '<div class="ab-metrics">'+items.map(m=>`<div class="ab-metric"><div class="m-v">${m.v}</div><div class="m-l">${m.l}</div></div>`).join('')+'</div>';
+}
+// المحرّك: يحوّل السؤال إلى إجابة هندسية
+function asstAnswer(q){
+  const s=asstSnapshot();
+  const t=q.trim();
+  const has=(...ws)=>ws.some(w=>t.includes(w));
+  let acts=[];  // أزرار إجراءات (تصدير/تقرير)
+
+  // 1) سؤال عن إدارة بعينها
+  const g=asstMatchGov(t);
+  if(g&&has('موقف','حالة','وضع','ملخص','بيانات','تفاصيل','ايه','إيه','كام','عن')){
+    const p1=g.phase1,p2=g.phase2;
+    let body=`<span class="ab-h">📍 الموقف التنفيذي — ${g.name}</span>`;
+    const mets=[];
+    if(p1){mets.push({v:AR_NUM(p1.canals),l:'ترع م.أولى'});mets.push({v:p1.donePct+'%',l:'نسبة النهو (أولى)'});mets.push({v:p1.delivPct+'%',l:'تسليم دار الهندسة'});}
+    if(p2&&p2.canals){mets.push({v:AR_NUM(p2.canals),l:'ترع م.ثانية'});mets.push({v:(p2.donePct||0)+'%',l:'نسبة النهو (ثانية)'});}
+    body+=asstMetrics(mets);
+    // تصنيف ترعها إن وُجد تفصيل
+    const gc=(g.canals||[]);
+    if(gc.length){
+      const bc={};gc.forEach(c=>bc[c.statusCode]=(bc[c.statusCode]||0)+1);
+      const rows=Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[ASST_CODE_AR[k]||k,AR_NUM(v)]);
+      body+=`<div style="margin-top:6px"><b>تصنيف الترع المرصودة (${gc.length} ترعة):</b></div>`;
+      body+=asstTable(['الموقف','العدد'],rows,'تصنيف ترع '+g.name);
+    }
+    if((g.duesOutstanding||0)>0)body+=`<div style="margin-top:6px">💰 <b>مستحقات معلّقة:</b> ${g.duesOutstanding.toFixed(3)} مليون جنيه</div>`;
+    body+=`<div style="margin-top:5px;font-size:12px;color:var(--muted)">حالة دار الهندسة: <b>${g.darStatus}</b>${g._edited?' • تحتوي تعديلات محليّة ✎':''}</div>`;
+    acts=[{l:'📄 تقرير رسمي بترويسة المشروع',fn:`openGovDoc('${g.id}')`},{l:'⬇ تصدير ترع '+g.name+' (CSV)',fn:`asstExportGov('${g.id}')`}];
+    return {body,acts};
+  }
+
+  // 2) الترع المتأخرة / المؤجلة / المتوقفة
+  if(has('متأخر','مؤجل','متوقف','معطل','معوق','سحب','متعثر')){
+    const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));
+    const rows=bad.slice(0,40).map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']);
+    let body=`<span class="ab-h">⏳ الترع خارج مسار الإنجاز</span>`;
+    body+=asstMetrics([{v:AR_NUM(bad.length),l:'إجمالي (مؤجلة/متوقفة/ملغاة)'},
+      {v:AR_NUM(bad.filter(c=>c.statusCode==='deferred').length),l:'مؤجلة/سحب'},
+      {v:AR_NUM(bad.filter(c=>c.statusCode==='stopped').length),l:'متوقفة'}]);
+    if(rows.length)body+=asstTable(['الترعة','الإدارة','الموقف','التنفيذ'],rows,'الترع المتأخرة والمتوقفة');
+    if(bad.length>40)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${bad.length-40} ترعة أخرى في ملف التصدير الكامل.</div>`;
+    acts=[{l:'⬇ تصدير القائمة كاملة (CSV)',fn:`asstExportList('bad')`}];
+    return {body,acts};
+  }
+
+  // 3) المستحقات المالية
+  if(has('مستحق','مبالغ','فلوس','مالي','محتجز','مليون','مديوني','دفعات')){
+    let body=`<span class="ab-h">💰 المستحقات المعلّقة</span>`;
+    body+=asstMetrics([{v:s.duesTotal.toFixed(2),l:'إجمالي المعلّق (م.ج)'},{v:AR_NUM(s.dues.length),l:'عملية'},{v:AR_NUM(s.govDues.length),l:'إدارة'}]);
+    const rows=s.govDues.map(d=>[d.name,d.v.toFixed(3)]);
+    if(rows.length)body+=asstTable(['الإدارة','المعلّق (م.ج)'],rows,'المستحقات المعلّقة بالإدارة');
+    acts=[{l:'💰 كشف المستحقات الرسمي',fn:`openDoc('dues')`},{l:'⬇ تصدير المستحقات (CSV)',fn:`asstExportList('dues')`}];
+    return {body,acts};
+  }
+
+  // 4) دار الهندسة / التسليم / الاستلام
+  if(has('دار الهندسة','تسليم','استلام','مسلم','سلّم','سلمت')){
+    const submitted=s.canals.filter(c=>['submitted','accepted','accepted_partial'].includes(c.statusCode));
+    let body=`<span class="ab-h">🏛️ موقف الاستلام عبر دار الهندسة</span>`;
+    const totDar=s.dt.p1.dar+s.dt.p2.dar;
+    body+=asstMetrics([{v:AR_NUM(totDar),l:'مستلمة عبر دار الهندسة'},
+      {v:AR_NUM(s.canals.filter(c=>c.statusCode==='submitted').length),l:'سُلّمت وبانتظار المعاينة'},
+      {v:AR_NUM(s.canals.filter(c=>c.statusCode==='inspecting').length),l:'تحت المعاينة'}]);
+    // أعلى الإدارات تسليماً
+    const rows=s.gs.filter(x=>x.phase1).map(x=>[x.name,(x.phase1.delivPct||0)+'%',(x.phase2&&x.phase2.delivPct!=null?x.phase2.delivPct+'%':'—')]).slice(0,20);
+    body+=asstTable(['الإدارة','تسليم م.أولى','تسليم م.ثانية'],rows,'نسب التسليم لدار الهندسة');
+    acts=[{l:'📊 تقرير الموقف التنفيذي',fn:`openDoc('exec')`},{l:'📄 خطاب تصعيد للتأخير',fn:`openDoc('escalation')`}];
+    return {body,acts};
+  }
+
+  // 5) الإجمالي / نظرة عامة / المشروع كله
+  if(has('اجمالي','إجمالي','المشروع','كله','عام','نظرة','ملخص','الكل','احصائ','إحصائ','مؤشر','نسب')){
+    const p1=s.p1,p2=s.p2;
+    let body=`<span class="ab-h">🗂️ الملخص التنفيذي لمشروع حياة كريمة</span>`;
+    body+=asstMetrics([{v:AR_NUM(p1.total+p2.total),l:'إجمالي الترع'},
+      {v:PCT(p1.done+p2.done,p1.total+p2.total)+'%',l:'نسبة النهو الكلي'},
+      {v:AR_NUM(s.dt.p1.dar+s.dt.p2.dar),l:'مستلمة دار الهندسة'},
+      {v:s.duesTotal.toFixed(1),l:'مستحقات معلّقة (م.ج)'}]);
+    body+=asstTable(['المرحلة','إجمالي','منفّذ','% نهو','مسلّم','% تسليم','متبقٍّ'],
+      [['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%',p1.remainingDeliver],
+       ['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%',p2.remainingDeliver]],'الملخص التنفيذي للمرحلتين');
+    body+=`<div style="margin-top:6px;font-size:12px;color:var(--muted)">${s.gs.length} إدارة مركزية • ${s.canals.length} ترعة مرصودة تفصيلياً${s.edited?` • ${s.edited} إدارة بها تعديلات ✎`:''}</div>`;
+    acts=[{l:'📄 خطاب التقرير الشهري',fn:`openDoc('monthly')`},{l:'📊 تقرير تنفيذي شامل',fn:`openDoc('exec')`},{l:'⬇ تصدير كل الترع (CSV)',fn:`asstExportList('all')`}];
+    return {body,acts};
+  }
+
+  // 6) التحديثات / التعديلات الأخيرة (متابعة التغيرات)
+  if(has('تحديث','تعديل','تغيير','آخر','اخر','سجل','جديد','حصل')){
+    const a=s.audit.slice(0,15);
+    let body=`<span class="ab-h">🔄 آخر التحديثات على المشروع</span>`;
+    if(!a.length){body+='<div>لا توجد تعديلات مسجّلة بعد على هذا الجهاز. كل الأرقام مطابقة للبيانات الرسمية المعتمدة.</div>';}
+    else{
+      body+=`<div style="margin-bottom:5px">آخر ${a.length} تعديل مسجّل:</div>`;
+      const rows=a.map(e=>[e.gov||'—',e.field||'—',(e.before||'—')+' ← '+(e.after||'—'),(e.ts||'').slice(0,10)]);
+      body+=asstTable(['الإدارة','الحقل','التغيير','التاريخ'],rows,'سجل آخر التحديثات');
+    }
+    acts=[{l:'🔄 فتح سجل التغييرات',fn:`document.querySelector('.nav a[data-view=audit]').click()`}];
+    return {body,acts};
+  }
+
+  // 7) بحث عن ترعة بالاسم
+  const foundCanals=s.canals.filter(c=>t.length>=3&&c.name&&c.name.replace(/^ال/,'').includes(t.replace(/^ال/,'').replace(/ترعة|فرع/g,'').trim())&&t.replace(/ترعة|فرع|عن|موقف/g,'').trim().length>=3);
+  if(foundCanals.length&&foundCanals.length<=25){
+    let body=`<span class="ab-h">🔎 نتائج البحث عن ترعة</span>`;
+    const rows=foundCanals.map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—',c.length!=null?c.length:'—']);
+    body+=asstTable(['الترعة','الإدارة','الموقف','التنفيذ','الطول'],rows,'نتائج البحث');
+    return {body,acts:[]};
+  }
+
+  // افتراضي: إرشاد
+  return {body:`<span class="ab-h">👋 تحت أمر سيادتك</span>يمكنني الإجابة عن أي استفسار عن المشروع وإعداد الجداول والتقارير. جرّب أن تسأل:<ul>
+    <li>«ما موقف <b>الجيزة</b>؟» أو أي إدارة</li>
+    <li>«أظهر الترع <b>المتأخرة</b> والمتوقفة»</li>
+    <li>«ما إجمالي <b>المستحقات</b> المعلّقة؟»</li>
+    <li>«موقف <b>دار الهندسة</b> والتسليم»</li>
+    <li>«<b>ملخص</b> المشروع بالكامل»</li>
+    <li>«ما <b>آخر التحديثات</b>؟»</li></ul>`,acts:[]};
+}
+
+// ═══════ واجهة المحادثة ═══════
+const ASST_CHIPS=[
+  ['📊','ملخص المشروع بالكامل','ملخص المشروع بالكامل'],
+  ['⏳','الترع المتأخرة والمتوقفة','أظهر الترع المتأخرة والمتوقفة'],
+  ['💰','المستحقات المعلّقة','ما إجمالي المستحقات المعلّقة؟'],
+  ['🏛️','موقف دار الهندسة','موقف دار الهندسة والتسليم'],
+  ['🔄','آخر التحديثات','ما آخر التحديثات على المشروع؟']
+];
+function asstInit(){
+  const live=document.getElementById('asstLive');
+  if(live){const s=asstSnapshot();live.textContent=`متصل بالبيانات الحيّة • ${s.gs.length} إدارة • ${s.canals.length} ترعة مرصودة`;}
+  const chips=document.getElementById('asstChips');
+  if(chips&&!chips.children.length){
+    chips.innerHTML=ASST_CHIPS.map(c=>`<button class="asst-chip" onclick="asstAsk('${c[2].replace(/'/g,"\\'")}')"><span class="ci">${c[0]}</span>${c[1]}</button>`).join('');
+  }
+  if(!_asstReady){
+    _asstReady=true;
+    asstPush('bot',`<span class="ab-h">مرحباً بسيادتك 👋</span>أنا المساعد الهندسي لمشروع تبطين الترع — حياة كريمة. أقرأ كل بيانات المشروع لحظياً وأعكس أي تعديل فور حدوثه. اسألني عن أي إدارة أو ترعة أو رقم، وسأعدّ لك الجداول والتقارير والخطابات جاهزة للطباعة أو التصدير.`);
+  }
+}
+function asstPush(who,html){
+  const box=document.getElementById('asstChat');if(!box)return null;
+  const av=who==='me'?'👤':'🛰️';
+  const el=document.createElement('div');el.className='asst-msg '+who;
+  el.innerHTML=`<div class="asst-av">${av}</div><div class="asst-bubble">${html}</div>`;
+  box.appendChild(el);box.scrollTop=box.scrollHeight;return el;
+}
+function asstAsk(q){document.getElementById('asstInput').value=q;asstSend();}
+function asstSend(){
+  const inp=document.getElementById('asstInput');const q=(inp.value||'').trim();if(!q)return;
+  asstPush('me',q.replace(/</g,'&lt;'));inp.value='';
+  // مؤشر الكتابة
+  const typing=asstPush('bot','<span class="asst-typing"><i></i><i></i><i></i></span>');
+  setTimeout(()=>{
+    const {body,acts}=asstAnswer(q);
+    let html=body;
+    if(acts&&acts.length)html+='<div class="ab-actions">'+acts.map((a,i)=>`<button class="ab-act${i>0?' ghost':''}" onclick="${a.fn}">${a.l}</button>`).join('')+'</div>';
+    typing.querySelector('.asst-bubble').innerHTML=html;
+    document.getElementById('asstChat').scrollTop=document.getElementById('asstChat').scrollHeight;
+  },420);
+}
+// تصدير آخر جدول عرضه المساعد كـ CSV
+function asstExportCSV(head,rows,fname){
+  const esc=v=>{v=(v==null?'':String(v));return '"'+v.replace(/"/g,'""')+'"';};
+  const lines=[head.map(esc).join(',')];rows.forEach(r=>lines.push(r.map(esc).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(fname||'جدول')+'.csv';a.click();URL.revokeObjectURL(a.href);
+  toast&&toast('تم تصدير الجدول (CSV)');
+}
+function asstExportGov(govId){
+  const g=gov(govId);const rows=(g.canals||[]).map(c=>[c.id,c.name,c.op||'',c.contractor||'',c.length!=null?c.length:'',c.pct!=null?c.pct:'',c.status]);
+  asstExportCSV(['المعرّف','الترعة','العملية','المقاول','الطول','التنفيذ%','الموقف'],rows,'ترع_'+g.name);
+}
+function asstExportList(kind){
+  const s=asstSnapshot();
+  if(kind==='dues'){asstExportCSV(['الإدارة','العملية','المقاول','المعلّق(م.ج)','البيان'],s.dues.map(d=>[d.gov,d.name,d.contractor,d.outstanding,d.detail]),'المستحقات_المعلّقة');return;}
+  if(kind==='bad'){const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));
+    asstExportCSV(['الترعة','الإدارة','الموقف','التنفيذ%','الطول'],bad.map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct,c.length]),'الترع_المتأخرة');return;}
+  // all
+  asstExportCSV(['المعرّف','الإدارة','الترعة','العملية','المقاول','الطول','التنفيذ%','الموقف'],
+    s.canals.map(c=>[c.id,c.govName,c.name,c.op||'',c.contractor||'',c.length,c.pct,c.status]),'كل_ترع_المشروع');
+}
+
+// ═══════ تصدير نسخة المساعد المستقلة (HTML) ═══════
+function exportAssistant(){
+  const s=asstSnapshot();
+  // نُصدّر البيانات الحيّة الحالية داخل ملف HTML مستقل يعمل بالكامل offline
+  const data={
+    generated:new Date().toISOString(),
+    official:s.of,
+    govs:s.gs.map(g=>({id:g.id,name:g.name,region:g.region,phase1:g.phase1,phase2:g.phase2,
+      darStatus:g.darStatus,duesOutstanding:g.duesOutstanding,operations:g.operations,
+      canals:(g.canals||[]).map(c=>({id:c.id,name:c.name,op:c.op,contractor:c.contractor,length:c.length,pct:c.pct,statusCode:c.statusCode,status:c.status}))}))
+  };
+  const html=asstStandaloneHTML(data);
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='المساعد_الذكي_حياة_كريمة_'+new Date().toISOString().slice(0,10)+'.html';a.click();URL.revokeObjectURL(a.href);
+  toast&&toast('تم تصدير نسخة المساعد المستقلة');
+}
+function asstStandaloneHTML(data){
+  const codeAr=JSON.stringify(ASST_CODE_AR);
+  // ملف مستقل: نفس محرّك القواعد لكن يقرأ من نسخة البيانات المضمّنة
+  return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'+
+'<meta name="viewport" content="width=device-width,initial-scale=1">'+
+'<title>المساعد الذكي — حياة كريمة</title>'+
+'<style>'+
+'@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap");'+
+'*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cairo,sans-serif;background:#0a1f1a;color:#e8f0ed;min-height:100vh;display:flex;flex-direction:column}'+
+'.hd{background:linear-gradient(120deg,#103831,#1d4d4e);border-bottom:2px solid #c9b67c;padding:18px 20px;text-align:center}'+
+'.hd h1{color:#e6cf8f;font-size:19px}.hd p{font-size:12px;opacity:.85;margin-top:4px}'+
+'.wrap{max-width:900px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;padding:14px;gap:12px}'+
+'.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{font-family:Cairo;font-size:12px;font-weight:700;background:#15463d;color:#e6cf8f;border:1.4px solid #2d7d6a;border-radius:999px;padding:7px 13px;cursor:pointer}'+
+'.chip:hover{background:#1d4d4e}'+
+'.chat{flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:300px;padding:6px}'+
+'.msg{display:flex;gap:9px;max-width:92%}.msg.me{flex-direction:row-reverse}.msg.bot{align-self:flex-end}.msg.me{align-self:flex-start}'+
+'.av{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto}.msg.me .av{background:#1d4d4e}.msg.bot .av{background:linear-gradient(135deg,#e6cf8f,#a8904f);color:#0a1f1a}'+
+'.bub{background:#103831;border:1px solid #1d4d4e;border-radius:14px;padding:11px 14px;font-size:13.5px;line-height:1.8}.msg.me .bub{background:#1d4d4e}'+
+'.bub b{color:#e6cf8f}.ab-h{display:block;font-weight:800;color:#e6cf8f;margin-bottom:6px}'+
+'table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}th,td{border:1px solid #2d7d6a;padding:6px 8px;text-align:center}th{background:#15463d;color:#e6cf8f}td:first-child{text-align:right}'+
+'.mets{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0}.met{flex:1 1 100px;background:#15463d;border-radius:10px;padding:8px;text-align:center}.met .v{font-family:"JetBrains Mono";font-size:17px;font-weight:800;color:#e6cf8f}.met .l{font-size:10px;opacity:.8;margin-top:2px}'+
+'.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.act{font-family:Cairo;font-size:11.5px;font-weight:700;background:#c9b67c;color:#0a1f1a;border:none;border-radius:8px;padding:7px 12px;cursor:pointer}'+
+'.bar{display:flex;gap:8px;background:#103831;border:1.5px solid #1d4d4e;border-radius:14px;padding:8px;position:sticky;bottom:0}'+
+'.bar input{flex:1;background:transparent;border:none;color:#e8f0ed;font-family:Cairo;font-size:14px;outline:none;padding:6px}'+
+'.bar button{width:40px;height:40px;border-radius:11px;border:none;background:linear-gradient(135deg,#236b5c,#103831);color:#fff;cursor:pointer;font-size:17px}'+
+'.foot{text-align:center;font-size:10.5px;opacity:.6;padding:8px}'+
+'</style></head><body>'+
+'<div class="hd"><h1>🛰️ المساعد الذكي — مشروع حياة كريمة</h1><p>نسخة مستقلة تعمل بالكامل دون إنترنت • بيانات بتاريخ '+new Date(data.generated).toLocaleDateString('ar-EG')+'</p></div>'+
+'<div class="wrap"><div class="chips" id="chips"></div><div class="chat" id="chat"></div>'+
+'<div class="bar"><input id="inp" placeholder="اسأل عن أي شيء في المشروع…" onkeydown="if(event.key===\'Enter\')send()"><button onclick="send()">➤</button></div></div>'+
+'<div class="foot">وزارة الموارد المائية والري — مفوض الوزارة لمشروع حياة كريمة</div>'+
+'<script>\nconst DATA='+JSON.stringify(data)+';\nconst CODE_AR='+codeAr+';\n'+asstStandaloneEngine()+'\n<\/script>'+
+'</body></html>';
+}
+// محرّك النسخة المستقلة (نص مضمّن) — نسخة مبسّطة مكتفية ذاتياً
+function asstStandaloneEngine(){
+  return `
+const N=n=>n==null?'—':Number(n).toLocaleString('en');
+function snap(){const gs=DATA.govs;const canals=[];gs.forEach(g=>(g.canals||[]).forEach(c=>canals.push({...c,govName:g.name})));
+ let dues=[];gs.forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0)dues.push({gov:g.name,name:o.name,contractor:o.contractor,outstanding:o.outstanding,detail:o.detail||''})}));
+ return {gs,canals,dues,duesTotal:dues.reduce((a,d)=>a+d.outstanding,0),of:DATA.official};}
+function matchGov(q){const norm=s=>String(s).replace(/[أإآ]/g,'ا').replace(/\\s+/g,'').replace(/^ال/,'');const nq=norm(q);let b=null;DATA.govs.forEach(g=>{const ng=norm(g.name);if(nq.includes(ng)&&ng.length>=2){if(!b||ng.length>norm(b.name).length)b=g;}});return b;}
+function tbl(h,r){return '<table><thead><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+r.map(x=>'<tr>'+x.map(c=>'<td>'+(c==null?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
+function mets(a){return '<div class="mets">'+a.map(m=>'<div class="met"><div class="v">'+m.v+'</div><div class="l">'+m.l+'</div></div>').join('')+'</div>';}
+function answer(q){const s=snap();const has=(...w)=>w.some(x=>q.includes(x));const g=matchGov(q);
+ if(g&&has('موقف','حالة','وضع','ملخص','بيانات','تفاصيل','عن','كام','ايه','إيه')){let b='<span class="ab-h">📍 '+g.name+'</span>';const m=[];if(g.phase1){m.push({v:N(g.phase1.canals),l:'ترع م.أولى'});m.push({v:g.phase1.donePct+'%',l:'نهو أولى'});m.push({v:g.phase1.delivPct+'%',l:'تسليم دار الهندسة'});}if(g.phase2&&g.phase2.canals){m.push({v:N(g.phase2.canals),l:'ترع م.ثانية'});}b+=mets(m);const gc=g.canals||[];if(gc.length){const bc={};gc.forEach(c=>bc[c.statusCode]=(bc[c.statusCode]||0)+1);b+=tbl(['الموقف','العدد'],Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[CODE_AR[k]||k,N(v)]));}if(g.duesOutstanding>0)b+='<div>💰 مستحقات معلّقة: <b>'+g.duesOutstanding.toFixed(3)+'</b> م.ج</div>';return b;}
+ if(has('متأخر','مؤجل','متوقف','معطل','سحب','متعثر')){const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));let b='<span class="ab-h">⏳ الترع المتأخرة والمتوقفة</span>'+mets([{v:N(bad.length),l:'الإجمالي'}]);b+=tbl(['الترعة','الإدارة','الموقف','التنفيذ'],bad.slice(0,50).map(c=>[c.name,c.govName,CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));return b;}
+ if(has('مستحق','مبالغ','مالي','محتجز','مليون')){let b='<span class="ab-h">💰 المستحقات المعلّقة</span>'+mets([{v:s.duesTotal.toFixed(2),l:'الإجمالي (م.ج)'},{v:N(s.dues.length),l:'عملية'}]);b+=tbl(['الإدارة','العملية','المعلّق'],s.dues.map(d=>[d.gov,d.name,d.outstanding.toFixed(3)]));return b;}
+ if(has('اجمالي','إجمالي','المشروع','كله','عام','نظرة','ملخص','الكل','مؤشر')){const p1=s.of.phase1,p2=s.of.phase2;let b='<span class="ab-h">🗂️ الملخص التنفيذي</span>'+mets([{v:N(p1.total+p2.total),l:'إجمالي الترع'},{v:Math.round((p1.done+p2.done)/(p1.total+p2.total)*100)+'%',l:'نسبة النهو'},{v:s.duesTotal.toFixed(1),l:'مستحقات (م.ج)'}]);b+=tbl(['المرحلة','إجمالي','منفّذ','%نهو','مسلّم','%تسليم'],[['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%'],['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%']]);return b;}
+ const fc=s.canals.filter(c=>q.length>=3&&c.name&&c.name.includes(q.replace(/ترعة|فرع|عن|موقف/g,'').trim())&&q.replace(/ترعة|فرع|عن|موقف/g,'').trim().length>=3);
+ if(fc.length&&fc.length<=25){return '<span class="ab-h">🔎 نتائج البحث</span>'+tbl(['الترعة','الإدارة','الموقف','التنفيذ'],fc.map(c=>[c.name,c.govName,CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));}
+ return '<span class="ab-h">👋 تحت أمرك</span>اسألني: «موقف الجيزة»، «الترع المتأخرة»، «المستحقات المعلّقة»، «ملخص المشروع»، أو ابحث باسم أي ترعة.';}
+function push(who,html){const c=document.getElementById('chat');const av=who==='me'?'👤':'🛰️';const e=document.createElement('div');e.className='msg '+who;e.innerHTML='<div class="av">'+av+'</div><div class="bub">'+html+'</div>';c.appendChild(e);c.scrollTop=c.scrollHeight;}
+function ask(q){document.getElementById('inp').value=q;send();}
+function send(){const i=document.getElementById('inp');const q=(i.value||'').trim();if(!q)return;push('me',q);i.value='';setTimeout(()=>push('bot',answer(q)),200);}
+const CHIPS=[['📊','ملخص المشروع','ملخص المشروع بالكامل'],['⏳','الترع المتأخرة','الترع المتأخرة والمتوقفة'],['💰','المستحقات','المستحقات المعلّقة'],['🗂️','مؤشرات عامة','مؤشرات المشروع']];
+document.getElementById('chips').innerHTML=CHIPS.map(c=>'<button class="chip" onclick="ask(\\''+c[2]+'\\')">'+c[0]+' '+c[1]+'</button>').join('');
+push('bot','<span class="ab-h">مرحباً 👋</span>أنا المساعد الهندسي لمشروع حياة كريمة — نسخة مستقلة تعمل دون إنترنت. اسألني عن أي إدارة أو ترعة أو رقم.');
+`;
+}
+
 // عند بدء التشغيل: لو التزامن مُفعّل، اسحب أحدث البلاغات تلقائياً
 if(getSyncUrl()){setTimeout(()=>pullReports(true),400);}
 // تحديث دوري كل دقيقة عند تفعيل التزامن
