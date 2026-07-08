@@ -609,10 +609,18 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-title-main{font-family:'Cairo';font-weight:900;font-size:19px;text-align:center;margin-bottom:4px;color:#111}
 .doc-sub-main{text-align:center;font-size:12.5px;color:#555;margin-bottom:18px}
 .doc-tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
-.doc-tbl th{background:#eaf4f7;border:1px solid #9bc3d0;padding:7px 6px;font-weight:800;text-align:center;color:#111}
-.doc-tbl td{border:1px solid #b8d4dd;padding:6px;text-align:center}
+.doc-tbl th{background:#e7f1ec;border:1px solid #9cbfb2;padding:7px 6px;font-weight:800;text-align:center;color:#111}
+.doc-tbl td{border:1px solid #bcd4c9;padding:6px;text-align:center}
 .doc-tbl.sm{font-size:11px}.doc-tbl.sm td,.doc-tbl.sm th{padding:4px}
-.doc-tbl .doc-total td{background:#0d5a6e;color:#fff;font-weight:800;border-color:#0d5a6e}
+.doc-tbl.xs{font-size:10px}.doc-tbl.xs td,.doc-tbl.xs th{padding:3px 4px}
+.doc-tbl .doc-total td{background:#15463d;color:#fff;font-weight:800;border-color:#15463d}
+/* الجدول التفصيلي للترع */
+.doc-canals .doc-op-row td{background:#15463d;color:#e6cf8f;font-weight:800;text-align:right;padding:6px 8px;font-size:10.5px;border-color:#0f3830}
+.doc-canals .doc-td-name{text-align:right;font-weight:700;padding-right:6px}
+.doc-canals .doc-td-contr{text-align:right;padding-right:6px;color:#333;font-size:9px}
+.doc-canals .doc-td-status{text-align:right;padding-right:6px;font-size:9.5px}
+.doc-canals tbody tr:nth-child(even):not(.doc-op-row){background:#f4f9f6}
+.doc-note-box{margin:16px 0;background:#f0f6f2;border:1.5px dashed #9cbfb2;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#2c5a4c;line-height:1.9}
 .doc-foot{margin-top:34px;display:flex;justify-content:flex-end}
 .doc-sign{text-align:center;font-weight:700;line-height:2.1}
 .sign-space{margin-top:6px}
@@ -620,10 +628,10 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-address{margin-top:30px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
 .doc-cc{margin-top:18px;font-size:11.5px;line-height:1.9;color:#222}
 .doc-cc .cc-t{font-weight:800;text-decoration:underline;margin-top:8px}
-.doc-sec-h{font-family:'Cairo';font-weight:800;font-size:15px;margin:18px 0 4px;color:#0d5a6e;border-bottom:2px solid #d4dde0;padding-bottom:4px}
-.gov-export{background:linear-gradient(120deg,var(--nile-800),var(--nile-600));border-radius:14px;padding:16px;margin-bottom:18px;text-align:center}
+.doc-sec-h{font-family:'Cairo';font-weight:800;font-size:15px;margin:18px 0 4px;color:#15463d;border-bottom:2px solid #cfe0d8;padding-bottom:4px}
+.gov-export{background:linear-gradient(120deg,var(--nile-800),var(--nile-600));border:1.5px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:18px;text-align:center}
 .btn-export{background:#fff;color:var(--nile-800);font-weight:800;border:none;width:100%;justify-content:center;padding:12px}
-.btn-export:hover{background:#f0fafc}
+.btn-export:hover{background:#eef7f2}
 .gov-export-hint{display:block;color:rgba(255,255,255,.9);font-size:11.5px;margin-top:9px;line-height:1.6}
 .edit-phase{margin-bottom:14px;padding:12px;background:var(--cyan-soft);border-radius:10px;border:1px solid var(--line)}
 .ephase-t{font-size:13.5px;font-weight:800;color:var(--nile-700);margin-bottom:10px}
@@ -2456,20 +2464,58 @@ function openGovDoc(govId){
 function buildGovDoc(govId){
   const g=gov(govId);
   const p1=g.phase1,p2=g.phase2,ops=g.operations||[];
+  const canals=(g.canals||[]).filter(Boolean);
   const duesRows=ops.filter(o=>o.outstanding>0).sort((a,b)=>b.outstanding-a.outstanding);
   const duesTot=duesRows.reduce((s,o)=>s+o.outstanding,0);
   const govReports=loadReports().filter(r=>r.govId===govId);
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  const num=v=>(v===null||v===undefined||v==='')?'—':v;
+  const len=v=>(v===null||v===undefined||v==='')?'—':(typeof v==='number'?v.toFixed(2):v);
+  const pctT=v=>(v===null||v===undefined||v==='')?'—':v+'%';
   const phaseTbl=(ph,label)=>ph?`
     <tr><td>${label}</td><td>${ph.canals||0}</td><td>${ph.executed||0}</td><td>${ph.dar||0}</td><td>${ph.invest||0}</td><td>${ph.delivered||0}</td><td>${(ph.canals||0)-(ph.delivered||0)}</td></tr>`:'';
   let body=`
-    <div class="doc-title-main">تقرير الموقف التنفيذي — ${g.name}</div>
+    <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
     <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
     <div class="doc-body">
-      <p>فيما يلي موقف استلامات الإدارة المركزية بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
+      <p>فيما يلي الموقف التنفيذي التفصيلي لاستلامات الإدارة المركزية بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
       <table class="doc-tbl"><thead><tr>
         <th>المرحلة</th><th>إجمالي الترع</th><th>المنفّذ</th><th>دار الهندسة</th><th>استثماري</th><th>المُسلّم</th><th>المتبقّي</th></tr></thead>
         <tbody>${phaseTbl(p1,'الأولى')}${phaseTbl(p2,'الثانية')}</tbody></table>`;
+
+  // ═══ الجدول التفصيلي بكل ترعة — مصنّف حسب العملية ═══
+  if(canals.length){
+    // تجميع الترع حسب العملية مع الحفاظ على الترتيب
+    const groups=[];const gmap={};
+    canals.forEach(c=>{
+      const key=c.op||'عمليات متفرقة';
+      if(!gmap[key]){gmap[key]={op:key,items:[]};gmap[key]._i=groups.length;groups.push(gmap[key]);}
+      gmap[key].items.push(c);
+    });
+    let m=0;
+    const rowsHtml=groups.map(gr=>{
+      const opHead=`<tr class="doc-op-row"><td colspan="7">العملية: ${gr.op}</td></tr>`;
+      const items=gr.items.map(c=>{
+        m++;
+        return `<tr>
+          <td>${m}</td>
+          <td class="doc-td-name">${c.name||'—'}</td>
+          <td class="doc-td-contr">${c.contractor||'—'}</td>
+          <td>${len(c.length)}</td>
+          <td>${pctT(c.pct)}</td>
+          <td class="doc-td-status">${c.status||'—'}</td>
+        </tr>`;
+      }).join('');
+      return opHead+items;
+    }).join('');
+    body+=`<div class="doc-sec-h">الموقف التفصيلي للترع (عدد ${canals.length} ترعة) — مصنّفة حسب العملية</div>
+      <table class="doc-tbl xs doc-canals"><thead><tr>
+        <th style="width:32px">م</th><th>اسم الترعة</th><th>المقاول</th><th style="width:52px">الطول (كم)</th><th style="width:56px">التنفيذ</th><th style="width:150px">موقف الترعة</th></tr></thead>
+      <tbody>${rowsHtml}</tbody></table>`;
+  } else {
+    body+=`<div class="doc-note-box">التفاصيل الفردية للترع بهذه الإدارة قيد الإدخال — التقرير يعرض الملخص المعتمد بالمرحلتين أعلاه، وسيُحدَّث تلقائياً فور إتاحة بيانات الترع التفصيلية.</div>`;
+  }
+
   if(duesRows.length){
     body+=`<div class="doc-sec-h">المستحقات المعلّقة لحين استلام دار الهندسة</div>
       <table class="doc-tbl sm"><thead><tr><th>م</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>المعلّق (م.ج)</th></tr></thead>
@@ -2484,8 +2530,13 @@ function buildGovDoc(govId){
   body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
       <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
     </div>`;
-  // توقيع رئيس الإدارة المركزية التابع له التقرير
-  const govSign={l1:'رئيس الإدارة المركزية',l2:`للموارد المائية والري بـ${g.name}`,name:'.........................'};
+  // توقيع رئيس الإدارة المركزية — للقاهرة والجيزة يُستخدم الاسم المعتمد
+  let govSign;
+  if(govId==='giza'||govId==='qalyubia'||g.region==='القاهرة الكبرى'){
+    govSign={l1:'رئيس الإدارة المركزية للموارد المائية والرى',l2:'لمحافظتى القاهرة والجيزة',name:'محسن عبد الرشيد'};
+  } else {
+    govSign={l1:'رئيس الإدارة المركزية',l2:`للموارد المائية والري بـ${g.name}`,name:'.........................'};
+  }
   return letterhead()+body+docFooter(govSign);
 }
 function buildDoc(id){
