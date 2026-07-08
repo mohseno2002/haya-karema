@@ -264,13 +264,14 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .donut-card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;align-items:center}
 .donut-title{font-family:'Cairo';font-weight:800;font-size:15px;align-self:flex-start;margin-bottom:6px}
 .donut-svg{width:150px;height:150px}
-.donut-arc{transition:stroke-width .2s,filter .2s;transform-origin:70px 70px;cursor:pointer}
+.donut-arc{transition:stroke-width .2s,filter .2s;cursor:pointer}
 .donut-arc:hover{stroke-width:19;filter:drop-shadow(0 2px 6px rgba(20,135,164,.4))}
 .donut-tip{position:fixed;z-index:100;background:var(--nile-900);color:#fff;padding:8px 13px;border-radius:10px;font-size:12.5px;font-weight:700;font-family:'Tajawal';box-shadow:0 6px 20px rgba(6,39,48,.35);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;white-space:nowrap}
 .donut-tip.on{opacity:1;transform:translateY(0)}
 .donut-tip b{color:var(--nile-accent);font-family:'IBM Plex Mono';margin-inline-start:4px}
-@keyframes drawArc{from{stroke-dasharray:0 var(--circ,339)}to{stroke-dasharray:var(--dash) var(--gap)}}
-.view.on .donut-arc{animation:drawArc .9s cubic-bezier(.3,.8,.3,1) backwards}
+@keyframes drawArc{from{opacity:0}to{opacity:1}}
+.donut-arc{animation:drawArc .7s ease both}
+@media (prefers-reduced-motion:reduce){.donut-arc{animation:none}}
 .donut-num{font-family:'Cairo';font-weight:900;font-size:26px;fill:var(--ink)}
 .donut-sub{font-size:8px;fill:var(--muted)}
 .donut-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
@@ -7520,21 +7521,20 @@ function renderOverview(){
 function donut(segments,centerLabel,centerSub){
   const R=54,C=2*Math.PI*R,cx=70,cy=70;let off=0;
   const active=segments.filter(s=>s.v>0);
-  const tot=active.reduce((a,b)=>a+b.v,0);
+  const tot=active.reduce((a,b)=>a+b.v,0)||1;
   const arcs=active.map((s,i)=>{
     const frac=s.v/tot;
     const len=frac*C;
-    const el=`<circle class="donut-arc" cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${s.c}" stroke-width="16" stroke-linecap="round"
-      stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"
-      data-label="${s.l}" data-val="${s.v}"
-      style="--dash:${len};--gap:${C-len};--off:${-off};animation-delay:${.15+i*.25}s"><title>${s.l}: ${s.v}</title></circle>`;
+    const el='<circle class="donut-arc" cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.c+'" stroke-width="16" stroke-linecap="round"'
+      +' stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'"'
+      +' data-label="'+s.l+'" data-val="'+s.v+'"><title>'+s.l+': '+s.v+'</title></circle>';
     off+=len;return el;
   }).join('');
-  return `<svg viewBox="0 0 140 140" class="donut-svg">
-    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="16"/>
-    ${arcs}
-    <text x="${cx}" y="${cy-2}" text-anchor="middle" class="donut-num">${centerLabel}</text>
-    <text x="${cx}" y="${cy+16}" text-anchor="middle" class="donut-sub">${centerSub}</text></svg>`;
+  return '<svg viewBox="0 0 140 140" class="donut-svg">'
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="16"/>'
+    +'<g transform="rotate(-90 '+cx+' '+cy+')">'+arcs+'</g>'
+    +'<text x="'+cx+'" y="'+(cy-2)+'" text-anchor="middle" class="donut-num">'+centerLabel+'</text>'
+    +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" class="donut-sub">'+centerSub+'</text></svg>';
 }
 function renderDonuts(dt){
   const mk=(dt,title,total)=>{
