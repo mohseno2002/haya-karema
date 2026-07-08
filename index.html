@@ -680,6 +680,7 @@ html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
 @keyframes asstPulse{0%{box-shadow:0 0 0 0 rgba(51,199,156,.55)}70%{box-shadow:0 0 0 7px rgba(51,199,156,0)}100%{box-shadow:0 0 0 0 rgba(51,199,156,0)}}
 .asst-chips{display:flex;flex-wrap:wrap;gap:8px}
 .asst-chip{font-family:'Cairo';font-size:12px;font-weight:700;color:var(--nile-700);background:var(--card);border:1.4px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.asst-chip-hint{align-self:center;font-size:11px;font-weight:800;color:var(--muted);margin-inline-end:2px;opacity:.8}
 .asst-chip:hover{border-color:var(--gold,#c9b67c);background:var(--cyan-soft);transform:translateY(-1px)}
 .asst-chip .ci{opacity:.6;margin-inline-end:5px}
 .asst-insights{margin:2px 0}
@@ -1621,6 +1622,9 @@ const titles={overview:['النظرة العامة','الموقف التنفيذ
   audit:['سجل التغييرات','توثيق كل تعديل على مواقف الاستلام والمستحقات'],
   assistant:['المساعد الذكي','مساعد هندسي داخلي يقرأ كل بيانات المشروع ويُعِدّ الجداول والتقارير والخطابات']};
 document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>{
+  // نتذكّر التبويب السابق (قبل الانتقال) لاستخدامه في الرقائق السياقية للمساعد
+  const prev=document.querySelector('.nav a.on');
+  if(prev&&prev.dataset.view&&prev.dataset.view!=='assistant')window._prevView=prev.dataset.view;
   document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('on'));a.classList.add('on');
   const v=a.dataset.view;
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
@@ -2931,7 +2935,7 @@ function asstMetrics(items){
 //  يحوّل السؤال الحر إلى: نيّة + كيانات + فلاتر، ثم يستدل على الإجابة
 // ═══════════════════════════════════════════════════════════════════
 // تطبيع عربي موحّد
-function nluNorm(s){return String(s||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/[\u064B-\u0652\u200f\u200e]/g,'').replace(/(.)\1{2,}/g,'$1$1').replace(/\s+/g,' ').trim();}
+function nluNorm(s){return String(s||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[\u064B-\u0652\u200f\u200e]/g,'').replace(/(.)\1{2,}/g,'$1$1').replace(/\s+/g,' ').trim();}
 // ═══ توسعة فهم العامية المصرية ═══
 // نحوّل صيغ عامية شائعة إلى المصطلحات القياسية التي يفهمها المحرّك، قبل التحليل.
 const NLU_COLLOQUIAL=[
@@ -2991,6 +2995,7 @@ const NLU_STATUS_SYN={
 const NLU_INTENTS=[
   ['checks', ['تناقض','تناقضات','جوده البيانات','جودة','خطا','اخطاء','أخطاء','تدقيق','فحص البيانات','نواقص','ناقص','مراجعه البيانات','بيانات خاطئه','تعارض']],
   ['brief',  ['موجز اليوم','موجز','ملخص اليوم','موجز تنفيذي','بريفنج','الموقف اليومي','تقرير اليوم','ماذا اليوم','ايه النهارده','موجز القياده']],
+  ['reports',['بلاغ','بلاغات','بلاغات الاستلام','بلاغ متاخر','بلاغات متاخره','مواعيد الاستلام','فات موعد','متاخر عن موعد']],
   ['contractor',['مقاول','مقاولين','المقاول','شركه المقاوله','اداء المقاول','متعثر مقاول','افضل مقاول','اسوا مقاول']],
   ['rank',   ['رتب','ترتيب','اعلى','أعلى','اكبر','أكبر','اقل','أقل','اكثر','أكثر','افضل','أفضل','اسوا','top','ترتيبي','الاولى','الأوائل']],
   ['compare',['قارن','مقارنه','مقابل','الفرق بين','بين','vs','ضد']],
@@ -3069,8 +3074,10 @@ function nluParse(q){
   if(/خطاب|اكتب|مذكره|مكاتبه|مخاطبه|افاده|رساله|تصعيد/.test(nq))intent='letter';
   const gov=nluGov(nq), govs=nluGovs(nq), status=nluStatusCode(nq),
         phase=nluPhase(nq), topN=nluTopN(nq), numF=nluNumFilter(nq);
+  // مرشّح تقريبي لاسم الإدارة (يُستخدم فقط كملاذ أخير عند غياب أي تطابق)
+  const govFuzzy=gov?null:nluFuzzyGov(nq);
   // rawNq: النص الأصلي المطبّع (للبحث الحر عن أسماء ترع/مقاولين لم تُمسّ بالعامية)
-  return {q,nq,rawNq:raw,intent,gov,govs,status,phase,topN,numF};
+  return {q,nq,rawNq:raw,intent,gov,govs,status,phase,topN,numF,govFuzzy};
 }
 // جمع كل الترع مع بيانات الإدارة
 function nluAllCanals(){
@@ -3097,11 +3104,130 @@ function nluFilterCanals(p){
     // عند غياب أي إشارة أخرى (إدارة/موقف/مرحلة/رقم) نشترط طول كلمة ≥4 لتقليل التطابق العرضي
     const weakOnly=!p.gov&&!p.status&&p.phase==null&&!p.numF;
     const eff=weakOnly?terms.filter(w=>w.length>=4):terms;
-    if(eff.length)rows=rows.filter(c=>{const hay=nluNorm([c.name,c.op,c.contractor].filter(Boolean).join(' '));
-      return eff.some(w=>hay.includes(w));});
-    else rows=[];
+    if(eff.length){
+      let exact=rows.filter(c=>{const hay=nluNorm([c.name,c.op,c.contractor].filter(Boolean).join(' '));
+        return eff.some(w=>hay.includes(w));});
+      // احتياطي تقريبي: لو لم يُطابق شيء تماماً، نجرّب مع التسامح مع الأخطاء الإملائية
+      if(!exact.length){
+        const fuzzy=nluFuzzyCanals(eff);
+        // نُبقيه ضمن الفلاتر الأخرى (الإدارة/المرحلة) المطبّقة على rows
+        const ids=new Set(rows.map(c=>c.id));
+        exact=fuzzy.filter(c=>ids.has(c.id));
+        if(exact.length)p._fuzzy=true; // علامة لإبلاغ المستخدم بأنه تطابق تقريبي
+      }
+      rows=exact;
+    }else rows=[];
   }
   return rows;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  البحث التقريبي (Fuzzy) + تمييز الكلمات المفتاحية
+// ═══════════════════════════════════════════════════════════════════
+
+// مسافة ليفنشتاين (تحرير) بين نصّين — للتسامح مع الأخطاء الإملائية
+function nluLev(a,b){
+  a=String(a);b=String(b);
+  const m=a.length,n=b.length;
+  if(!m)return n;if(!n)return m;
+  if(Math.abs(m-n)>3&&Math.min(m,n)<6)return 99; // فارق كبير جداً → استبعاد سريع
+  let prev=Array.from({length:n+1},(_,i)=>i),cur=new Array(n+1);
+  for(let i=1;i<=m;i++){
+    cur[0]=i;
+    for(let j=1;j<=n;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost);
+    }
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+// هل يطابق مصطلح كلمةً في النص تقريبياً؟ (محافظ جداً — الأمان أهم)
+function nluFuzzyScore(term,words){
+  term=nluNorm(term);let best=99;
+  for(const w of words){
+    if(!w||w.length<3)continue;
+    if(w===term)return 0;
+    // احتواء فقط للمصطلحات الطويلة (≥5) لتفادي مطابقات قصيرة عشوائية
+    if(term.length>=5&&(w.includes(term)||term.includes(w))&&Math.abs(w.length-term.length)<=2){best=Math.min(best,0.4);continue;}
+    // تحرير: فرق حرف واحد فقط، وبشرط تقارب الطول
+    if(Math.abs(w.length-term.length)<=1){
+      const d=nluLev(term,w);
+      if(d<=1)best=Math.min(best,d+0.6); // نجعله أضعف من التطابق التام
+    }
+  }
+  return best;
+}
+// بحث تقريبي عن ترع: يُرجع الأقرب فقط (يرتّب حسب قوة التطابق)
+function nluFuzzyCanals(terms){
+  const rows=nluAllCanals();
+  const scored=[];
+  rows.forEach(c=>{
+    const words=nluNorm([c.name,c.op,c.contractor].filter(Boolean).join(' ')).split(' ');
+    let s=99;terms.forEach(t=>{if(t.length>=3)s=Math.min(s,nluFuzzyScore(t,words));});
+    if(s<99)scored.push({c,s});
+  });
+  if(!scored.length)return [];
+  scored.sort((a,b)=>a.s-b.s);
+  const minS=scored[0].s;
+  // نُبقي فقط الأقرب (نفس أفضل درجة أو أقرب هامش)، لتفادي إغراق النتائج
+  return scored.filter(x=>x.s<=minS+0.5).map(x=>x.c);
+}
+// تصحيح اسم إدارة تقريبياً (لو لم يُطابق تماماً)
+function nluFuzzyGov(nq){
+  const gs=allGovs();let best=null,bestD=99;
+  const qWords=nq.split(' ').filter(w=>w.length>=3);
+  gs.forEach(g=>{
+    const ng=nluNorm(g.name).replace(/^ال/,'');
+    qWords.forEach(w=>{const d=nluLev(w.replace(/^ال/,''),ng);
+      const tol=ng.length<=4?1:(ng.length<=7?2:3);
+      if(d<=tol&&d<bestD){bestD=d;best=g;}});
+  });
+  return best;
+}
+
+// ═══ تمييز الكلمات المفتاحية داخل ردود المساعد ═══
+// نلوّن أسماء الإدارات وحالات التنفيذ داخل النص فقط (خارج الوسوم والجداول)
+let _hlTerms=null;
+function hlBuildTerms(){
+  if(_hlTerms)return _hlTerms;
+  const govNames=allGovs().map(g=>g.name).filter(Boolean);
+  // حالات التنفيذ ولونها (نستخدم متغيّرات الثيم)
+  const statusColors=[
+    [['متوقفة','متوقفه','متعثرة','معطلة'],'var(--stop)'],
+    [['مؤجلة','مؤجلة/سحب','سحب','ملغاة'],'var(--stop)'],
+    [['جارٍ التنفيذ','جاري التنفيذ'],'var(--silt-deep,#8a6d1f)'],
+    [['منفّذة','منفذة','بانتظار التسليم','تم النهو'],'var(--nile-600,#0e7c66)'],
+    [['سُلّمت','سلمت','سُلّمت لدار الهندسة'],'var(--nile-500,#12a58a)'],
+    [['مقبولة','مقبولة نهائياً','استُلمت'],'var(--nile-600,#0e7c66)'],
+    [['معوّقات','معوقات','بها معوقات'],'var(--stop)'],
+    [['استثماري'],'var(--invest,#7a5cc0)']
+  ];
+  _hlTerms={govNames,statusColors};
+  return _hlTerms;
+}
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+// يميّز النص مع تجاهل ما بداخل الوسوم <...>
+function hlApply(html){
+  try{
+    const {govNames,statusColors}=hlBuildTerms();
+    const rules=[];
+    statusColors.forEach(([words,color])=>words.forEach(w=>rules.push({w,style:`color:${color};font-weight:700`})));
+    govNames.forEach(g=>rules.push({w:g,style:'color:var(--nile-700,#0a5c4d);font-weight:700'}));
+    rules.sort((a,b)=>b.w.length-a.w.length);
+    // نلوّن النص الظاهر فقط (بين > و <)، ونستخدم علامات مؤقتة لتفادي التداخل
+    return html.replace(/>([^<]+)</g,(m,txt)=>{
+      let t=txt;
+      for(const r of rules){
+        if(t.indexOf(r.w)<0)continue;
+        // حدود عربية آمنة: بداية/نهاية أو محاط بمسافة أو علامة ترقيم
+        const re=new RegExp('(^|[\\s(«—:،])('+escRe(r.w)+')(?=$|[\\s)»—:،.؟])','g');
+        t=t.replace(re,(mm,pre,word)=>pre+'\u0001'+r.style+'\u0002'+word+'\u0003');
+      }
+      return '>'+t+'<';
+    })
+    .replace(/\u0001([^\u0002]+)\u0002([^\u0003]+)\u0003/g,'<span style="$1">$2</span>');
+  }catch(e){return html;}
 }
 
 // ═══ دوال الإجابة المشتركة (مُعاد تنظيمها من المحرّك القديم) ═══
@@ -3233,6 +3359,7 @@ function nluAnswer(q){
   if(p.intent==='checks')return asstDataChecksAnswer();
   if(p.intent==='brief')return asstDailyBrief();
   if(p.intent==='contractor')return asstContractorAnswer(p);
+  if(p.intent==='reports')return asstReportsAnswer();
 
   // (أولوية 1) — مقارنة بين إدارتين أو أكثر
   if(p.intent==='compare'&&p.govs.length>=2){
@@ -3251,7 +3378,7 @@ function nluAnswer(q){
 
   // (أولوية 1) — ترتيب top-N حسب معيار
   if(p.intent==='rank'){
-    const asc=/اقل|أقل|اصغر|اسوا/.test(p.nq);
+    const asc=/اقل|اصغر|اسوا|ادنى|ادني|اوطا|اضعف/.test(p.nq);
     const n=p.topN||5;
     // ترتيب حسب المستحقات
     if(p.numF&&p.numF.field==='dues'||p.intent==='rank'&&(p.nq.includes('مستحق')||s._rankDues)){
@@ -3260,6 +3387,16 @@ function nluAnswer(q){
       let body=`<span class="ab-h">🏅 ترتيب الإدارات حسب المستحقات (${asc?'الأقل':'الأعلى'} — أول ${n})</span>`;
       body+=asstTable(['#','الإدارة','المعلّق (م.ج)'],rows,'ترتيب المستحقات');
       return {body,acts:[{l:'💰 كشف المستحقات الرسمي',fn:`openDoc('dues')`}]};
+    }
+    // ترتيب حسب التعثّر (عدد الترع خارج المسار لكل إدارة)
+    if(/تعثر|متعثر|متوقف|مؤجل|مشاكل|خارج المسار/.test(p.nq)){
+      const bad=['deferred','stopped','cancelled','obstacles'];
+      const gl=allGovs().map(g=>({name:g.name,v:(g.canals||[]).filter(c=>bad.includes(c.statusCode)).length})).filter(x=>x.v>0);
+      gl.sort((a,b)=>asc?a.v-b.v:b.v-a.v);
+      const rows=gl.slice(0,n).map((g,i)=>[i+1,g.name,AR_NUM(g.v)]);
+      let body=`<span class="ab-h">🏅 ترتيب الإدارات حسب التعثّر (${asc?'الأقل':'الأعلى'} — أول ${n})</span>`;
+      body+=asstTable(['#','الإدارة','ترع خارج المسار'],rows,'ترتيب التعثّر');
+      return {body,acts:[{l:'⬇ تصدير الترتيب (CSV)',fn:`asstExportLastTable()`}]};
     }
     // ترتيب حسب نسبة التسليم أو النهو
     const metric=p.nq.includes('نهو')||p.nq.includes('تنفيذ')?'donePct':'delivPct';
@@ -3306,6 +3443,13 @@ function nluAnswer(q){
   const rows=nluFilterCanals(p);
   if(rows.length)return nluCanalResult(rows,p);
 
+  // ملاذ أخير: تصحيح تقريبي لاسم إدارة أخطأ المستخدم في كتابته
+  if(p.govFuzzy){
+    const r=asstGovCard(p.govFuzzy);
+    r.body=`<div style="font-size:11.5px;color:var(--muted);margin-bottom:4px">🪄 لعلّك تقصد «${p.govFuzzy.name}»:</div>`+r.body;
+    return r;
+  }
+
   // لا نتيجة → إرشاد
   return asstGuide(p);
 }
@@ -3317,6 +3461,7 @@ function nluCanalResult(rows,p){
   if(p.phase!=null)chips.push('المرحلة '+(p.phase===1?'الأولى':'الثانية'));
   if(p.numF&&p.numF.field!=='dues')chips.push((p.numF.field==='length'?'الطول':'التنفيذ')+(p.numF.dir==='gt'?' > ':' < ')+p.numF.val+(p.numF.field==='pct'?'%':' كم'));
   let body=`<span class="ab-h">🔎 نتائج مطابِقة (${AR_NUM(rows.length)})</span>`;
+  if(p._fuzzy)body+=`<div style="font-size:11.5px;color:var(--muted);margin:2px 0 6px">🪄 لم أجد تطابقاً دقيقاً، فعرضت الأقرب إملائياً لِما كتبت.</div>`;
   if(chips.length)body+=`<div class="nlu-chips">${chips.map(c=>`<span class="nlu-chip">${c}</span>`).join('')}</div>`;
   if(!rows.length)return {body:body+'<div>لا توجد ترع تطابق هذه الشروط.</div>',acts:[]};
   const byC={};rows.forEach(c=>byC[c.statusCode]=(byC[c.statusCode]||0)+1);
@@ -3497,6 +3642,33 @@ function asstDailyBrief(){
   return {body,acts};
 }
 
+// ═══ إجابة بلاغات الاستلام المتأخّرة ═══
+function asstReportsAnswer(){
+  const reps=(typeof loadReports==='function')?loadReports():[];
+  let body=`<span class="ab-h">🔔 بلاغات الاستلام</span>`;
+  if(!reps.length)return {body:body+'<div style="margin-top:6px">لا توجد بلاغات استلام مسجّلة بعد على هذا الجهاز.</div>',acts:[{l:'🔔 فتح بلاغات الاستلام',fn:`document.querySelector('.nav a[data-view=reports]').click()`}]};
+  const withT=reps.map(r=>({r,t:reportTiming(r)}));
+  const overdue=withT.filter(x=>x.t.state==='overdue').sort((a,b)=>b.t.days-a.t.days);
+  const today=withT.filter(x=>x.t.state==='today');
+  const upcoming=withT.filter(x=>x.t.state==='upcoming');
+  const closed=withT.filter(x=>x.t.state==='closed');
+  body+=asstMetrics([
+    {v:AR_NUM(overdue.length),l:'متأخّر عن الموعد'},
+    {v:AR_NUM(today.length),l:'يستحق اليوم'},
+    {v:AR_NUM(upcoming.length),l:'قادم'},
+    {v:AR_NUM(closed.length),l:'مغلق'}]);
+  if(overdue.length){
+    const rows=overdue.slice(0,30).map(x=>[x.r.canalName||'—',x.r.govName||'—',x.t.days+' يوم',(x.r.dueDate||'').slice(0,10)]);
+    body+=`<div style="margin-top:6px"><b>البلاغات المتأخّرة عن موعد الاستلام:</b></div>`;
+    body+=asstTable(['الترعة','الإدارة','التأخّر','الموعد المقرر'],rows,'البلاغات المتأخرة');
+    if(overdue.length>30)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${overdue.length-30} بلاغاً آخر.</div>`;
+  }else{
+    body+='<div style="margin-top:6px">✅ لا توجد بلاغات متأخّرة عن موعدها حالياً.</div>';
+  }
+  const acts=[{l:'🔔 فتح بلاغات الاستلام',fn:`document.querySelector('.nav a[data-view=reports]').click()`}];
+  if(overdue.length)acts.push({l:'⚠️ خطاب تصعيد للتأخير',fn:`openDoc('escalation')`});
+  return {body,acts};
+}
 // المدخل الموحّد: يفوّض إلى محرّك الفهم اللغوي، مع حارس أمان يرجع للإرشاد
 function asstAnswer(q){
   try{
@@ -3529,6 +3701,54 @@ const ASST_CHIPS=[
   ['🏛️','موقف دار الهندسة','موقف دار الهندسة والتسليم'],
   ['🔄','آخر التحديثات','ما آخر التحديثات على المشروع؟']
 ];
+// رقائق سياقية حسب التبويب الذي جاء منه المستخدم
+const ASST_CHIPS_CTX={
+  dues:[
+    ['💰','رتّب أعلى الإدارات مستحقات','رتّب أعلى ٥ إدارات مستحقات'],
+    ['🏆','أعلى المقاولين مبالغ','تحليل المقاولين'],
+    ['📄','كشف المستحقات الرسمي','اكتب خطاب المستحقات'],
+    ['📊','ملخص المشروع','ملخص المشروع بالكامل']
+  ],
+  reports:[
+    ['🔔','البلاغات المتأخرة','ما البلاغات المتأخرة؟'],
+    ['🏛️','موقف دار الهندسة','موقف دار الهندسة والتسليم'],
+    ['⏳','الترع الجاهزة للتسليم','الترع الجاهزة بانتظار التسليم'],
+    ['📋','موجز اليوم','موجز اليوم التنفيذي']
+  ],
+  canaltable:[
+    ['⏳','الترع المتوقفة','أظهر الترع المتوقفة'],
+    ['🧪','فحص جودة البيانات','افحص جودة البيانات'],
+    ['📏','ترع أطول من ٥ كم','ترع أطول من ٥ كم'],
+    ['👷','تحليل المقاولين','تحليل المقاولين الأعلى تعثراً']
+  ],
+  govs:[
+    ['⚖️','قارن إدارتين','قارن الجيزة بالقليوبية'],
+    ['📉','أدنى إدارة تسليماً','رتّب أدنى ٥ إدارات تسليماً'],
+    ['🏛️','موقف دار الهندسة','موقف دار الهندسة والتسليم'],
+    ['📄','خطاب لإدارة','اكتب خطاب للجيزة']
+  ],
+  deferred:[
+    ['⏳','الترع المؤجلة','أظهر الترع المؤجلة'],
+    ['🏗️','أكثر إدارة تعثّراً','رتّب أعلى الإدارات تعثراً'],
+    ['📋','موجز اليوم','موجز اليوم التنفيذي'],
+    ['⚠️','خطاب تصعيد','اكتب خطاب تصعيد']
+  ],
+  audit:[
+    ['🔄','آخر التحديثات','ما آخر التحديثات على المشروع؟'],
+    ['🧪','فحص جودة البيانات','افحص جودة البيانات'],
+    ['📊','ملخص المشروع','ملخص المشروع بالكامل']
+  ],
+  docs:[
+    ['📄','خطاب التقرير الشهري','اكتب خطاب شهري'],
+    ['⚠️','خطاب تصعيد','اكتب خطاب تصعيد'],
+    ['📊','تقرير تنفيذي','ملخص المشروع بالكامل']
+  ]
+};
+// يختار مجموعة الرقائق المناسبة للتبويب الذي فُتح منه المساعد
+function asstChipsFor(view){
+  const ctx=ASST_CHIPS_CTX[view];
+  return ctx&&ctx.length?ctx:ASST_CHIPS;
+}
 function asstRenderInsights(){
   const box=document.getElementById('asstInsights');if(!box)return;
   const cards=asstInsights();
@@ -3544,8 +3764,13 @@ function asstInit(){
   const live=document.getElementById('asstLive');
   if(live){const s=asstSnapshot();live.textContent=`متصل بالبيانات الحيّة • ${s.gs.length} إدارة • ${s.canals.length} ترعة مرصودة`;}
   const chips=document.getElementById('asstChips');
-  if(chips&&!chips.children.length){
-    chips.innerHTML=ASST_CHIPS.map(c=>`<button class="asst-chip" onclick="asstAsk('${c[2].replace(/'/g,"\\'")}')"><span class="ci">${c[0]}</span>${c[1]}</button>`).join('');
+  if(chips){
+    // رقائق سياقية: نختارها حسب التبويب الذي جاء منه المستخدم (تُعاد كل فتح)
+    const view=window._prevView||'overview';
+    const set=asstChipsFor(view);
+    const ctxNames={dues:'المستحقات',reports:'بلاغات الاستلام',canaltable:'جدول الترع',govs:'الإدارات',deferred:'الترع المؤجلة',audit:'سجل التغييرات',docs:'التقارير'};
+    const hint=ctxNames[view]?`<span class="asst-chip-hint">مقترحات ${ctxNames[view]}</span>`:'';
+    chips.innerHTML=hint+set.map(c=>`<button class="asst-chip" onclick="asstAsk('${c[2].replace(/'/g,"\\'")}')"><span class="ci">${c[0]}</span>${c[1]}</button>`).join('');
   }
   asstRenderInsights();
   if(!_asstReady){
@@ -3556,8 +3781,10 @@ function asstInit(){
 function asstPush(who,html){
   const box=document.getElementById('asstChat');if(!box)return null;
   const av=who==='me'?'👤':'🛰️';
+  // تمييز الكلمات المفتاحية في ردود المساعد فقط (تجاهل مؤشر الكتابة)
+  const content=(who==='bot'&&typeof hlApply==='function'&&!/asst-typing/.test(html))?hlApply(html):html;
   const el=document.createElement('div');el.className='asst-msg '+who;
-  el.innerHTML=`<div class="asst-av">${av}</div><div class="asst-bubble">${html}</div>`;
+  el.innerHTML=`<div class="asst-av">${av}</div><div class="asst-bubble">${content}</div>`;
   box.appendChild(el);box.scrollTop=box.scrollHeight;return el;
 }
 function asstAsk(q){document.getElementById('asstInput').value=q;asstSend();}
@@ -3583,7 +3810,7 @@ function asstSend(){
     // اقتراحات متابعة سياقية
     const fu=asstFollowups(q);
     if(fu.length)html+='<div class="ab-followups"><span class="fu-lbl">متابعة:</span>'+fu.map(x=>`<button class="fu-chip" onclick="asstAsk('${String(x).replace(/'/g,"\\'")}')">${x}</button>`).join('')+'</div>';
-    typing.querySelector('.asst-bubble').innerHTML=html;
+    typing.querySelector('.asst-bubble').innerHTML=(typeof hlApply==='function')?hlApply(html):html;
     document.getElementById('asstChat').scrollTop=document.getElementById('asstChat').scrollHeight;
   },420);
 }
