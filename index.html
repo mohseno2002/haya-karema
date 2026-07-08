@@ -1413,6 +1413,24 @@ function loadOv(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch
 function saveOv(o){localStorage.setItem(STORE,JSON.stringify(o))}
 let ov=loadOv();
 
+// أكواد الموقف التي تُعتبر «استُلمت عبر دار الهندسة» (قبول نهائي/جزئي)
+const DAR_CODES=['accepted','accepted_partial'];
+// حساب الفرق الذي أحدثه المستخدم في عدد الترع المستلَمة عبر دار الهندسة
+// بمقارنة المواقف المعدّلة (o.canals) بالمواقف الأصلية في PROJECT لنفس الإدارة.
+// يُرجَع صافي التغيير (+/-) ليُطبَّق على إجمالي dar المعتمد رسمياً دون المساس به عند عدم التعديل.
+function canalDarDelta(baseCanals,ovCanals){
+  if(!ovCanals||!baseCanals||!baseCanals.length)return 0;
+  let delta=0;
+  baseCanals.forEach(c=>{
+    const co=ovCanals[c.id];
+    if(!co)return;                                   // لا تعديل على هذه الترعة
+    const wasDar=DAR_CODES.includes(c.statusCode);   // الأصل
+    const nowDar=DAR_CODES.includes(co.statusCode);  // بعد التعديل
+    if(nowDar&&!wasDar)delta++;
+    else if(!nowDar&&wasDar)delta--;
+  });
+  return delta;
+}
 function gov(id){
   const g=PROJECT.govs.find(x=>x.id===id);const o=ov[id];
   if(!o)return g;
@@ -1426,6 +1444,27 @@ function gov(id){
       const co=o.canals[c.id];
       return co?{...c,statusCode:co.statusCode,status:co.status,stage:(co.stage!=null?co.stage:c.stage),_edited:true}:c;
     });
+    // ── عكس تعديل مواقف الترع على إجماليات الإدارة (dar/delivered/متبقّي) ──
+    // لا نُعيد احتساب الأرقام الرسمية بالكامل (فالترع الفردية لا تُغطّى كلها)، بل
+    // نطبّق صافي الفرق الذي أحدثه المستخدم فقط، فيبقى الرقم الرسمي مصاناً عند عدم التعديل.
+    const delta=canalDarDelta(g.canals,o.canals);
+    if(delta!==0){
+      // نوزّع الفرق على المرحلة التي تنتمي إليها غالبية الترع المعدّلة؛ وإن لم تتحدّد
+      // المرحلة (phase=null) نطبّقه على المرحلة الأولى إن وُجدت وإلا الثانية.
+      const editedPhases=g.canals.filter(c=>o.canals[c.id]).map(c=>c.phase);
+      const p2count=editedPhases.filter(p=>p===2).length;
+      const p1count=editedPhases.filter(p=>p===1).length;
+      const targetKey=(p2count>p1count&&m.phase2)?'phase2':(m.phase1?'phase1':(m.phase2?'phase2':null));
+      if(targetKey&&m[targetKey]){
+        const ph={...m[targetKey]};
+        const cap=ph.canals!=null?ph.canals:Infinity;              // لا يتجاوز إجمالي ترع المرحلة
+        ph.dar=Math.max(0,Math.min(cap,(ph.dar||0)+delta));
+        ph.delivered=Math.max(0,Math.min(cap,(ph.delivered||0)+delta));
+        if(ph.canals!=null)ph.remaining=Math.max(0,ph.canals-ph.delivered);
+        ph._darAdjusted=delta;                                     // أثر مرئي للتشخيص
+        m[targetKey]=ph;
+      }
+    }
   }
   return m;
 }
@@ -1602,7 +1641,7 @@ function refreshAll(){
       else _ctDirty=true;                                    // غير نشط: علّمه ليُعاد بناؤه عند فتحه
     }
     updateReportBadge();   // شارة التأخّر في القائمة الجانبية
-  }catch(e){console.warn('refresh',e);}
+  }catch(e){console.warn('refresh',e);try{toast&&toast('تعذّر تحديث بعض العناصر — راجع وحدة التحكم',true);}catch(_){}}
 }
 
 // تجميع حيّ من البيانات المعدّلة — يضمن انعكاس أي تعديل على اللوحة الرئيسية
@@ -2245,12 +2284,25 @@ function renderDues(){
   let rows=[];
   allGovs().forEach(g=>{
     const edited=ov[g.id]&&ov[g.id].duesOutstanding!=null;
+    const ops=(g.operations||[]).filter(o=>o.outstanding>0);
+    const opsSum=ops.reduce((s,o)=>s+o.outstanding,0);
     if(edited){
-      // إدارة عُدّل إجمالي مستحقاتها يدوياً → صف إجمالي واحد (يعكس التعديل)
-      if(ov[g.id].duesOutstanding>0)
-        rows.push({gov:g.name,name:'إجمالي مستحقات الإدارة (محدّث)',contractor:'—',detail:'قيمة محدّثة يدوياً',outstanding:ov[g.id].duesOutstanding,_edited:true});
+      const newTot=ov[g.id].duesOutstanding;
+      // نُبقي تفصيل المقاولين ظاهراً (لا نمحوه)، ونضيف صف تسوية يعكس الفرق مع القيمة المحدّثة يدوياً.
+      ops.forEach(o=>rows.push({gov:g.name,...o,_official:true}));
+      const diff=+(newTot-opsSum).toFixed(3);
+      if(Math.abs(diff)>=0.001){
+        rows.push({gov:g.name,
+          name:'تسوية إجمالي المستحقات (محدّث يدوياً)',
+          contractor:'—',
+          detail:'الإجمالي المعتمد '+newTot.toFixed(3)+' م.ج مقابل مجموع البنود '+opsSum.toFixed(3)+' م.ج',
+          outstanding:diff,_edited:true});
+      } else if(!ops.length&&newTot>0){
+        // لا بنود تفصيلية أصلاً → صف إجمالي واحد
+        rows.push({gov:g.name,name:'إجمالي مستحقات الإدارة (محدّث)',contractor:'—',detail:'قيمة محدّثة يدوياً',outstanding:newTot,_edited:true});
+      }
     } else {
-      (g.operations||[]).forEach(o=>{if(o.outstanding>0)rows.push({gov:g.name,...o})});
+      ops.forEach(o=>rows.push({gov:g.name,...o}));
     }
   });
   if(q)rows=rows.filter(r=>r.gov.includes(q)||(r.contractor||'').includes(q)||(r.name||'').includes(q)||(r.detail||'').includes(q));
@@ -2464,7 +2516,22 @@ function addReport(rep){const a=loadReports();rep.id='RPT-'+Date.now().toString(
   logAudit({gov:rep.govName,phase:'—',field:'بلاغ استلام جديد',before:'—',after:rep.canalName+' — موعد '+rep.dueDate});pushReport(rep);return rep;}
 function updateReportOutcome(id,outcome,note){const a=loadReports();const r=a.find(x=>x.id===id);if(!r)return;
   const prev=REPORT_OUTCOMES[r.outcome].label;r.outcome=outcome;r.outcomeNote=note||'';r.outcomeAt=new Date().toISOString();saveReports(a);
-  logAudit({gov:r.govName,phase:'—',field:'نتيجة بلاغ ('+r.canalName+')',before:prev,after:REPORT_OUTCOMES[outcome].label});pushReport(r);}
+  logAudit({gov:r.govName,phase:'—',field:'نتيجة بلاغ ('+r.canalName+')',before:prev,after:REPORT_OUTCOMES[outcome].label});pushReport(r);
+  // ── ربط عكسي: قبول البلاغ يُحدِّث موقف الترعة المرتبطة إلى «مقبولة نهائياً» ──
+  // فينعكس على جدول الترع وكارت الترعة وإجماليات الإدارة واللوحة الرئيسية معاً.
+  if(outcome==='accepted'&&r.govId&&r.canalId){
+    const bg=PROJECT.govs.find(x=>x.id===r.govId);
+    const bc=bg&&(bg.canals||[]).find(x=>x.id===r.canalId);
+    if(bc&&bc.statusCode!=='accepted'){
+      const o=ov[r.govId]||{}; o.canals=o.canals||{};
+      const lbl=(STATUS_OPTIONS.find(x=>x[0]==='accepted')||[])[1]||'مقبولة نهائياً (استُلمت)';
+      o.canals[r.canalId]={statusCode:'accepted',status:lbl,stage:gateStep('accepted',bc.pct)};
+      o.lastUpdate=new Date().toISOString().slice(0,10);
+      ov[r.govId]=o; saveOv(ov);
+      logAudit({gov:r.govName,phase:r.canalId+' — '+(bc.name||''),field:'موقف الترعة (عبر بلاغ)',before:bc.status||'—',after:lbl});
+      try{if(typeof pushOverride==='function')pushOverride(r.govId,r.govName,ov[r.govId]);}catch(e){}
+    }
+  }}
 function deleteReport(id){saveReports(loadReports().filter(x=>x.id!==id));pushDelete(id);}
 // حساب حالة الموعد تلقائياً (يوم كامل)
 function reportTiming(rep){
