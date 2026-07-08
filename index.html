@@ -176,6 +176,17 @@ html[data-theme="dark"] .ic-moon{display:block}
 .panel,.dues-table,.report-grid{border-radius:18px}
 /* توهّج خفيف على الأزرار الأساسية */
 .btn-primary{background:linear-gradient(120deg,var(--nile-700),var(--nile-500));box-shadow:0 3px 12px rgba(20,135,164,.22)}
+/* ═══ لمسات نهائية: أشرطة تمرير + تحديد نص + تحويم الجداول ═══ */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--nile-accent),var(--nile-600));border-radius:10px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--nile-600)}
+*{scrollbar-width:thin;scrollbar-color:var(--nile-500) transparent}
+::selection{background:var(--nile-500);color:#fff}
+/* إبراز صفوف الجداول عند التمرير */
+.tbl tbody tr{transition:background .16s}
+.tbl tbody tr:hover{background:var(--cyan-soft)}
+html[data-theme="dark"] .tbl tbody tr:hover{background:rgba(57,197,224,.10)}
 
 .gate-hero{background:linear-gradient(120deg,var(--nile-950),var(--nile-800) 60%,var(--nile-700));border-radius:18px;padding:26px 28px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden;isolation:isolate}
 .gate-hero .hero-bg{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center 38%;background-repeat:no-repeat}
@@ -255,6 +266,9 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .donut-svg{width:150px;height:150px}
 .donut-arc{transition:stroke-width .2s,filter .2s;transform-origin:70px 70px;cursor:pointer}
 .donut-arc:hover{stroke-width:19;filter:drop-shadow(0 2px 6px rgba(20,135,164,.4))}
+.donut-tip{position:fixed;z-index:100;background:var(--nile-900);color:#fff;padding:8px 13px;border-radius:10px;font-size:12.5px;font-weight:700;font-family:'Tajawal';box-shadow:0 6px 20px rgba(6,39,48,.35);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;white-space:nowrap}
+.donut-tip.on{opacity:1;transform:translateY(0)}
+.donut-tip b{color:var(--nile-accent);font-family:'IBM Plex Mono';margin-inline-start:4px}
 @keyframes drawArc{from{stroke-dasharray:0 var(--circ,339)}to{stroke-dasharray:var(--dash) var(--gap)}}
 .view.on .donut-arc{animation:drawArc .9s cubic-bezier(.3,.8,.3,1) backwards}
 .donut-num{font-family:'Cairo';font-weight:900;font-size:26px;fill:var(--ink)}
@@ -383,6 +397,34 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .cr-st.st-exe{background:#e8f0f4;color:var(--nile-700)}
 .cr-st.st-stop{background:#fbebeb;color:var(--stop-soft)}
 .cr-st.st-none{background:#eef1ef;color:var(--muted)}
+/* بطاقة تفاصيل الترعة */
+.cr-click{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.cr-click:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(20,135,164,.13)}
+.cr-click:active{transform:translateY(0)}
+.ccd-wrap{position:fixed;inset:0;z-index:120;display:none}
+.ccd-wrap.on{display:block}
+.ccd-bg{position:absolute;inset:0;background:rgba(6,30,38,.55);backdrop-filter:blur(2px)}
+.ccd-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92vw);max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;box-shadow:0 20px 60px rgba(6,30,38,.4)}
+.ccd-close{position:absolute;inset-inline-end:14px;top:14px;width:32px;height:32px;border:none;border-radius:9px;background:var(--bg);color:var(--ink);font-size:15px;cursor:pointer}
+.ccd-head{display:flex;flex-direction:column;gap:6px;padding-inline-start:12px;border-inline-start:4px solid #cdd8d4;margin-bottom:12px}
+.ccd-head.t-done{border-inline-start-color:var(--done)}
+.ccd-head.t-del{border-inline-start-color:var(--silt-500)}
+.ccd-head.t-wait{border-inline-start-color:var(--wait)}
+.ccd-head.t-inv{border-inline-start-color:var(--invest)}
+.ccd-head.t-exe{border-inline-start-color:var(--nile-500)}
+.ccd-head.t-stop{border-inline-start-color:var(--stop)}
+.ccd-id{font:600 12px/1 'JetBrains Mono',monospace;color:var(--muted)}
+.ccd-name{font-size:19px;font-weight:800;color:var(--ink)}
+.ccd-desc{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink);margin-bottom:12px;line-height:1.6}
+.ccd-bar{height:8px;border-radius:5px;background:var(--bg);overflow:hidden;margin-bottom:14px}
+.ccd-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--nile-500),var(--done));border-radius:5px}
+.ccd-grid{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.ccd-row{display:flex;justify-content:space-between;gap:12px;background:var(--card);padding:9px 13px}
+.ccd-l{font-size:12.5px;color:var(--muted)}
+.ccd-v{font-size:13px;font-weight:600;color:var(--ink);text-align:end}
+.ccd-pipe-t{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:9px}
+html[data-theme="dark"] .ccd-close{background:#0a2b34;color:var(--ink)}
+html[data-theme="dark"] .ccd-desc,html[data-theme="dark"] .ccd-bar{background:#0f3a45}
 /* مسار بوابة الاستلام المصغّر */
 .gate-pipe{display:flex;align-items:center;gap:0;margin:6px 0 24px;padding:0 4px}
 .gp-node{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;width:16px;position:relative}
@@ -569,6 +611,368 @@ html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
   .gate-flow{gap:4px}.gate-step{min-width:88px;padding:9px}
   .gstat .b .n{font-size:17px}
 }
+
+/* ===== طبقة UX PRO الفاخرة (مدمجة) ===== */
+/* ═══════════════════════════════════════════════════════════════════════
+   UX PRO UPGRADE — Executive Nile Command Layer
+   تطوير بصري/تجربة استخدام احترافي دون المساس بمنطق البيانات الأصلي
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --ux-deep:#073845;
+  --ux-deeper:#052b35;
+  --ux-teal:#0f8aa6;
+  --ux-aqua:#48d7ec;
+  --ux-gold:#f2c464;
+  --ux-emerald:#33c79c;
+  --ux-danger:#e26464;
+  --ux-panel:rgba(255,255,255,.82);
+  --ux-panel-solid:#ffffff;
+  --ux-border:rgba(15,138,166,.18);
+  --ux-soft-shadow:0 14px 44px rgba(7,56,69,.10),0 2px 8px rgba(7,56,69,.06);
+  --ux-strong-shadow:0 24px 70px rgba(7,56,69,.16),0 8px 22px rgba(7,56,69,.08);
+  --ux-radius-xl:26px;
+  --ux-radius-lg:20px;
+  --ux-ring:0 0 0 4px rgba(72,215,236,.16);
+}
+html[data-theme="dark"]{
+  --ux-panel:rgba(11,56,67,.78);
+  --ux-panel-solid:#0b3843;
+  --ux-border:rgba(72,215,236,.18);
+  --ux-soft-shadow:0 18px 46px rgba(0,0,0,.28),0 2px 8px rgba(0,0,0,.22);
+  --ux-strong-shadow:0 28px 80px rgba(0,0,0,.38),0 8px 24px rgba(0,0,0,.25);
+}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 85% 5%,rgba(72,215,236,.22),transparent 34vw),
+    radial-gradient(circle at 18% 20%,rgba(242,196,100,.12),transparent 28vw),
+    linear-gradient(135deg,#eef8fb 0%,#f8fbfc 45%,#eaf4f7 100%);
+}
+html[data-theme="dark"] body{
+  background:
+    radial-gradient(circle at 80% 0%,rgba(72,215,236,.16),transparent 34vw),
+    radial-gradient(circle at 10% 15%,rgba(242,196,100,.08),transparent 28vw),
+    linear-gradient(135deg,#052832 0%,#061e26 48%,#07323d 100%);
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  background-image:
+    linear-gradient(rgba(15,138,166,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(15,138,166,.045) 1px,transparent 1px),
+    radial-gradient(circle at 50% 120%,rgba(15,138,166,.12),transparent 45%);
+  background-size:44px 44px,44px 44px,100% 100%;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.9),rgba(0,0,0,.35));
+}
+.shell{position:relative;isolation:isolate}
+.side{
+  width:282px;
+  padding:14px 12px;
+  background:
+    radial-gradient(circle at 85% 12%,rgba(72,215,236,.18),transparent 34%),
+    linear-gradient(180deg,#062f3b 0%,#073f4e 42%,#052a34 100%) !important;
+  border-inline-start:1px solid rgba(72,215,236,.22);
+  box-shadow:-18px 0 45px rgba(7,56,69,.16);
+}
+.brand{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  margin-bottom:12px;
+  background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  position:relative;
+  overflow:hidden;
+}
+.brand::after{
+  content:"Command Ready";
+  display:inline-flex;
+  margin-top:12px;
+  color:#bff5ff;
+  background:rgba(72,215,236,.12);
+  border:1px solid rgba(72,215,236,.22);
+  border-radius:999px;
+  padding:4px 10px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  direction:ltr;
+}
+.brand .drop{
+  border-radius:16px;
+  background:linear-gradient(145deg,#4de0f2,#0f8aa6) !important;
+  box-shadow:0 12px 30px rgba(72,215,236,.34),0 0 0 1px rgba(255,255,255,.18) inset !important;
+}
+.nav{padding:4px 2px 10px}
+.nav .lbl{color:rgba(191,245,255,.58);padding-inline:14px}
+.nav a{
+  min-height:46px;
+  border-radius:16px;
+  padding:12px 14px;
+  margin:4px 0;
+  color:rgba(222,246,250,.82);
+  border:1px solid transparent;
+  position:relative;
+  overflow:hidden;
+}
+.nav a::before{
+  content:"";
+  width:4px;
+  border-radius:8px;
+  background:linear-gradient(180deg,var(--ux-aqua),var(--ux-gold));
+  position:absolute;
+  top:10px;bottom:10px;inset-inline-start:7px;
+  opacity:0;
+  transform:scaleY(.5);
+  transition:.22s ease;
+}
+.nav a:hover{background:rgba(72,215,236,.10);border-color:rgba(72,215,236,.12);transform:translateX(-4px)}
+.nav a.on{
+  background:linear-gradient(115deg,rgba(72,215,236,.22),rgba(242,196,100,.08)) !important;
+  color:#fff;
+  border-color:rgba(72,215,236,.22);
+  box-shadow:0 10px 28px rgba(0,0,0,.18),0 0 0 1px rgba(255,255,255,.05) inset;
+}
+.nav a.on::before{opacity:1;transform:scaleY(1)}
+.side-foot{
+  margin-top:auto;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  background:rgba(255,255,255,.055);
+}
+.main{min-width:0}
+.topbar{
+  top:14px;
+  margin:14px 18px 0;
+  border:1px solid var(--ux-border);
+  border-radius:22px;
+  background:var(--ux-panel) !important;
+  box-shadow:var(--ux-soft-shadow);
+  padding:14px 18px;
+}
+.topbar .ttl{font-size:19px;font-weight:900}
+.topbar .ttl small{margin-top:2px}
+.icon-btn,.btn,.select,.search input,.rpt-sel,.rpt-del{
+  border-radius:14px !important;
+  border-color:var(--ux-border) !important;
+}
+.icon-btn:hover,.btn:hover,.select:focus,.search input:focus,.rpt-sel:focus{
+  box-shadow:var(--ux-ring);
+  outline:none;
+}
+.pill{border-radius:999px;border:1px solid rgba(255,255,255,.18)}
+.pill-date{background:linear-gradient(120deg,var(--ux-deep),var(--ux-teal)) !important;color:#effcff}
+.pill-live{background:rgba(51,199,156,.12) !important;color:var(--done-soft);border-color:rgba(51,199,156,.22)}
+.content{padding:18px 26px 34px;max-width:1540px}
+.ux-command{
+  margin:18px 26px 0;
+  border-radius:var(--ux-radius-xl);
+  border:1px solid var(--ux-border);
+  background:
+    linear-gradient(135deg,var(--ux-panel),rgba(255,255,255,.64)),
+    radial-gradient(circle at 12% 0%,rgba(72,215,236,.16),transparent 36%);
+  box-shadow:var(--ux-soft-shadow);
+  padding:18px;
+  display:grid;
+  grid-template-columns:minmax(280px,1.15fr) minmax(330px,1.55fr) auto;
+  gap:16px;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+}
+.ux-command::before{
+  content:"";
+  position:absolute;
+  inset-inline-start:0;top:0;bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,var(--ux-aqua),var(--ux-gold),var(--ux-emerald));
+}
+.ux-kicker{
+  display:inline-flex;
+  font-size:10.5px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:var(--ux-teal);
+  background:rgba(72,215,236,.12);
+  border:1px solid rgba(72,215,236,.18);
+  border-radius:999px;
+  padding:4px 10px;
+  margin-bottom:7px;
+}
+.ux-command h2{font-size:18px;line-height:1.35;margin:0;font-weight:900;color:var(--ink)}
+.ux-command p{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.7}
+.ux-insights{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ux-insight{
+  background:rgba(255,255,255,.58);
+  border:1px solid var(--ux-border);
+  border-radius:18px;
+  padding:12px 13px;
+  min-height:78px;
+  position:relative;
+  overflow:hidden;
+}
+html[data-theme="dark"] .ux-insight{background:rgba(10,43,52,.58)}
+.ux-insight::after{
+  content:"";
+  position:absolute;
+  inset-inline-end:-18px;bottom:-22px;
+  width:70px;height:70px;border-radius:50%;
+  background:rgba(72,215,236,.10);
+}
+.ux-insight .n{font-family:'Cairo';font-size:23px;font-weight:900;line-height:1;position:relative;z-index:1}
+.ux-insight .l{font-size:11px;color:var(--muted);font-weight:700;margin-top:7px;position:relative;z-index:1}
+.ux-insight.risk .n{color:var(--ux-danger)}
+.ux-insight.gold .n{color:var(--silt-deep)}
+.ux-insight.ok .n{color:var(--done-soft)}
+.ux-actions{display:flex;flex-direction:column;gap:9px;align-items:stretch;min-width:210px}
+.ux-global-search{position:relative}
+.ux-global-search input{
+  width:100%;
+  padding:12px 40px 12px 14px;
+  border-radius:16px;
+  border:1px solid var(--ux-border);
+  background:var(--ux-panel-solid);
+  color:var(--ink);
+  font-family:'Tajawal';
+  font-size:13px;
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset;
+}
+html[data-theme="dark"] .ux-global-search input{background:#0a2b34}
+.ux-global-search svg{position:absolute;inset-inline-end:13px;top:50%;transform:translateY(-50%);width:17px;color:var(--ux-teal)}
+.ux-action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ux-mini-btn{
+  border:none;
+  border-radius:15px;
+  background:linear-gradient(135deg,var(--ux-deep),var(--ux-teal));
+  color:#fff;
+  font-family:'Tajawal';
+  font-weight:900;
+  font-size:12px;
+  padding:11px 10px;
+  cursor:pointer;
+  box-shadow:0 10px 24px rgba(15,138,166,.22);
+}
+.ux-mini-btn.alt{background:linear-gradient(135deg,#fff,#edfafd);color:var(--ux-deep);border:1px solid var(--ux-border);box-shadow:none}
+html[data-theme="dark"] .ux-mini-btn.alt{background:linear-gradient(135deg,#0a2b34,#0f3a45);color:#d6ecf1}
+.ux-mini-btn:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.ux-hint{font-size:10.5px;color:var(--muted);text-align:center}
+.kpi,.panel,.gcard,.wide-panel,.donut-card,.notif-box,.rpt-card,.doc-card,.sync-bar{
+  border-radius:var(--ux-radius-lg) !important;
+  border-color:var(--ux-border) !important;
+  box-shadow:var(--ux-soft-shadow) !important;
+}
+.kpi:hover,.gcard:hover,.doc-card:hover,.rpt-card:hover,.notif-box:hover{
+  box-shadow:var(--ux-strong-shadow) !important;
+}
+.gate-hero{
+  min-height:248px;
+  border-radius:28px !important;
+  border:1px solid rgba(72,215,236,.24);
+  box-shadow:var(--ux-strong-shadow);
+  padding:30px 34px;
+  background:
+    radial-gradient(circle at 18% 18%,rgba(72,215,236,.20),transparent 32%),
+    linear-gradient(120deg,#052f3c,#0e6f87 58%,#12a0bd) !important;
+}
+.gate-hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(120deg,rgba(255,255,255,.08),transparent 35%),
+    repeating-linear-gradient(-18deg,rgba(255,255,255,.08) 0 1px,transparent 1px 18px);
+  opacity:.85;
+}
+.gate-hero .eyebrow{
+  display:inline-flex;
+  padding:5px 12px;
+  border:1px solid rgba(72,215,236,.28);
+  border-radius:999px;
+  background:rgba(6,39,48,.32);
+}
+.gate-hero h2{font-size:25px;max-width:820px}
+.gate-hero p{font-size:14px;max-width:850px;color:#d5edf4}
+.gate-step{
+  min-width:132px;
+  border-radius:18px;
+  background:rgba(6,39,48,.44);
+  border-color:rgba(255,255,255,.18);
+  box-shadow:0 12px 24px rgba(0,0,0,.12);
+}
+.gate-step.key{background:rgba(242,196,100,.15)}
+.kpi .val{font-size:33px;letter-spacing:-.5px}
+.kpi-head{align-items:flex-start}
+.kpi-ic{border-radius:15px}
+.tbl{border-collapse:separate !important;border-spacing:0}
+table.tbl th{background:linear-gradient(120deg,#063847,#0f7f99) !important;color:#effcff}
+table.tbl td{background-clip:padding-box}
+.wide-panel{overflow:hidden}
+.report-grid,.gov-grid,.docs-grid{gap:18px}
+.drawer{border-radius:0 28px 28px 0;overflow:hidden;box-shadow:-24px 0 70px rgba(0,0,0,.28)}
+.drawer-h{padding:28px;background:linear-gradient(135deg,#063847,#0f8aa6)}
+.doc-page{border-radius:8px}
+.ux-fab{
+  position:fixed;
+  inset-inline-end:24px;
+  bottom:24px;
+  z-index:70;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.ux-fab button{
+  width:46px;height:46px;border:none;border-radius:16px;
+  background:linear-gradient(135deg,var(--ux-deep),var(--ux-teal));
+  color:#fff;cursor:pointer;
+  box-shadow:0 14px 34px rgba(7,56,69,.25);
+  display:grid;place-items:center;
+}
+.ux-fab button:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.ux-fab svg{width:20px;height:20px}
+.ux-focus .side{width:88px}
+.ux-focus .brand{padding:14px 10px;text-align:center}
+.ux-focus .brand .drop{margin-inline:auto;margin-bottom:0}
+.ux-focus .brand h1,.ux-focus .brand .sub,.ux-focus .brand::after,.ux-focus .side-foot,.ux-focus .nav .lbl{display:none}
+.ux-focus .nav a{font-size:0;justify-content:center;padding:13px 8px}
+.ux-focus .nav a .ic{width:22px;height:22px}
+.ux-focus .nav-badge{font-size:10px;position:absolute;top:5px;inset-inline-end:5px}
+.ux-density .kpi,.ux-density .panel-b,.ux-density .gcard-b,.ux-density .rpt-card{padding-block:12px !important}
+.ux-density .content{padding-top:12px}
+.ux-density .gate-hero{min-height:210px;padding:22px 26px}
+.ux-density .kpi .val{font-size:27px}
+.ux-toast-note{
+  position:fixed;top:92px;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:var(--ux-deep);color:#fff;border-radius:16px;padding:11px 16px;
+  box-shadow:var(--ux-strong-shadow);z-index:100;font-size:13px;font-weight:800;
+  opacity:0;pointer-events:none;transition:.24s;
+}
+.ux-toast-note.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:1180px){
+  .ux-command{grid-template-columns:1fr;align-items:stretch}
+  .ux-actions{min-width:0;display:grid;grid-template-columns:1fr auto;align-items:center}
+  .ux-action-row{grid-template-columns:auto auto}
+}
+@media(max-width:820px){
+  .side{width:100%;padding:8px;border-radius:0;position:relative;height:auto;box-shadow:none}
+  .brand{min-width:168px;margin-bottom:0}
+  .topbar{position:sticky;top:8px;margin:10px;border-radius:18px;flex-wrap:wrap}
+  .topbar .spacer{display:none}
+  .content{padding:12px}
+  .ux-command{margin:12px;padding:14px;border-radius:20px}
+  .ux-insights{grid-template-columns:repeat(2,1fr)}
+  .ux-actions{display:block}
+  .ux-action-row{margin-top:8px}
+  .gate-hero{padding:22px;min-height:auto}
+  .gate-hero h2{font-size:20px}
+  .kgrid{grid-template-columns:1fr 1fr !important}
+  .donut-row,.two{grid-template-columns:1fr !important}
+  .ux-fab{inset-inline-end:14px;bottom:14px}
+}
+@media(max-width:520px){.ux-insights,.kgrid{grid-template-columns:1fr !important}.pill{font-size:11px}.topbar .ttl{font-size:16px}}
+@media print{.ux-command,.ux-fab,.ux-toast-note{display:none!important}}
+
+
 </style>
 </head>
 <body>
@@ -723,6 +1127,7 @@ html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
   </div>
 </div>
 
+<div class="donut-tip" id="donutTip"></div>
 <div class="sync-modal" id="syncModal">
   <div class="sync-modal-bg" onclick="closeSyncSetup()"></div>
   <div class="sync-modal-card">
@@ -765,6 +1170,14 @@ html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
       <div class="st" id="dStatus"></div>
     </div>
     <div class="drawer-body" id="drawerBody"></div>
+  </div>
+</div>
+
+<div class="ccd-wrap" id="canalCard">
+  <div class="ccd-bg" onclick="closeCanalCard()"></div>
+  <div class="ccd-panel">
+    <button class="ccd-close" onclick="closeCanalCard()">✕</button>
+    <div id="canalCardBody"></div>
   </div>
 </div>
 
@@ -4945,7 +5358,591 @@ window.PROJECT = {
    "duesOutstanding": 0,
    "operations": [],
    "lastUpdate": "2026-07-01",
-   "canals": []
+   "canals":    [
+    {
+     "id": "QLY-001",
+     "name": "الجنابية اليمنى للبحر الخليلي",
+     "op": "تأهيل ترعة الجنابية اليمنى للبحر الخليلي",
+     "contractor": "أيمن عبد الرحيم",
+     "length": 4.54,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-002",
+     "name": "الجنابية اليسرى للبحر الخليلي",
+     "op": "تأهيل ترعة الجنابية اليسرى للبحر الخليلي",
+     "contractor": "أيمن عبد الرحيم",
+     "length": 4.665,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-003",
+     "name": "ترعة فرع طحانوب",
+     "op": "تأهيل ترعة فرع طحانوب",
+     "contractor": "مؤسسة الشيماء للمقاولات (محمد عطية التهامي)",
+     "length": 1.1,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-004",
+     "name": "ترعة طحانوب",
+     "op": "تأهيل ترعة طحانوب",
+     "contractor": "الجمعية التعاونية للانشاء والتعمير بالغربية",
+     "length": 2.64,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-005",
+     "name": "ترعة القشيش من ك 4.400 حتي ك5.51",
+     "op": "تاهيل ترعة القشيش من ك 4.400 حتي ك5.50",
+     "contractor": "مؤسسه الشيماء للمقاولات (محمد عطية التهامي)",
+     "length": 1.1,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-006",
+     "name": "ترعة ام الفئران",
+     "op": "تأهيل ترعه ام الفئران وفروعها بعدد 5ترع",
+     "contractor": "أسامة طلب",
+     "length": 4.773,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-007",
+     "name": "بشكارية السلمانية",
+     "op": "تأهيل ترعه ام الفئران وفروعها بعدد 5ترع",
+     "contractor": "أسامة طلب",
+     "length": 2.973,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-008",
+     "name": "جمص",
+     "op": "تأهيل ترعه ام الفئران وفروعها بعدد 5ترع",
+     "contractor": "أسامة طلب",
+     "length": 1.91,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-009",
+     "name": "الجعافرة",
+     "op": "تأهيل ترعه ام الفئران وفروعها بعدد 5ترع",
+     "contractor": "أسامة طلب",
+     "length": 2.454,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-010",
+     "name": "بشكارية الحيزانية",
+     "op": "تأهيل ترعه ام الفئران وفروعها بعدد 5ترع",
+     "contractor": "أسامة طلب",
+     "length": 2.1,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-011",
+     "name": "ترعة باشا",
+     "op": "تأهيل ترعة باشا",
+     "contractor": "جاسر المتولي المتولي غانم",
+     "length": 4.95,
+     "pct": 100,
+     "statusCode": "accepted",
+     "status": "منفّذة — تم النهو والختامي",
+     "stage": 5
+    },
+    {
+     "id": "QLY-012",
+     "name": "المرصفاوية",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 1.5,
+     "pct": 99,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-013",
+     "name": "فارس الخيل",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 1.75,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-014",
+     "name": "خليل",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 3.43,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-015",
+     "name": "القلزم",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.1,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-016",
+     "name": "شاكر",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 8.8,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-017",
+     "name": "بحر كشك",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.74,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-018",
+     "name": "البرسومية",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 5.5,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-019",
+     "name": "قسيمة",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 3.15,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-020",
+     "name": "الجبسة",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 3.0,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-021",
+     "name": "قنبة",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.0,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-022",
+     "name": "طحوريا",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 7.0,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-023",
+     "name": "منشاه الكرام",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 5.03,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-024",
+     "name": "البورة",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.25,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-025",
+     "name": "الزيتونية",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.58,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-026",
+     "name": "نوي",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 2.78,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-027",
+     "name": "الزهويين",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 7.0,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-028",
+     "name": "ام علي",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 3.35,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-029",
+     "name": "القشيش",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 6.68,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-030",
+     "name": "المنايل",
+     "op": "تأهيل عدد 30 ترعة بزمام هندستى شبين القناطر وقليوب",
+     "contractor": "ابناء عبد السلام عبد الحميد الفقي وشركاه للمقاولات والاستشارات الهندسية",
+     "length": 6.55,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-031",
+     "name": "الفلفلة اليسرى",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 2.0,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة — لم تُستلَم بعد",
+     "stage": 2
+    },
+    {
+     "id": "QLY-032",
+     "name": "ساحل دجوى",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 0.6,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-033",
+     "name": "الوسطانية",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 6.285,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-034",
+     "name": "العموم",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 4.55,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-035",
+     "name": "البلد",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 4.03,
+     "pct": 96,
+     "statusCode": "progress",
+     "status": "جارٍ التنفيذ",
+     "stage": 1
+    },
+    {
+     "id": "QLY-036",
+     "name": "فرع البلد",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 5.31,
+     "pct": 65,
+     "statusCode": "progress",
+     "status": "منفّذة جزئياً — اكتفاء بالمنفَّذ",
+     "stage": 1
+    },
+    {
+     "id": "QLY-037",
+     "name": "غزال",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 1.43,
+     "pct": 77,
+     "statusCode": "progress",
+     "status": "جارٍ التنفيذ",
+     "stage": 1
+    },
+    {
+     "id": "QLY-038",
+     "name": "المربع",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 2.25,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-039",
+     "name": "مرحبا",
+     "op": "تأهيل عدد 22ترعة زمام هندسة ري بنها",
+     "contractor": "الهيئة العربية للتصنيع (مصنع الطائرات)",
+     "length": 2.6,
+     "pct": 100,
+     "statusCode": "done",
+     "status": "منفّذة / تم النهو",
+     "stage": 2
+    },
+    {
+     "id": "QLY-040",
+     "name": "الحصة",
+     "op": "تاهيل وتبطين ترع (الحصة - الزبير) بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 6.335,
+     "pct": 22,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    },
+    {
+     "id": "QLY-041",
+     "name": "الزبير",
+     "op": "تاهيل وتبطين ترع (الحصة - الزبير) بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 2.76,
+     "pct": 47,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    },
+    {
+     "id": "QLY-042",
+     "name": "مقطع البنا",
+     "op": "تاهيل وتبطين ترعة مقطع البنا بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 7.185,
+     "pct": 14,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    },
+    {
+     "id": "QLY-043",
+     "name": "العواقيل",
+     "op": "تاهيل وتبطين ترع (كوم أشفين - أبو رفاعة - العواقيل - أم الفئران الجديدة - أم الفئران القديمة)  بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 2.69,
+     "pct": 91,
+     "statusCode": "done",
+     "status": "منفّذة — اكتفاء بالمنفَّذ",
+     "stage": 2
+    },
+    {
+     "id": "QLY-044",
+     "name": "أم الفئران الجديدة",
+     "op": "تاهيل وتبطين ترع (كوم أشفين - أبو رفاعة - العواقيل - أم الفئران الجديدة - أم الفئران القديمة)  بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 4.1,
+     "pct": 40,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    },
+    {
+     "id": "QLY-045",
+     "name": "أم الفئران القديمة",
+     "op": "تاهيل وتبطين ترع (كوم أشفين - أبو رفاعة - العواقيل - أم الفئران الجديدة - أم الفئران القديمة)  بقطاعات من الدبش والخرسانة العادية",
+     "contractor": "الري والصرف",
+     "length": 0.65,
+     "pct": 92,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    },
+    {
+     "id": "QLY-046",
+     "name": "أبو المنجا",
+     "op": "تاهيل وتبطين ترعة ابو المنجا هندسة قليوب",
+     "contractor": "الري والصرف",
+     "length": 11.0,
+     "pct": 59,
+     "statusCode": "progress",
+     "status": "جارٍ التنفيذ",
+     "stage": 1
+    },
+    {
+     "id": "QLY-047",
+     "name": "السيسى",
+     "op": "تاهيل وتبطين ترعة (السيسى - مصرف بلتان ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة طوخ",
+     "contractor": "مصنع قادر",
+     "length": 4.4,
+     "pct": 20,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-048",
+     "name": "مصرف بلتان",
+     "op": "تاهيل وتبطين ترعة (السيسى - مصرف بلتان ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة طوخ",
+     "contractor": "مصنع قادر",
+     "length": 6.5,
+     "pct": 2,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-049",
+     "name": "كشمير اليسرى",
+     "op": "تاهيل وتبطين ترعة (كشمير اليسرى - عرب فودة - الرملة - فرع الرملة ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة شبرا",
+     "contractor": "مصنع قادر",
+     "length": 5.7,
+     "pct": 100,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-050",
+     "name": "عرب فودة",
+     "op": "تاهيل وتبطين ترعة (كشمير اليسرى - عرب فودة - الرملة - فرع الرملة ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة شبرا",
+     "contractor": "مصنع قادر",
+     "length": 3.3,
+     "pct": 60,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-051",
+     "name": "الرملة",
+     "op": "تاهيل وتبطين ترعة (كشمير اليسرى - عرب فودة - الرملة - فرع الرملة ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة شبرا",
+     "contractor": "مصنع قادر",
+     "length": 4.13,
+     "pct": 21,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-052",
+     "name": "فرع الرملة",
+     "op": "تاهيل وتبطين ترعة (كشمير اليسرى - عرب فودة - الرملة - فرع الرملة ) بقطاعات من الرمل المثبت و الجيوسل والخرسانة العادية بهندسة شبرا",
+     "contractor": "مصنع قادر",
+     "length": 1.1,
+     "pct": 0,
+     "statusCode": "stopped",
+     "status": "العمل متوقف",
+     "stage": -2
+    },
+    {
+     "id": "QLY-053",
+     "name": "مصطفى افندى",
+     "op": "تاهيل وتبطين ترعة (مصطفى أفندى - الدمشوشية ) بقطاعات من الدبش والخرسانة العادية بهندسة غرب بلبيس",
+     "contractor": "الري والصرف",
+     "length": 6.47,
+     "pct": 16,
+     "statusCode": "stopped",
+     "status": "جارٍ سحب العمل",
+     "stage": -2
+    }
+   ]
   },
   {
    "id": "gharbia",
@@ -6529,6 +7526,7 @@ function donut(segments,centerLabel,centerSub){
     const len=frac*C;
     const el=`<circle class="donut-arc" cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${s.c}" stroke-width="16" stroke-linecap="round"
       stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"
+      data-label="${s.l}" data-val="${s.v}"
       style="--dash:${len};--gap:${C-len};--off:${-off};animation-delay:${.15+i*.25}s"><title>${s.l}: ${s.v}</title></circle>`;
     off+=len;return el;
   }).join('');
@@ -6556,6 +7554,23 @@ function renderDonuts(dt){
   document.getElementById('donutRow').innerHTML=
     mk(dt.p1,'توزيع استلام المرحلة الأولى',PROJECT.official.phase1.total)+
     mk(dt.p2,'توزيع استلام المرحلة الثانية',PROJECT.official.phase2.total);
+  wireDonutTips();
+}
+// تفاصيل تفاعلية على المخطط الدائري عند التمرير
+function wireDonutTips(){
+  const tip=document.getElementById('donutTip');if(!tip)return;
+  document.querySelectorAll('.donut-arc').forEach(arc=>{
+    arc.addEventListener('mousemove',e=>{
+      tip.innerHTML=arc.getAttribute('data-label')+'<b>'+arc.getAttribute('data-val')+' ترعة</b>';
+      tip.classList.add('on');
+      const pad=14;let x=e.clientX+pad,y=e.clientY+pad;
+      const w=tip.offsetWidth,h=tip.offsetHeight;
+      if(x+w>window.innerWidth-8)x=e.clientX-w-pad;
+      if(y+h>window.innerHeight-8)y=e.clientY-h-pad;
+      tip.style.left=x+'px';tip.style.top=y+'px';
+    });
+    arc.addEventListener('mouseleave',()=>tip.classList.remove('on'));
+  });
 }
 function phasePanel(of,dt){
   const darPct=Math.round(dt.dar/of.total*100);
@@ -6727,10 +7742,11 @@ function gateStep(code,pct){
 }
 function renderCanals(list){
   const el=document.getElementById('canalList');if(!el)return;
+  window._canalIndex={};list.forEach(c=>{window._canalIndex[c.id]=c;});
   el.innerHTML=list.map(c=>{
     const tone=toneOf(c.statusCode);
     const step=gateStep(c.statusCode,c.pct);
-    return `<div class="canal-row t-${tone}">
+    return `<div class="canal-row cr-click t-${tone}" onclick="openCanalCard('${c.id}')" role="button" tabindex="0">
       <div class="cr-top">
         <div class="cr-main"><span class="cr-id">${c.id}</span><span class="cr-name">${c.name}</span>
           ${c.op?`<div class="cr-op">${c.op}${c.contractor?' — '+c.contractor:''}</div>`:''}</div>
@@ -6743,6 +7759,52 @@ function renderCanals(list){
       </div></div>`;
   }).join('')||'<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد ترع مطابقة</div>';
 }
+// خريطة كود الحالة → وصف تفصيلي
+const STATUS_DESC={
+  accepted:'تم قبولها نهائياً واستلامها عبر دار الهندسة',
+  accepted_partial:'قبول جزئي — استُلم جزء منها',
+  submitted:'سُلّمت لدار الهندسة وبانتظار المعاينة/القبول النهائي',
+  inspecting:'تحت أو بانتظار المعاينة',
+  done:'منفّذة وجاهزة للدخول في مسار الاستلام',
+  progress:'جارٍ تنفيذها',
+  investment:'مسار استثماري مباشر — لا تمرّ على دار الهندسة',
+  deferred:'مؤجّلة — خارج مسار الاستلام حالياً',
+  cancelled:'ملغاة',
+  stopped:'متوقفة',
+  obstacles:'بها معوّقات تحول دون استكمالها',
+  unknown:'غير محدّدة',uncoded:'غير مصنّفة'
+};
+function openCanalCard(cid){
+  const c=(window._canalIndex||{})[cid];if(!c)return;
+  const tone=toneOf(c.statusCode);
+  const step=gateStep(c.statusCode,c.pct);
+  const desc=STATUS_DESC[c.statusCode]||c.status||'—';
+  const rows=[];
+  const R=(l,v)=>{if(v!=null&&v!=='')rows.push(`<div class="ccd-row"><span class="ccd-l">${l}</span><span class="ccd-v">${v}</span></div>`);};
+  R('معرّف الترعة',c.id);
+  R('اسم الترعة',c.name);
+  R('العملية',c.op);
+  R('المقاول',c.contractor);
+  R('الطول',c.length!=null?c.length+' كم':null);
+  R('نسبة التنفيذ',c.pct!=null?c.pct+'%':null);
+  R('الموقف',c.status);
+  if(c.stage!=null&&c.stage>=0)R('خطوة المسار',(c.stage>0?c.stage:'—')+' من '+GATE_STAGES.length);
+  const pipe=step>=0?gatePipeline(step):`<div class="cr-special" style="margin:0">${c.statusCode==='investment'?'مسار استثماري مباشر — لا تمرّ على دار الهندسة':'خارج مسار الاستلام (مؤجلة/متوقفة/ملغاة)'}</div>`;
+  const bar=c.pct!=null?`<div class="ccd-bar"><i style="width:${Math.min(100,c.pct)}%"></i></div>`:'';
+  document.getElementById('canalCardBody').innerHTML=
+    `<div class="ccd-head t-${tone}">
+       <div class="ccd-id">${c.id}</div>
+       <div class="ccd-name">${c.name}</div>
+       <span class="cr-st st-${tone}" style="align-self:flex-start">${c.status}</span>
+     </div>
+     <div class="ccd-desc">${desc}</div>
+     ${bar}
+     <div class="ccd-grid">${rows.join('')}</div>
+     <div class="ccd-pipe-t">مسار بوابة الاستلام</div>
+     ${pipe}`;
+  document.getElementById('canalCard').classList.add('on');
+}
+function closeCanalCard(){document.getElementById('canalCard').classList.remove('on');}
 function gatePipeline(step){
   return `<div class="gate-pipe">${GATE_STAGES.map((s,i)=>{
     const state=i<step?'past':(i===step?'now':'future');
@@ -6941,7 +8003,7 @@ function renderNotifBox(){
       ${total>3?`<div class="nb-more">و${total-3} بلاغ آخر — اضغط لعرض الكل</div>`:''}
     </div>`;
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCanalCard();closeDrawer();}});
 
 function duesTotal(){
   // متسق مع التعديلات: لو الإدارة عُدّلت مستحقاتها يدوياً تُستخدم القيمة المعدّلة،
