@@ -3008,23 +3008,57 @@ function asstAnswer(q){
     return {body,acts};
   }
 
-  // 7) بحث عن ترعة بالاسم
-  const foundCanals=s.canals.filter(c=>t.length>=3&&c.name&&c.name.replace(/^ال/,'').includes(t.replace(/^ال/,'').replace(/ترعة|فرع/g,'').trim())&&t.replace(/ترعة|فرع|عن|موقف/g,'').trim().length>=3);
-  if(foundCanals.length&&foundCanals.length<=25){
-    let body=`<span class="ab-h">🔎 نتائج البحث عن ترعة</span>`;
-    const rows=foundCanals.map(c=>[c.name,c.govName,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—',c.length!=null?c.length:'—']);
-    body+=asstTable(['الترعة','الإدارة','الموقف','التنفيذ','الطول'],rows,'نتائج البحث');
-    return {body,acts:[]};
+  // 7) بحث نصّي عام — يشمل اسم الترعة والعملية والمقاول والإدارة معاً
+  // (يلتقط استعلامات مثل اسم مقاول «المخابرات» أو جزء من اسم عملية)
+  const normT=s2=>String(s2).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\u200f|\u200e/g,'');
+  // كلمات تُستبعد من البحث (وصل/استفهام + كلمات المشروع العامة التي تطابق كل شيء)
+  const stop=['موقف','عن','ما','ماهو','ايه','اظهر','كل','ترعه','فرع','التي','الذي','عايز','عاوز','هات','قائمه','بتاع','بتاعه','ترع','مقاول','عمليه','عمليات','تاهيل','تبطين','هندسه','ري','والصرف','الصرف','وتبطين','بزمام','بطول','زمام','الاداره','العامه','بمحافظه','محافظه'];
+  const stripLead=w=>w.replace(/^و/,'').replace(/^ال/,'');
+  let terms=normT(t).split(/\s+/).map(stripLead).filter(w=>w.length>=3&&!stop.includes(w));
+  if(terms.length){
+    const hit=c=>{
+      const hay=normT([c.name,c.op,c.contractor,c.govName].filter(Boolean).join(' '));
+      // نطابق المصطلح كما هو أو بعد إسقاط «ال» التعريف في بداية كلمات النص
+      return terms.some(w=>hay.includes(w)||hay.replace(/(^|\s)ال/g,'$1').includes(w));
+    };
+    const found=s.canals.filter(hit);
+    if(found.length){
+      let body=`<span class="ab-h">🔎 نتائج البحث</span>`;
+      const byC={};found.forEach(c=>byC[c.statusCode]=(byC[c.statusCode]||0)+1);
+      const topCode=Object.entries(byC).sort((a,b)=>b[1]-a[1])[0];
+      body+=asstMetrics([{v:AR_NUM(found.length),l:'ترعة مطابِقة'},
+        {v:AR_NUM(new Set(found.map(c=>c.govName)).size),l:'إدارة'},
+        {v:topCode?(ASST_CODE_AR[topCode[0]]||topCode[0]):'—',l:'الموقف الأغلب'}]);
+      const rows=found.slice(0,40).map(c=>[c.name,c.govName,c.contractor||'—',ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']);
+      body+=asstTable(['الترعة','الإدارة','المقاول','الموقف','التنفيذ'],rows,'نتائج البحث');
+      if(found.length>40)body+=`<div style="font-size:11.5px;color:var(--muted)">…و${found.length-40} ترعة أخرى. صيّغ البحث بدقة أكبر أو صدّر القائمة.</div>`;
+      window._asstFound=found;
+      return {body,acts:[{l:'⬇ تصدير نتائج البحث (CSV)',fn:`asstExportFound()`}]};
+    }
   }
 
-  // افتراضي: إرشاد
-  return {body:`<span class="ab-h">👋 تحت أمر سيادتك</span>يمكنني الإجابة عن أي استفسار عن المشروع وإعداد الجداول والتقارير. جرّب أن تسأل:<ul>
+  // افتراضي: إرشاد — يوضّح عدم وجود نتيجة إن كان هناك مصطلح بحث فعلي
+  const noResult=terms.length>0;
+  return {body:`<span class="ab-h">${noResult?'🔍 لم أجد نتيجة مطابِقة':'👋 تحت أمر سيادتك'}</span>${noResult?`لم أعثر على ترع أو عمليات أو مقاولين يطابقون «${t.replace(/</g,'&lt;')}». تأكّد من الاسم أو `:'يمكنني الإجابة عن أي استفسار عن المشروع وإعداد الجداول والتقارير. '}جرّب أن تسأل:<ul>
     <li>«ما موقف <b>الجيزة</b>؟» أو أي إدارة</li>
+    <li>«ترع مقاول <b>المخابرات</b>» أو أي مقاول</li>
     <li>«أظهر الترع <b>المتأخرة</b> والمتوقفة»</li>
     <li>«ما إجمالي <b>المستحقات</b> المعلّقة؟»</li>
     <li>«موقف <b>دار الهندسة</b> والتسليم»</li>
     <li>«<b>ملخص</b> المشروع بالكامل»</li>
     <li>«ما <b>آخر التحديثات</b>؟»</li></ul>`,acts:[]};
+}
+// تصدير نتائج آخر بحث كـ CSV
+function asstExportFound(){
+  const rows=window._asstFound||[];if(!rows.length){toast&&toast('لا نتائج للتصدير');return;}
+  const head=['الترعة','الإدارة','المقاول','العملية','الموقف','التنفيذ %','الطول'];
+  const esc=v=>{v=(v==null?'':String(v));return '"'+v.replace(/"/g,'""')+'"';};
+  const lines=[head.map(esc).join(',')];
+  rows.forEach(c=>lines.push([c.name,c.govName,c.contractor,c.op,ASST_CODE_AR[c.statusCode]||c.statusCode,c.pct,c.length].map(esc).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='نتائج_البحث_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(a.href);
+  toast&&toast('تم تصدير نتائج البحث');
 }
 
 // ═══════ واجهة المحادثة ═══════
@@ -3156,9 +3190,13 @@ function answer(q){const s=snap();const has=(...w)=>w.some(x=>q.includes(x));con
  if(has('متأخر','مؤجل','متوقف','معطل','سحب','متعثر')){const bad=s.canals.filter(c=>['deferred','stopped','cancelled','obstacles'].includes(c.statusCode));let b='<span class="ab-h">⏳ الترع المتأخرة والمتوقفة</span>'+mets([{v:N(bad.length),l:'الإجمالي'}]);b+=tbl(['الترعة','الإدارة','الموقف','التنفيذ'],bad.slice(0,50).map(c=>[c.name,c.govName,CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));return b;}
  if(has('مستحق','مبالغ','مالي','محتجز','مليون')){let b='<span class="ab-h">💰 المستحقات المعلّقة</span>'+mets([{v:s.duesTotal.toFixed(2),l:'الإجمالي (م.ج)'},{v:N(s.dues.length),l:'عملية'}]);b+=tbl(['الإدارة','العملية','المعلّق'],s.dues.map(d=>[d.gov,d.name,d.outstanding.toFixed(3)]));return b;}
  if(has('اجمالي','إجمالي','المشروع','كله','عام','نظرة','ملخص','الكل','مؤشر')){const p1=s.of.phase1,p2=s.of.phase2;let b='<span class="ab-h">🗂️ الملخص التنفيذي</span>'+mets([{v:N(p1.total+p2.total),l:'إجمالي الترع'},{v:Math.round((p1.done+p2.done)/(p1.total+p2.total)*100)+'%',l:'نسبة النهو'},{v:s.duesTotal.toFixed(1),l:'مستحقات (م.ج)'}]);b+=tbl(['المرحلة','إجمالي','منفّذ','%نهو','مسلّم','%تسليم'],[['الأولى',p1.total,p1.done,p1.donePct+'%',p1.delivered,p1.deliveredPct+'%'],['الثانية',p2.total,p2.done,p2.donePct+'%',p2.delivered,p2.deliveredPct+'%']]);return b;}
- const fc=s.canals.filter(c=>q.length>=3&&c.name&&c.name.includes(q.replace(/ترعة|فرع|عن|موقف/g,'').trim())&&q.replace(/ترعة|فرع|عن|موقف/g,'').trim().length>=3);
- if(fc.length&&fc.length<=25){return '<span class="ab-h">🔎 نتائج البحث</span>'+tbl(['الترعة','الإدارة','الموقف','التنفيذ'],fc.map(c=>[c.name,c.govName,CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));}
- return '<span class="ab-h">👋 تحت أمرك</span>اسألني: «موقف الجيزة»، «الترع المتأخرة»، «المستحقات المعلّقة»، «ملخص المشروع»، أو ابحث باسم أي ترعة.';}
+ const nT=x=>String(x).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي');
+ const stopW=['موقف','عن','ما','ماهو','ايه','اظهر','كل','ترعه','فرع','عايز','عاوز','هات','ترع','مقاول','عمليه','عمليات','تاهيل','تبطين','هندسه','ري','والصرف','الصرف','وتبطين','بزمام','بطول','زمام','الاداره','العامه','بمحافظه','محافظه'];
+ const terms=nT(q).split(/\\s+/).map(w=>w.replace(/^و/,'').replace(/^ال/,'')).filter(w=>w.length>=3&&stopW.indexOf(w)<0);
+ if(terms.length){const fc=s.canals.filter(c=>{const hay=nT([c.name,c.op,c.contractor,c.govName].filter(Boolean).join(' '));return terms.some(w=>hay.indexOf(w)>=0||hay.replace(/(^|\\s)ال/g,'$1').indexOf(w)>=0);});
+   if(fc.length){let b='<span class="ab-h">🔎 نتائج البحث ('+N(fc.length)+')</span>';b+=tbl(['الترعة','الإدارة','المقاول','الموقف','التنفيذ'],fc.slice(0,50).map(c=>[c.name,c.govName,c.contractor||'—',CODE_AR[c.statusCode]||c.statusCode,c.pct!=null?c.pct+'%':'—']));if(fc.length>50)b+='<div style="font-size:11px;opacity:.7">…و'+(fc.length-50)+' ترعة أخرى</div>';return b;}
+   return '<span class="ab-h">🔍 لم أجد نتيجة</span>لم أعثر على ترع أو مقاولين يطابقون «'+q.replace(/</g,'&lt;')+'». جرّب اسم إدارة أو مقاول أو ترعة.';}
+ return '<span class="ab-h">👋 تحت أمرك</span>اسألني: «موقف الجيزة»، «ترع مقاول المخابرات»، «الترع المتأخرة»، «المستحقات المعلّقة»، «ملخص المشروع»، أو ابحث باسم أي ترعة أو مقاول.';}
 function push(who,html){const c=document.getElementById('chat');const av=who==='me'?'👤':'🛰️';const e=document.createElement('div');e.className='msg '+who;e.innerHTML='<div class="av">'+av+'</div><div class="bub">'+html+'</div>';c.appendChild(e);c.scrollTop=c.scrollHeight;}
 function ask(q){document.getElementById('inp').value=q;send();}
 function send(){const i=document.getElementById('inp');const q=(i.value||'').trim();if(!q)return;push('me',q);i.value='';setTimeout(()=>push('bot',answer(q)),200);}
