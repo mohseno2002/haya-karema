@@ -637,6 +637,7 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-sign{text-align:center;font-weight:700;line-height:2.1}
 .sign-space{margin-top:6px}
 .sign-name{font-weight:800;margin-top:26px}
+.sign-dotted{letter-spacing:2px;color:#555;font-weight:600}
 .doc-address{margin-top:40px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
 .doc-cc{margin-top:18px;font-size:11.5px;line-height:1.9;color:#222}
 .doc-cc .cc-t{font-weight:800;text-decoration:underline;margin-top:8px}
@@ -3134,17 +3135,20 @@ function letterhead(){
   <div class="lh-rule"></div>`;
 }
 function docFooter(sign,extra){
-  // بناءً على التوجيه: توقيع كل الخطابات موحّد = مفوّض الوزارة المهندسة سلوى عبد الغني عثمان
-  // (يُتجاهل أي توقيع مخصّص يُمرَّر، لضمان توحيد جهة الإصدار)
-  const s={l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
+  // الافتراضي: توقيع مفوّض الوزارة م/سلوى عبد الغني عثمان (لكل الخطابات الصادرة منها).
+  // يمكن تمرير توقيع مخصّص للخطابات الواردة إليها من جهة أخرى (كتقرير الإدارة المركزية).
+  const isDefault=!sign;
+  const s=sign||{l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
+  const nameHtml=s.name?`<div class="sign-name">${s.name}</div>`:`<div class="sign-name sign-dotted">............................</div>`;
+  const addr=isDefault?`<div class="doc-address">الحي الحكومي بالعاصمة الإدارية — وزارة الموارد المائية والري — مبنى مصلحة الري - الدور الرابع - غرفة 307</div>`:'';
   return `<div class="doc-foot"><div class="doc-sign">
       <div>${s.l1}</div>
       <div>${s.l2}</div>
       <div class="sign-space">م /</div>
-      <div class="sign-name">${s.name}</div>
+      ${nameHtml}
     </div></div>
   ${extra||''}
-  <div class="doc-address">الحي الحكومي بالعاصمة الإدارية — وزارة الموارد المائية والري — مبنى مصلحة الري - الدور الرابع - غرفة 307</div>`;
+  ${addr}`;
 }
 function renderDocs(){
   const docs=[
@@ -3198,9 +3202,9 @@ function buildGovDoc(govId){
     <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
     <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
     <div class="doc-body">
-      <div class="doc-to">السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
+      <div class="doc-to">السيدة المهندسة / مفوض مشروع حياة كريمة</div>
       <div class="doc-greet">تحية طيبة وبعد ،،،</div>
-      <p>فيما يلي الموقف التنفيذي التفصيلي لاستلامات الإدارة المركزية بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
+      <p>فيما يلي الموقف التنفيذي التفصيلي لاستلامات الإدارة المركزية للموارد المائية والري بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
       <table class="doc-tbl"><thead><tr>
         <th>المرحلة</th><th>إجمالي الترع</th><th>المنفّذ</th><th>دار الهندسة</th><th>استثماري</th><th>المُسلّم</th><th>المتبقّي</th></tr></thead>
         <tbody>${phaseTbl(p1,'الأولى')}${phaseTbl(p2,'الثانية')}</tbody></table>`;
@@ -3252,10 +3256,8 @@ function buildGovDoc(govId){
   body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
       <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
     </div>`;
-  return letterhead()+body+docFooter();
+  return letterhead()+body+docFooter({l1:'الإدارة المركزية للموارد المائية والري بـ'+g.name,l2:'رئيس الإدارة المركزية',name:null});
 }
-// ═══════════════════════════════════════════════════════════════════
-//  منشئ الخطابات المخصّصة — نموذج تفاعلي يبني خطاباً رسمياً احترافياً
 // ═══════════════════════════════════════════════════════════════════
 // يفتح نموذج الإدخال
 function openLetterComposer(preTo,preSubject){
