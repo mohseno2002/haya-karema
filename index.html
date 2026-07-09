@@ -230,6 +230,8 @@ html[data-theme="dark"] .tbl tbody tr:hover{background:rgba(57,197,224,.10)}
 .nb-flag.up{background:var(--cyan-soft);color:var(--nile-700)}
 .nb-flag.done{background:#e6f6ee;color:var(--done-soft)}
 .nb-flag.post{background:#efeaf9;color:#4b3d86}
+.nb-flag.noted{background:#fdeede;color:#9a4a12}
+.nb-dot.noted{background:#d98324}
 .nb-more{font-size:12px;color:var(--nile-600);font-weight:700;text-align:center;padding-top:4px}
 .nb-empty{display:flex;align-items:center;gap:14px}
 .nb-empty .nb-ic{background:linear-gradient(145deg,var(--nile-400,var(--nile-500)),var(--nile-600));opacity:.85}
@@ -541,6 +543,7 @@ table.tbl .num{font-family:'IBM Plex Mono';direction:ltr;text-align:end}
 .rpt-flag.up{background:#eef5f8;color:var(--nile-700)}
 .rpt-flag.post{background:#efeaf9;color:#4b3d86}
 .rpt-flag.done{background:#e6f6ee;color:var(--done-soft)}
+.rpt-flag.noted{background:#fdeede;color:#9a4a12}
 .rpt-dates{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:10px}
 .rpt-dates b{color:var(--ink);font-weight:700}
 .rpt-outcome{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -2609,6 +2612,7 @@ function reportCard(r,inDrawer){
   else if(t.state==='upcoming')timing=`<span class="rpt-flag up">بعد ${t.days} يوم</span>`;
   else if(t.state==='postponed')timing=`<span class="rpt-flag post">مؤجّل</span>`;
   else if(t.state==='closed')timing=`<span class="rpt-flag done">مُغلق</span>`;
+  else if(t.state==='noted')timing=`<span class="rpt-flag noted">بها ملاحظات — للمتابعة</span>`;
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
   return `<div class="rpt-card tone-${oc.tone}">
     <div class="rpt-head">
@@ -2664,7 +2668,7 @@ function renderNotifBox(){
   const overdue=reps.filter(r=>r._t.state==='overdue');
   const today=reps.filter(r=>r._t.state==='today');
   const upcoming=reps.filter(r=>r._t.state==='upcoming');
-  const open=reps.filter(r=>r.outcome!=='accepted'&&r.outcome!=='notes');
+  const open=reps.filter(r=>r.outcome!=='accepted');
   const total=reps.length;
   box.classList.toggle('has-alert',overdue.length>0);
   if(total===0){
@@ -2676,7 +2680,7 @@ function renderNotifBox(){
     return;
   }
   // most recent 3 to preview
-  const rank={overdue:0,today:1,upcoming:2,postponed:3,closed:4};
+  const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
   const preview=[...reps].sort((a,b)=>{const r=rank[a._t.state]-rank[b._t.state];return r||(b._t.days||0)-(a._t.days||0);}).slice(0,3);
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'}):'—';
   box.innerHTML=`
@@ -2703,6 +2707,7 @@ function renderNotifBox(){
           :st==='today'?`<span class="nb-flag today">اليوم</span>`
           :st==='upcoming'?`<span class="nb-flag up">بعد ${r._t.days} يوم</span>`
           :st==='closed'?`<span class="nb-flag done">مُغلق</span>`
+          :st==='noted'?`<span class="nb-flag noted">بها ملاحظات</span>`
           :`<span class="nb-flag post">مؤجّل</span>`;
         return `<div class="nb-item">
           <span class="nb-dot ${st}"></span>
@@ -3010,7 +3015,8 @@ function reportTiming(rep){
   const today=new Date();today.setHours(0,0,0,0);
   const due=new Date(rep.dueDate);due.setHours(0,0,0,0);
   const days=Math.round((today-due)/86400000);
-  if(rep.outcome==='accepted'||rep.outcome==='notes')return {state:'closed',days};
+  if(rep.outcome==='accepted')return {state:'closed',days};
+  if(rep.outcome==='notes')return {state:'noted',days};
   if(rep.outcome==='postponed')return {state:'postponed',days};
   if(days>0)return {state:'overdue',days};          // فات الموعد ولم يُغلق
   if(days===0)return {state:'today',days};
@@ -3089,7 +3095,7 @@ function renderReports(){
   // KPIs
   const overdue=reps.filter(r=>r._t.state==='overdue').length;
   const today=reps.filter(r=>r._t.state==='today').length;
-  const openN=reps.filter(r=>r.outcome!=='accepted'&&r.outcome!=='notes').length;
+  const openN=reps.filter(r=>r.outcome!=='accepted').length;
   const total=reps.length;
   const kp=document.getElementById('reportKpi');
   if(kp)kp.innerHTML=`
@@ -3101,11 +3107,11 @@ function renderReports(){
   if(f==='overdue')reps=reps.filter(r=>r._t.state==='overdue');
   else if(f==='today')reps=reps.filter(r=>r._t.state==='today');
   else if(f==='upcoming')reps=reps.filter(r=>r._t.state==='upcoming');
-  else if(f==='open')reps=reps.filter(r=>r.outcome!=='accepted'&&r.outcome!=='notes');
-  else if(f==='closed')reps=reps.filter(r=>r.outcome==='accepted'||r.outcome==='notes');
+  else if(f==='open')reps=reps.filter(r=>r.outcome!=='accepted');
+  else if(f==='closed')reps=reps.filter(r=>r.outcome==='accepted');
   if(q)reps=reps.filter(r=>r.govName.includes(q)||r.canalName.includes(q)||(r.meta||'').includes(q));
   // sort: overdue first (by most overdue), then today, then upcoming, closed last
-  const rank={overdue:0,today:1,upcoming:2,postponed:3,closed:4};
+  const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
   reps.sort((a,b)=>{const ra=rank[a._t.state],rb=rank[b._t.state];if(ra!==rb)return ra-rb;return (b._t.days||0)-(a._t.days||0);});
   const list=document.getElementById('reportList');
   list.innerHTML=reps.length?reps.map(r=>reportCard(r,false)).join('')
@@ -3417,7 +3423,7 @@ function buildDoc(id){
   }
   if(id==='reports'){
     const reps=loadReports().map(r=>({...r,_t:reportTiming(r)}));
-    const rank={overdue:0,today:1,upcoming:2,postponed:3,closed:4};
+    const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
     reps.sort((a,b)=>{const r=rank[a._t.state]-rank[b._t.state];return r||(b._t.days||0)-(a._t.days||0);});
     const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
     const stTxt=t=>t.state==='overdue'?`متأخّر ${t.days} يوم`:t.state==='today'?'الموعد اليوم':t.state==='upcoming'?`بعد ${t.days} يوم`:t.state==='postponed'?'مؤجّل':'مُغلق';
