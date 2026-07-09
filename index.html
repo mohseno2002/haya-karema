@@ -671,6 +671,33 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .efield label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
 .efield input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px;font-weight:700;background:var(--card);color:var(--ink);text-align:center;font-family:'IBM Plex Mono'}
 .efield input:focus{outline:none;border-color:var(--nile-accent);box-shadow:0 0 0 3px rgba(57,197,224,.15)}
+/* ═══ عناصر إضافة إدارة جديدة ═══ */
+#addGovBtn svg{vertical-align:-3px}
+.ng-phase-toggle{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 10px;padding:10px 12px;background:var(--cyan-soft);border-radius:10px;border:1px solid var(--line)}
+.ng-check{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--nile-700);cursor:pointer}
+.ng-check input{width:16px;height:16px;accent-color:var(--nile-600);cursor:pointer}
+.ng-derived{margin-top:8px;font-size:12px}
+.ng-derived-row{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);background:rgba(42,134,173,.06);border-radius:8px;padding:7px 10px}
+.ng-derived-row b{color:var(--nile-700);font-family:'IBM Plex Mono'}
+.ng-derived-warn{margin-top:6px;color:var(--stop);font-weight:700;font-size:11.5px}
+.ng-err{display:none;background:rgba(201,79,79,.1);border:1px solid rgba(201,79,79,.35);color:var(--stop);border-radius:9px;padding:10px 12px;font-size:12.5px;font-weight:700;line-height:1.8;margin-bottom:12px}
+.custom-tag{font-size:10px;font-weight:800;color:#fff;background:var(--invest);border-radius:6px;padding:1px 7px;vertical-align:middle}
+.custom-gov-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:rgba(216,142,60,.12);border:1px solid rgba(216,142,60,.4);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12.5px;font-weight:700;color:var(--invest)}
+.btn-del-gov{background:rgba(201,79,79,.12);color:var(--stop);border:1px solid rgba(201,79,79,.35);font-size:12px;padding:7px 12px;white-space:nowrap}
+.btn-del-gov:hover{background:rgba(201,79,79,.2)}
+.btn-del-gov svg{vertical-align:-2px}
+/* إضافة ترعة جديدة داخل الدرج */
+.btn-add-canal{float:inline-end;display:inline-flex;align-items:center;gap:5px;background:var(--nile-600,#2a86ad);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-add-canal:hover{filter:brightness(1.08)}
+.btn-add-canal svg{vertical-align:-2px}
+.canal-add-tag{font-size:9.5px;font-weight:800;color:#fff;background:var(--invest);border-radius:5px;padding:1px 6px;margin-inline-start:6px;vertical-align:middle}
+.canal-row.cr-custom{border-inline-start:3px solid var(--invest)}
+.cr-del{background:rgba(201,79,79,.12);color:var(--stop);border:1px solid rgba(201,79,79,.3);border-radius:7px;padding:3px 7px;cursor:pointer;margin-inline-start:auto}
+.cr-del:hover{background:rgba(201,79,79,.22)}
+.cr-del svg{vertical-align:-2px}
+.ac-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ac-idnote{margin-top:10px;font-size:11.5px;color:var(--muted)}
+.ac-idnote b{color:var(--nile-700);font-family:'IBM Plex Mono'}
 /* حقل دار الهندسة — مميّز لأنه المسار الإلزامي */
 .efield-hl{background:var(--cyan-soft);border-radius:10px;padding:9px 11px;border:1px solid rgba(29,77,78,.25)}
 .efield-hl label{color:var(--nile-700);font-weight:800}
@@ -1248,6 +1275,9 @@ table.tbl td{background-clip:padding-box}
             <option value="part">استلام جزئي</option>
             <option value="done">استلام مكتمل</option>
           </select>
+          <button class="btn btn-primary" id="addGovBtn" onclick="openAddGov()" style="white-space:nowrap">
+            <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            إضافة إدارة جديدة</button>
         </div>
         <div class="legend">
           <span><i style="background:var(--nile-500)"></i> استُلم عبر دار الهندسة</span>
@@ -1280,7 +1310,7 @@ table.tbl td{background-clip:padding-box}
           <div class="panel-h"><h3>المستحقات المعلّقة لحين استلام دار الهندسة</h3><span class="tag" id="duesTotalTag"></span></div>
           <div style="overflow:auto;max-height:72vh"><table class="tbl sortable" id="duesTable"></table></div>
         </div>
-        <div class="disclaimer">القيم بالمليون جنيه. أغلب المستحقات المعلّقة سببها نسبة 10% دار الهندسة المحجوزة والمستخلص الختامي و5% الجاري وفروق الأسعار — وكلها لا تُصرف قبل استلام دار الهندسة النهائي. المصدر: ملفات مستحقات الشركات بتاريخ 23 يونيو 2026.</div>
+        <div class="disclaimer">القيم بالمليون جنيه. الأعمدة: <b>ما تم صرفه</b> (المبالغ المصروفة فعلاً للمقاول، تظهر «—» إن لم تُسجَّل بالبيانات) ثم <b>المعلّق</b> (المحتجز لحين استلام دار الهندسة) ثم <b>الإجمالي</b> (= المصروف + المعلّق). أغلب المعلّق سببه نسبة 10% دار الهندسة المحجوزة والمستخلص الختامي و5% الجاري وفروق الأسعار — وكلها لا تُصرف قبل استلام دار الهندسة النهائي. المصدر: ملفات مستحقات الشركات بتاريخ 23 يونيو 2026.</div>
       </section>
 
       <section class="view" id="v-deferred">
@@ -1427,6 +1457,31 @@ table.tbl td{background-clip:padding-box}
   </div>
 </div>
 
+<!-- ═══════ مودال إضافة إدارة جديدة ═══════ -->
+<div class="drawer-wrap" id="addGovModal">
+  <div class="drawer-bg" onclick="closeAddGov()"></div>
+  <div class="drawer">
+    <div class="drawer-h">
+      <button class="close" onclick="closeAddGov()">✕</button>
+      <h2>إضافة إدارة جديدة</h2>
+      <div class="rg">تُدمج فوراً مع جميع المؤشّرات والتبويبات والخطابات</div>
+    </div>
+    <div class="drawer-body" id="addGovBody"></div>
+  </div>
+</div>
+
+<div class="drawer-wrap" id="addCanalModal">
+  <div class="drawer-bg" onclick="closeAddCanal()"></div>
+  <div class="drawer">
+    <div class="drawer-h">
+      <button class="close" onclick="closeAddCanal()">✕</button>
+      <h2 id="addCanalTitle">إضافة ترعة جديدة</h2>
+      <div class="rg">تُدمج فوراً في جداول الترع والمؤشّرات والخطابات</div>
+    </div>
+    <div class="drawer-body" id="addCanalBody"></div>
+  </div>
+</div>
+
 <script>
 // ملف بيانات مولّد آلياً — منظّف (قاموس حالات موحّد + معرّف ثابت لكل ترعة)
 // الأرقام الرسمية من تقرير المفوّض؛ تفاصيل الترع من المواقف التفصيلية
@@ -1455,6 +1510,46 @@ const STORE='darElHandasa_v2';
 function loadOv(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
 function saveOv(o){localStorage.setItem(STORE,JSON.stringify(o))}
 let ov=loadOv();
+
+/* ═══════════════════════════════════════════════════════════════
+   طبقة الإدارات المُضافة يدوياً (Custom Administrations)
+   ───────────────────────────────────────────────────────────────
+   تُخزَّن منفصلةً عن البيانات الرسمية، وتُدمج في PROJECT.govs مباشرةً
+   بعد تعريفه وقبل أي حساب. بذلك تمرّ الإدارة الجديدة تلقائياً عبر
+   allGovs() وكل المشتقات (مؤشّرات القيادة، محرك القرار، الشريط
+   التحذيري، الخطابات الرسمية، جداول الترع) دون المساس بأي منطق حسابي.
+   الأرقام الرسمية المعتمدة تبقى مصانة؛ ما يُضاف هنا يحمل السمة
+   _custom:true للتمييز البصري وإتاحة الحذف الآمن.
+   ═══════════════════════════════════════════════════════════════ */
+const CUSTOM_STORE='darElHandasa_customGovs_v1';
+function loadCustomGovs(){try{return JSON.parse(localStorage.getItem(CUSTOM_STORE)||'[]')}catch(e){return[]}}
+function saveCustomGovs(list){localStorage.setItem(CUSTOM_STORE,JSON.stringify(list))}
+let customGovs=loadCustomGovs();
+// دمج الإدارات المُضافة في مصفوفة المشروع (مرّة واحدة عند التحميل، مع تفادي التكرار)
+(function mergeCustomGovs(){
+  const existing=new Set(PROJECT.govs.map(g=>g.id));
+  customGovs.forEach(g=>{ if(!existing.has(g.id)){ PROJECT.govs.push(g); existing.add(g.id);} });
+})();
+
+/* ─── الترع المُضافة يدوياً داخل صفحة كل إدارة ───
+   تُخزَّن منفصلة (كل ترعة تحمل _gov = معرّف الإدارة الأم و _custom=true)،
+   وتُدمج في g.canals للإدارة المطابقة مرّة واحدة عند التحميل مع تفادي التكرار. */
+const CUSTOM_CANALS_STORE='darElHandasa_customCanals_v1';
+function loadCustomCanals(){try{return JSON.parse(localStorage.getItem(CUSTOM_CANALS_STORE)||'[]')}catch(e){return[]}}
+function saveCustomCanals(list){localStorage.setItem(CUSTOM_CANALS_STORE,JSON.stringify(list))}
+let customCanals=loadCustomCanals();
+(function mergeCustomCanals(){
+  const byGov={};
+  PROJECT.govs.forEach(g=>{ byGov[g.id]=new Set((g.canals||[]).map(c=>c.id)); });
+  customCanals.forEach(c=>{
+    const g=PROJECT.govs.find(x=>x.id===c._gov);
+    if(!g)return;
+    if(!g.canals)g.canals=[];
+    if(!byGov[g.id])byGov[g.id]=new Set(g.canals.map(x=>x.id));
+    if(!byGov[g.id].has(c.id)){ g.canals.push(c); byGov[g.id].add(c.id); }
+  });
+})();
+
 
 // أكواد الموقف التي تُعتبر «استُلمت عبر دار الهندسة» (قبول نهائي/جزئي)
 const DAR_CODES=['accepted','accepted_partial'];
@@ -1697,18 +1792,21 @@ function liveTotals(){
   const gs=allGovs();
   const sum=(ph,key)=>gs.reduce((a,g)=>a+((g[ph]&&g[ph][key])||0),0);
   const off=PROJECT.official, dtl=PROJECT.detailTotals;
-  // الفرق الذي أحدثه المستخدم عن الأرقام الرسمية الأصلية، مطبّقاً على الإجماليات المعتمدة
-  const baseDar1=PROJECT.govs.reduce((a,g)=>a+((g.phase1&&g.phase1.dar)||0),0);
-  const baseDar2=PROJECT.govs.reduce((a,g)=>a+((g.phase2&&g.phase2.dar)||0),0);
-  const baseInv1=PROJECT.govs.reduce((a,g)=>a+((g.phase1&&g.phase1.invest)||0),0);
-  const baseInv2=PROJECT.govs.reduce((a,g)=>a+((g.phase2&&g.phase2.invest)||0),0);
-  const p1={dar:dtl.p1.dar+(sum('phase1','dar')-baseDar1), invest:dtl.p1.invest+(sum('phase1','invest')-baseInv1)};
-  const p2={dar:dtl.p2.dar+(sum('phase2','dar')-baseDar2), invest:dtl.p2.invest+(sum('phase2','invest')-baseInv2)};
-  // فرق إجمالي الترع (لو عُدّل) مطبّق على الإجمالي الرسمي
-  const baseCan1=PROJECT.govs.reduce((a,g)=>a+((g.phase1&&g.phase1.canals)||0),0);
-  const baseCan2=PROJECT.govs.reduce((a,g)=>a+((g.phase2&&g.phase2.canals)||0),0);
-  const totalCanals=off.phase1.total+off.phase2.total+(sum('phase1','canals')-baseCan1)+(sum('phase2','canals')-baseCan2);
-  return {p1,p2,totalCanals};
+  // الأساس يُحسب من الإدارات الرسمية فقط (بدون المُضافة يدوياً). بذلك:
+  //  • تعديلات الإدارات الرسمية تدخل كفرق (دلتا) عن الرقم الرسمي المعتمد.
+  //  • الإدارات المُضافة يدوياً تدخل بقيمتها الكاملة كزيادة صافية (لأنها غير ممثَّلة في الأساس).
+  const officialGovs=PROJECT.govs.filter(g=>!g._custom);
+  const base=(ph,key)=>officialGovs.reduce((a,g)=>a+((g[ph]&&g[ph][key])||0),0);
+  const p1={dar:dtl.p1.dar+(sum('phase1','dar')-base('phase1','dar')), invest:dtl.p1.invest+(sum('phase1','invest')-base('phase1','invest'))};
+  const p2={dar:dtl.p2.dar+(sum('phase2','dar')-base('phase2','dar')), invest:dtl.p2.invest+(sum('phase2','invest')-base('phase2','invest'))};
+  // فرق إجمالي الترع (تعديل رسمي أو إدارة مُضافة) مطبّق على الإجمالي الرسمي
+  const totalCanals=off.phase1.total+off.phase2.total
+    +(sum('phase1','canals')-base('phase1','canals'))
+    +(sum('phase2','canals')-base('phase2','canals'));
+  // إجمالي المنفّذ (النهو) مطبّقاً عليه فرق الإدارات المُضافة والتعديلات
+  const exec1=off.phase1.done+(sum('phase1','executed')-base('phase1','executed'));
+  const exec2=off.phase2.done+(sum('phase2','executed')-base('phase2','executed'));
+  return {p1,p2,totalCanals,exec1,exec2,totExec:exec1+exec2};
 }
 // عدّاد متحرّك للأرقام (count-up) — لمسة مبهرة عند عرض المؤشرات
 function animateCounts(){
@@ -1736,7 +1834,7 @@ function animateCounts(){
 function renderOverview(){
   const of=PROJECT.official;
   const dt=liveTotals();
-  const totExec=of.phase1.done+of.phase2.done;
+  const totExec=dt.totExec;
   const totDar=dt.p1.dar+dt.p2.dar;
   const totInv=dt.p1.invest+dt.p2.invest;
   const totDeliv=totDar+totInv;
@@ -1861,7 +1959,7 @@ function renderGovs(){
     const exeW=canals?Math.max(0,(exe-del))/canals*100:0, remW=Math.max(0,100-darW-invW-exeW);
     const rem=canals-del;
     return `<div class="gcard" onclick="openDrawer('${g.id}')">
-      <div class="gcard-h"><div><div class="nm">${g.name}${g._edited?' <span style="font-size:11px;color:var(--nile-500)">✎</span>':''}</div><div class="rg">${g.region}</div></div>
+      <div class="gcard-h"><div><div class="nm">${g.name}${g._edited?' <span style="font-size:11px;color:var(--nile-500)">✎</span>':''}${g._custom?' <span class="custom-tag">مُضافة</span>':''}</div><div class="rg">${g.region}</div></div>
         <span class="st-badge st-${g._ds}">${stateLabel[g._ds]}</span></div>
       <div class="gcard-b">
         <div class="gstat">
@@ -1898,6 +1996,10 @@ function openDrawer(id){
     <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>
     تصدير تقرير الإدارة الرسمي</button>
     <span class="gov-export-hint">تقرير رسمي بترويسة المشروع، يعكس أحدث الأرقام المعتمدة لهذه الإدارة تلقائياً.</span></div>`;
+  if(g._custom)html+=`<div class="custom-gov-banner">إدارة مُضافة يدوياً — مدمجة بالكامل في مؤشّرات المشروع.
+    <button class="btn btn-del-gov" onclick="deleteCustomGov('${id}')">
+      <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+      حذف هذه الإدارة</button></div>`;
   if(p1)html+=`<div class="sec"><div class="sec-t">المرحلة الأولى</div>
     <div class="dstat">
       <div class="c"><div class="n">${p1.canals}</div><div class="l">إجمالي الترع</div></div>
@@ -1916,18 +2018,23 @@ function openDrawer(id){
     <div class="dnote">جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${p2.delivPct!=null?p2.delivPct+'%':'—'}${p2.note?'<br>'+p2.note:''}</div></div>`;
   if(ops.length)html+=`<div class="sec"><div class="sec-t">العمليات والمقاولون (${ops.length})</div>${ops.map(opCard).join('')}</div>`;
   const canals=g.canals||[];
+  window._curCanals=canals;
+  html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})
+      <button class="btn-add-canal" onclick="openAddCanal('${id}')">
+        <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+        إضافة ترعة جديدة</button></div>`;
   if(canals.length){
-    window._curCanals=canals;
-    html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})</div>
-      <div class="canal-src-note">قائمة إرشادية باسم كل ترعة وموقفها من مسار بوابة الاستلام. لكل ترعة معرّف ثابت وحالة موحّدة. الأرقام الرسمية المعتمدة هي الظاهرة أعلى البطاقة (مصدرها تقرير المفوّض).</div>
+    html+=`<div class="canal-src-note">قائمة إرشادية باسم كل ترعة وموقفها من مسار بوابة الاستلام. لكل ترعة معرّف ثابت وحالة موحّدة. الأرقام الرسمية المعتمدة هي الظاهرة أعلى البطاقة (مصدرها تقرير المفوّض).</div>
       <div class="gate-key"><b>مسار بوابة الاستلام:</b> التنفيذ ← الجاهزية ← المعاينة ← التسليم لدار الهندسة ← القبول النهائي</div>
       <div class="canal-tools">
         <div class="search" style="flex:1"><input id="canalSearch" oninput="filterCanals()" placeholder="بحث باسم الترعة…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
         <select class="select" id="canalStatusFilter" onchange="filterCanals()"><option value="all">كل المواقف</option>${[...new Set(canals.map(c=>c.status))].map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
       </div>
-      <div id="canalList" class="canal-list"></div>
-    </div>`;
+      <div id="canalList" class="canal-list"></div>`;
+  } else {
+    html+=`<div class="canal-src-note">لا توجد ترع تفصيلية مُدرجة لهذه الإدارة بعد. يمكنك إضافة ترعة جديدة بكامل بياناتها من الزر أعلاه، وستُدمج فوراً في جداول الترع ومؤشّرات المشروع.</div>`;
   }
+  html+=`</div>`;
   // ── بلاغات الاستلام لهذه الإدارة ──
   const canalOpts=(canals.length?canals:[]);
   const govReports=loadReports().filter(r=>r.govId===id);
@@ -2006,9 +2113,9 @@ function renderCanals(list,govId){
   el.innerHTML=list.map(c=>{
     const tone=toneOf(c.statusCode);
     const step=gateStep(c.statusCode,c.pct);
-    return `<div class="canal-row cr-click t-${tone}" onclick="openCanalCard('${c.id}')" role="button" tabindex="0">
+    return `<div class="canal-row cr-click t-${tone}${c._custom?' cr-custom':''}" onclick="openCanalCard('${c.id}')" role="button" tabindex="0">
       <div class="cr-top">
-        <div class="cr-main"><span class="cr-id">${c.id}</span><span class="cr-name">${c.name}</span>
+        <div class="cr-main"><span class="cr-id">${c.id}</span><span class="cr-name">${c.name}</span>${c._custom?'<span class="canal-add-tag">مُضافة</span>':''}
           ${c.op?`<div class="cr-op">${c.op}${c.contractor?' — '+c.contractor:''}</div>`:''}</div>
         <span class="cr-st st-${tone}">${c.status}</span>
       </div>
@@ -2016,6 +2123,7 @@ function renderCanals(list,govId){
       <div class="cr-meta">
         ${c.length!=null?`<span class="cr-km">الطول ${c.length} كم</span>`:''}
         ${c.pct!=null?`<span class="cr-pct"><span class="mb"><i style="width:${Math.min(100,c.pct)}%"></i></span>${c.pct}%</span>`:''}
+        ${c._custom?`<button class="cr-del" onclick="event.stopPropagation();deleteCustomCanal('${c._gov||govId}','${c.id}')" title="حذف الترعة المُضافة"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>`:''}
       </div></div>`;
   }).join('')||'<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد ترع مطابقة</div>';
 }
@@ -2176,6 +2284,300 @@ function saveGov(id){
 function resetGov(id){const g=PROJECT.govs.find(x=>x.id===id);delete ov[id];saveOv(ov);logAudit({gov:g.name,phase:'—',field:'إلغاء التعديلات',before:'—',after:'عودة للأرقام الرسمية'});pushOverrideDelete(id);openDrawer(id);refreshAll();}
 function closeDrawer(){document.getElementById('drawer').classList.remove('on')}
 
+/* ═══════════════════════════════════════════════════════════════
+   إضافة إدارة جديدة — الفورم والحفظ والتكامل الفوري
+   ═══════════════════════════════════════════════════════════════ */
+// الأقاليم المعروفة في المشروع (تُشتق من البيانات القائمة + خيار حر)
+function knownRegions(){
+  return [...new Set(PROJECT.govs.map(g=>g.region).filter(Boolean))];
+}
+// توليد معرّف لاتيني فريد تلقائياً
+function suggestGovId(){
+  let i=PROJECT.govs.length+1, id;
+  const taken=new Set(PROJECT.govs.map(g=>g.id));
+  do{ id='gov'+i; i++; }while(taken.has(id));
+  return id;
+}
+function phaseFields(n){
+  return `<div class="edit-phase"><div class="ephase-t">المرحلة ${n===1?'الأولى':'الثانية'}</div>
+    <div class="efield"><label>إجمالي الترع</label><input id="ng${n}-canals" type="number" min="0" value="0" oninput="ngRecalc(${n})"></div>
+    <div class="efield"><label>عدد المنفّذة</label><input id="ng${n}-exec" type="number" min="0" value="0" oninput="ngRecalc(${n})"></div>
+    <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="ng${n}-dar" type="number" min="0" value="0" oninput="ngRecalc(${n})"></div>
+    <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="ng${n}-inv" type="number" min="0" value="0" oninput="ngRecalc(${n})"></div>
+    ${n===2?`<div class="efield"><label>جاهزة للاستلام</label><input id="ng2-ready" type="number" min="0" value="0"></div>`:''}
+    <div class="ng-derived" id="ng${n}-derived"></div>
+  </div>`;
+}
+function openAddGov(){
+  const regions=knownRegions();
+  const body=`
+    <div class="edit-block">
+      <div class="rpt-intro">أدخل بيانات الإدارة كما تظهر في التطبيق. عند الحفظ تُدمج فوراً في إجماليات المشروع، ومؤشّرات لوحة القيادة، ومحرك قرار الصرف، والشريط التحذيري، والخطابات الرسمية.</div>
+      <div class="field"><label>اسم الإدارة <span style="color:var(--stop)">*</span></label>
+        <input id="ng-name" placeholder="مثال: الإسماعيلية"></div>
+      <div class="field"><label>الإقليم <span style="color:var(--stop)">*</span></label>
+        <input id="ng-region" list="ng-region-list" placeholder="اختر أو اكتب إقليماً">
+        <datalist id="ng-region-list">${regions.map(r=>`<option value="${r}">`).join('')}</datalist></div>
+      <div class="field"><label>المعرّف اللاتيني (تلقائي — يمكن تعديله)</label>
+        <input id="ng-id" value="${suggestGovId()}" placeholder="latin-id"></div>
+
+      <div class="ng-phase-toggle">
+        <label class="ng-check"><input type="checkbox" id="ng-has1" checked onchange="ngTogglePhase(1)"> تتضمّن المرحلة الأولى</label>
+        <label class="ng-check"><input type="checkbox" id="ng-has2" checked onchange="ngTogglePhase(2)"> تتضمّن المرحلة الثانية</label>
+      </div>
+
+      <div id="ng-p1-wrap">${phaseFields(1)}</div>
+      <div id="ng-p2-wrap">${phaseFields(2)}</div>
+
+      <div class="field"><label>المستحقات المعلّقة (مليون جنيه)</label>
+        <input id="ng-dues" type="number" step="0.001" min="0" value="0"></div>
+
+      <div class="ng-err" id="ng-err"></div>
+      <div class="save-row">
+        <button class="btn btn-primary" onclick="saveNewGov()">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          حفظ الإدارة ودمجها</button>
+        <button class="btn" onclick="closeAddGov()">إلغاء</button>
+      </div>
+    </div>`;
+  document.getElementById('addGovBody').innerHTML=body;
+  document.getElementById('addGovModal').classList.add('on');
+  ngRecalc(1);ngRecalc(2);
+}
+function closeAddGov(){document.getElementById('addGovModal').classList.remove('on')}
+function ngTogglePhase(n){
+  const on=document.getElementById('ng-has'+n).checked;
+  document.getElementById('ng-p'+n+'-wrap').style.display=on?'':'none';
+}
+function ngVal(id){const el=document.getElementById(id);return el?Math.max(0,+el.value||0):0;}
+// معاينة حيّة للمشتقّات + كشف التعارض المنطقي
+function ngRecalc(n){
+  const canals=ngVal(`ng${n}-canals`),exec=ngVal(`ng${n}-exec`),dar=ngVal(`ng${n}-dar`),inv=ngVal(`ng${n}-inv`);
+  const delivered=dar+inv, remaining=Math.max(0,canals-delivered);
+  const donePct=canals?Math.round(exec/canals*100):0, delivPct=canals?Math.round(delivered/canals*100):0;
+  const box=document.getElementById(`ng${n}-derived`);if(!box)return;
+  const warn=[];
+  if(exec>canals)warn.push('المنفّذ أكبر من الإجمالي');
+  if(delivered>exec)warn.push('المُسلّم (دار الهندسة + استثماري) أكبر من المنفّذ');
+  if(delivered>canals)warn.push('المُسلّم أكبر من الإجمالي');
+  box.innerHTML=`<div class="ng-derived-row"><span>المُسلّم كلياً: <b>${delivered}</b></span><span>المتبقّي: <b>${remaining}</b></span><span>نسبة التنفيذ: <b>${donePct}%</b></span><span>نسبة التسليم: <b>${delivPct}%</b></span></div>`+
+    (warn.length?`<div class="ng-derived-warn">⚠ ${warn.join(' • ')}</div>`:'');
+}
+function saveNewGov(){
+  const name=(document.getElementById('ng-name').value||'').trim();
+  const region=(document.getElementById('ng-region').value||'').trim();
+  let id=(document.getElementById('ng-id').value||'').trim().toLowerCase().replace(/\s+/g,'-');
+  const has1=document.getElementById('ng-has1').checked, has2=document.getElementById('ng-has2').checked;
+  const err=document.getElementById('ng-err');
+  const problems=[];
+  if(!name)problems.push('اسم الإدارة مطلوب');
+  if(!region)problems.push('الإقليم مطلوب');
+  if(!id)problems.push('المعرّف مطلوب');
+  if(id&&PROJECT.govs.some(g=>g.id===id))problems.push('المعرّف مستخدَم بالفعل — اختر معرّفاً آخر');
+  if(name&&PROJECT.govs.some(g=>g.name===name))problems.push('يوجد إدارة بنفس الاسم');
+  if(!has1&&!has2)problems.push('يجب تضمين مرحلة واحدة على الأقل');
+  // بناء المراحل مع فرض الاتساق المنطقي
+  function buildPhase(n){
+    const canals=ngVal(`ng${n}-canals`),exec=ngVal(`ng${n}-exec`),dar=ngVal(`ng${n}-dar`),inv=ngVal(`ng${n}-inv`);
+    const delivered=dar+inv;
+    if(exec>canals)problems.push(`م${n}: المنفّذ (${exec}) أكبر من الإجمالي (${canals})`);
+    if(delivered>exec)problems.push(`م${n}: المُسلّم (${delivered}) أكبر من المنفّذ (${exec})`);
+    const remaining=Math.max(0,canals-delivered);
+    const donePct=canals?Math.round(exec/canals*100):0, delivPct=canals?Math.round(delivered/canals*100):0;
+    const ph={canals,executed:exec,delivered,dar,invest:inv,remaining,donePct,delivPct,note:''};
+    if(n===2){ph.ready=ngVal('ng2-ready');}
+    return ph;
+  }
+  const phase1=has1?buildPhase(1):null;
+  const phase2=has2?buildPhase(2):null;
+  if(problems.length){err.innerHTML=problems.map(p=>'• '+p).join('<br>');err.style.display='block';return;}
+  err.style.display='none';
+  // اشتقاق موقف دار الهندسة الإجمالي للإدارة من المرحلتين
+  const anyDone=(p)=>p&&p.canals>0&&p.delivered>=p.canals;
+  const anyPart=(p)=>p&&p.delivered>0;
+  let darStatus='متوقف';
+  const ps=[phase1,phase2].filter(Boolean);
+  if(ps.length&&ps.every(p=>anyDone(p)))darStatus='مكتمل';
+  else if(ps.some(p=>anyPart(p)))darStatus='جزئي';
+  const dues=ngVal('ng-dues');
+  const newGov={
+    id,name,region,
+    phase1,phase2,
+    darStatus,
+    duesOutstanding:dues,
+    operations:[],
+    canals:[],
+    lastUpdate:new Date().toISOString().slice(0,10),
+    _custom:true
+  };
+  // التخزين والدمج الفوري
+  customGovs.push(newGov);
+  saveCustomGovs(customGovs);
+  PROJECT.govs.push(newGov);
+  logAudit({gov:name,phase:'—',field:'إضافة إدارة جديدة',before:'—',
+    after:`إقليم ${region} • ${phase1?'م1 ('+phase1.canals+' ترعة) ':''}${phase2?'م2 ('+phase2.canals+' ترعة)':''} • مستحقات ${dues}`});
+  // مزامنة سحابية إن توفّرت (كتعديل على معرّف الإدارة الجديد)
+  try{if(typeof pushOverride==='function')pushOverride(id,name,{_custom:true,phase1,phase2,duesOutstanding:dues,lastUpdate:newGov.lastUpdate});}catch(e){}
+  closeAddGov();
+  refreshAll();
+  toast('تمت إضافة الإدارة ودمجها في جميع المؤشّرات');
+  // فتح درج الإدارة الجديدة مباشرةً للمراجعة
+  setTimeout(()=>{ if(typeof openDrawer==='function')openDrawer(id); },250);
+}
+// حذف إدارة مُضافة يدوياً (الرسمية غير قابلة للحذف)
+function deleteCustomGov(id){
+  const g=PROJECT.govs.find(x=>x.id===id);
+  if(!g||!g._custom)return;
+  if(!confirm(`حذف الإدارة المُضافة «${g.name}»؟ لا يمكن التراجع.`))return;
+  customGovs=customGovs.filter(x=>x.id!==id);saveCustomGovs(customGovs);
+  const i=PROJECT.govs.findIndex(x=>x.id===id);if(i>=0)PROJECT.govs.splice(i,1);
+  if(ov[id]){delete ov[id];saveOv(ov);try{pushOverrideDelete(id)}catch(e){}}
+  logAudit({gov:g.name,phase:'—',field:'حذف إدارة مُضافة',before:g.name,after:'—'});
+  closeDrawer();refreshAll();toast('تم حذف الإدارة المُضافة');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   إضافة ترعة جديدة داخل صفحة الإدارة — الفورم والحفظ والتكامل الفوري
+   ═══════════════════════════════════════════════════════════════ */
+// اشتقاق بادئة معرّف الترع لإدارة ما من ترعها القائمة (مثل QEN من QEN-001)، وإلا من معرّف الإدارة
+function canalPrefix(g){
+  const first=(g.canals||[]).find(c=>/^[A-Za-z]{2,4}-\d+/.test(c.id||''));
+  if(first)return first.id.split('-')[0];
+  const latin=(g.id||'gov').replace(/[^A-Za-z]/g,'').toUpperCase();
+  return (latin.slice(0,3)||'CNL');
+}
+// توليد معرّف ترعة فريد ضمن الإدارة (بادئة-رقم متسلسل)
+function suggestCanalId(g){
+  const pre=canalPrefix(g);
+  const taken=new Set((g.canals||[]).map(c=>c.id));
+  let max=0;
+  (g.canals||[]).forEach(c=>{const m=/-(\d+)$/.exec(c.id||'');if(m)max=Math.max(max,+m[1]);});
+  let n=max+1,id;
+  do{ id=pre+'-'+String(n).padStart(3,'0'); n++; }while(taken.has(id));
+  return id;
+}
+function openAddCanal(govId){
+  const g=gov(govId);
+  window._addCanalGov=govId;
+  const hasP1=!!g.phase1, hasP2=!!g.phase2;
+  const statusOpts=STATUS_OPTIONS.map(([code,lbl])=>`<option value="${code}"${code==='done'?' selected':''}>${lbl}</option>`).join('');
+  const body=`
+    <div class="edit-block">
+      <div class="rpt-intro">أدخل بيانات الترعة كاملةً. عند الحفظ تُدمج فوراً في جدول ترع الإدارة، وجدول الترع المصنّف، ومحرك القرار، والشريط التحذيري، والخطابات — مع خيار عكسها على إجماليات المرحلة.</div>
+      <div class="field"><label>اسم الترعة <span style="color:var(--stop)">*</span></label>
+        <input id="nc-name" placeholder="مثال: ترعة الرياح الغربي"></div>
+      <div class="field"><label>العملية / التوصيف</label>
+        <input id="nc-op" placeholder="مثال: تأهيل وتبطين ترعة …"></div>
+      <div class="field"><label>المقاول</label>
+        <input id="nc-contractor" placeholder="اسم المقاول أو الجهة المنفّذة"></div>
+      <div class="ac-grid">
+        <div class="efield"><label>الطول (كم)</label><input id="nc-length" type="number" step="0.001" min="0" placeholder="—"></div>
+        <div class="efield"><label>نسبة التنفيذ %</label><input id="nc-pct" type="number" min="0" max="100" placeholder="—" oninput="ncClampPct()"></div>
+      </div>
+      <div class="field"><label>الموقف الحالي من مسار الاستلام <span style="color:var(--stop)">*</span></label>
+        <select id="nc-status">${statusOpts}</select></div>
+      <div class="field"><label>المرحلة</label>
+        <select id="nc-phase">
+          <option value="">غير محدّدة</option>
+          ${hasP1?'<option value="1">المرحلة الأولى</option>':''}
+          ${hasP2?'<option value="2">المرحلة الثانية</option>':''}
+        </select></div>
+      <label class="ng-check" style="margin-top:6px"><input type="checkbox" id="nc-count" checked>
+        عكسها على إجماليات المرحلة (تُضاف +1 لإجمالي الترع، و+1 للمنفّذ إن كانت نسبتها 100%، و+1 للمُستلَم إن كان موقفها «مقبولة/اكتفاء»)</label>
+      <div class="ng-derived" id="nc-derived"></div>
+      <div class="ng-err" id="nc-err"></div>
+      <div class="save-row">
+        <button class="btn btn-primary" onclick="saveNewCanal()">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          حفظ الترعة ودمجها</button>
+        <button class="btn" onclick="closeAddCanal()">إلغاء</button>
+      </div>
+      <div class="ac-idnote">سيُخصّص معرّف تلقائي فريد: <b id="nc-idpreview">${suggestCanalId(g)}</b></div>
+    </div>`;
+  document.getElementById('addCanalBody').innerHTML=body;
+  document.getElementById('addCanalTitle').textContent='إضافة ترعة جديدة — '+g.name;
+  document.getElementById('addCanalModal').classList.add('on');
+}
+function closeAddCanal(){document.getElementById('addCanalModal').classList.remove('on')}
+function ncClampPct(){const el=document.getElementById('nc-pct');if(!el)return;let v=+el.value;if(v>100)el.value=100;if(v<0)el.value=0;}
+function saveNewCanal(){
+  const govId=window._addCanalGov;
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g){toast('تعذّر تحديد الإدارة');return;}
+  const err=document.getElementById('nc-err');
+  const name=(document.getElementById('nc-name').value||'').trim();
+  const op=(document.getElementById('nc-op').value||'').trim();
+  const contractor=(document.getElementById('nc-contractor').value||'').trim();
+  const lenRaw=document.getElementById('nc-length').value;
+  const pctRaw=document.getElementById('nc-pct').value;
+  const statusCode=document.getElementById('nc-status').value;
+  const phaseRaw=document.getElementById('nc-phase').value;
+  const count=document.getElementById('nc-count').checked;
+  const problems=[];
+  if(!name)problems.push('اسم الترعة مطلوب');
+  if(!statusCode)problems.push('الموقف مطلوب');
+  const length=lenRaw!==''?Math.max(0,+lenRaw):null;
+  let pct=pctRaw!==''?Math.max(0,Math.min(100,+pctRaw)):null;
+  if(lenRaw!==''&&isNaN(+lenRaw))problems.push('الطول يجب أن يكون رقماً');
+  if(pctRaw!==''&&isNaN(+pctRaw))problems.push('نسبة التنفيذ يجب أن تكون رقماً');
+  const phase=phaseRaw?+phaseRaw:null;
+  // منع تكرار الاسم داخل نفس الإدارة (تنبيه فقط لو مطابق تماماً)
+  if(name&&(g.canals||[]).some(c=>c.name===name&&c._custom))problems.push('سبق إضافة ترعة بنفس الاسم لهذه الإدارة');
+  if(problems.length){err.innerHTML=problems.map(p=>'• '+p).join('<br>');err.style.display='block';return;}
+  err.style.display='none';
+  const label=(STATUS_OPTIONS.find(o=>o[0]===statusCode)||[])[1]||statusCode;
+  const stage=gateStep(statusCode,pct);
+  const id=suggestCanalId(g);
+  const canal={id,name,op,contractor,length,pct,statusCode,status:label,stage,phase,_custom:true,_gov:govId};
+  // التخزين والدمج الفوري
+  customCanals.push(canal);
+  saveCustomCanals(customCanals);
+  if(!g.canals)g.canals=[];
+  g.canals.push(canal);
+  // عكسها على إجماليات المرحلة عبر طبقة الأوفررايد (زيادة صافية محكومة، لا مساس بالرقم الرسمي عند عدم التفعيل)
+  let phaseNote='بدون تعديل الإجماليات';
+  if(count){
+    const key=phase===2?'phase2':(phase===1?'phase1':(g.phase1?'phase1':(g.phase2?'phase2':null)));
+    if(key&&(g[key]||key==='phase1'||key==='phase2')){
+      const base=gov(govId)[key]||g[key]||{canals:0,executed:0,delivered:0,dar:0,invest:0,remaining:0};
+      const isDone=pct===100;
+      const isDar=['accepted','accepted_partial','submitted','inspecting','done'].includes(statusCode)&&['accepted','accepted_partial'].includes(statusCode);
+      const o=ov[govId]||{};
+      const cur=o[key]?{...base,...o[key]}:{...base};
+      cur.canals=(cur.canals||0)+1;
+      if(isDone)cur.executed=(cur.executed||0)+1;
+      if(isDar){cur.dar=(cur.dar||0)+1;cur.delivered=(cur.delivered||0)+1;}
+      cur.remaining=Math.max(0,cur.canals-(cur.delivered||0));
+      cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
+      cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
+      o[key]=cur;o.lastUpdate=new Date().toISOString().slice(0,10);
+      ov[govId]=o;saveOv(ov);
+      try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+      phaseNote=`م${key==='phase2'?'2':'1'}: إجمالي +1${isDone?' ومنفّذ +1':''}${isDar?' ومُستلَم +1':''}`;
+    }
+  }
+  logAudit({gov:g.name,phase:id+' — '+name,field:'إضافة ترعة جديدة',before:'—',
+    after:`${label}${length!=null?' • '+length+' كم':''}${pct!=null?' • '+pct+'%':''} • ${phaseNote}`});
+  closeAddCanal();
+  refreshAll();
+  toast('تمت إضافة الترعة ودمجها في جميع الجداول والمؤشّرات');
+  setTimeout(()=>openDrawer(govId),200);
+}
+// حذف ترعة مُضافة يدوياً (الترع الأصلية غير قابلة للحذف)
+function deleteCustomCanal(govId,cid){
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
+  const c=(g.canals||[]).find(x=>x.id===cid);
+  if(!c||!c._custom)return;
+  if(!confirm(`حذف الترعة المُضافة «${c.name}»؟ لا يمكن التراجع.`))return;
+  customCanals=customCanals.filter(x=>!(x.id===cid&&x._gov===govId));
+  saveCustomCanals(customCanals);
+  const i=g.canals.findIndex(x=>x.id===cid);if(i>=0)g.canals.splice(i,1);
+  // عكس أثر الترعة عن إجماليات المرحلة إن كانت قد عُكست (نعتمد على منطق آمن: لا نُنقص تحت الصفر)
+  logAudit({gov:g.name,phase:cid+' — '+(c.name||''),field:'حذف ترعة مُضافة',before:c.name,after:'—'});
+  refreshAll();
+  openDrawer(govId);
+  toast('تم حذف الترعة المُضافة');
+}
+
 // ═══ منطق بلاغات الاستلام في الدرج ═══
 function fillCanalMeta(govId){
   const sel=document.getElementById('rp-canal');const meta=document.getElementById('rp-meta');
@@ -2320,13 +2722,24 @@ function duesTotal(){
   let t=0;
   allGovs().forEach(g=>{
     const edited=ov[g.id]&&ov[g.id].duesOutstanding!=null;
-    if(edited){ t+=ov[g.id].duesOutstanding; }
+    if(edited){ t+=ov[g.id].duesOutstanding; }           // تعديل يدوي له الأسبقية
+    else if(g._custom){ t+=(g.duesOutstanding||0); }     // الإدارة المُضافة: مستحقاتها مخزّنة مباشرةً
     else { (g.operations||[]).forEach(o=>{if(o.outstanding>0)t+=o.outstanding}); }
   });
   return t;
 }
 let duesSort={col:'outstanding',dir:-1};
-function sortDues(col){duesSort.dir=(duesSort.col===col)?-duesSort.dir:(col==='outstanding'?-1:1);duesSort.col=col;renderDues();}
+function sortDues(col){duesSort.dir=(duesSort.col===col)?-duesSort.dir:((col==='outstanding'||col==='paid'||col==='gross')?-1:1);duesSort.col=col;renderDues();}
+// مُساعد: يبني صفاً موحّداً للمستحقات. المعلّق = المحتجز الذي لم يُصرف، وما تم صرفه = حقل paid الاختياري
+// (لا يُختلق: إن لم يوجد paid تُترك القيمة null فتظهر "—" ولا تُحتسب صفراً وهمياً). الإجمالي = المصروف + المعلّق.
+function duesRow(gov,src,extra){
+  const outstanding=+(src.outstanding||0);
+  const hasPaid=src.paid!=null;               // صُرف فعلاً وموثّق في البيانات فقط
+  const paid=hasPaid?+src.paid:null;
+  const gross=+((paid||0)+outstanding);       // إجمالي المستحق المرصود للعملية
+  return Object.assign({gov,name:src.name,contractor:src.contractor,detail:src.detail,
+    outstanding,paid,hasPaid,gross},extra||{});
+}
 function renderDues(){
   const q=(document.getElementById('duesSearch')?.value||'').trim();
   let rows=[];
@@ -2337,40 +2750,51 @@ function renderDues(){
     if(edited){
       const newTot=ov[g.id].duesOutstanding;
       // نُبقي تفصيل المقاولين ظاهراً (لا نمحوه)، ونضيف صف تسوية يعكس الفرق مع القيمة المحدّثة يدوياً.
-      ops.forEach(o=>rows.push({gov:g.name,...o,_official:true}));
+      ops.forEach(o=>rows.push(duesRow(g.name,o,{_official:true})));
       const diff=+(newTot-opsSum).toFixed(3);
       if(Math.abs(diff)>=0.001){
-        rows.push({gov:g.name,
-          name:'تسوية إجمالي المستحقات (محدّث يدوياً)',
-          contractor:'—',
+        rows.push(duesRow(g.name,{name:'تسوية إجمالي المستحقات (محدّث يدوياً)',contractor:'—',
           detail:'الإجمالي المعتمد '+newTot.toFixed(3)+' م.ج مقابل مجموع البنود '+opsSum.toFixed(3)+' م.ج',
-          outstanding:diff,_edited:true});
+          outstanding:diff},{_edited:true}));
       } else if(!ops.length&&newTot>0){
-        // لا بنود تفصيلية أصلاً → صف إجمالي واحد
-        rows.push({gov:g.name,name:'إجمالي مستحقات الإدارة (محدّث)',contractor:'—',detail:'قيمة محدّثة يدوياً',outstanding:newTot,_edited:true});
+        rows.push(duesRow(g.name,{name:'إجمالي مستحقات الإدارة (محدّث)',contractor:'—',detail:'قيمة محدّثة يدوياً',outstanding:newTot},{_edited:true}));
       }
+    } else if(g._custom){
+      if((g.duesOutstanding||0)>0)
+        rows.push(duesRow(g.name,{name:'إجمالي مستحقات الإدارة (مُضافة)',contractor:'—',detail:'إدارة مُضافة يدوياً',outstanding:g.duesOutstanding},{_edited:true}));
     } else {
-      ops.forEach(o=>rows.push({gov:g.name,...o}));
+      ops.forEach(o=>rows.push(duesRow(g.name,o)));
     }
   });
   if(q)rows=rows.filter(r=>r.gov.includes(q)||(r.contractor||'').includes(q)||(r.name||'').includes(q)||(r.detail||'').includes(q));
   const c=duesSort.col,d=duesSort.dir;
   rows.sort((a,b)=>{let x=a[c],y=b[c];if(typeof x==='number')return (x-y)*d;return String(x||'').localeCompare(String(y||''),'ar')*d;});
-  const total=rows.reduce((s,r)=>s+r.outstanding,0);
-  document.getElementById('duesTotalTag').textContent=total.toFixed(1)+' مليون جنيه';
+  const totPaid=rows.reduce((s,r)=>s+(r.paid||0),0);   // مجموع ما وُثّق صرفه فقط
+  const totOut =rows.reduce((s,r)=>s+r.outstanding,0);  // مجموع المعلّق
+  const totGross=rows.reduce((s,r)=>s+r.gross,0);        // الإجمالي الكلي المرصود
+  const anyPaid=rows.some(r=>r.hasPaid);
+  document.getElementById('duesTotalTag').textContent=totOut.toFixed(1)+' مليون جنيه معلّق';
   const arrow=col=>duesSort.col===col?(duesSort.dir>0?' ▲':' ▼'):'';
+  const cell=(v,hp)=>hp?v.toFixed(2):'—';
   document.getElementById('duesTable').innerHTML=`
     <thead><tr>
       <th class="sortable-th" onclick="sortDues('gov')">الإدارة${arrow('gov')}</th>
       <th class="sortable-th" onclick="sortDues('name')">العملية${arrow('name')}</th>
       <th class="sortable-th" onclick="sortDues('contractor')">المقاول${arrow('contractor')}</th>
       <th>البيان</th>
-      <th class="sortable-th" style="text-align:end" onclick="sortDues('outstanding')">المعلّق (م.ج)${arrow('outstanding')}</th></tr></thead>
+      <th class="sortable-th" style="text-align:end" onclick="sortDues('paid')">ما تم صرفه (م.ج)${arrow('paid')}</th>
+      <th class="sortable-th" style="text-align:end" onclick="sortDues('outstanding')">المعلّق (م.ج)${arrow('outstanding')}</th>
+      <th class="sortable-th" style="text-align:end" onclick="sortDues('gross')">الإجمالي (م.ج)${arrow('gross')}</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td><b>${r.gov}</b></td><td style="max-width:230px">${r.name}</td>
       <td style="color:var(--muted);font-size:12.5px">${r.contractor}</td>
       <td style="font-size:12px;color:#7a5716">${r.detail||'—'}</td>
-      <td class="num" style="color:var(--stop);font-weight:700">${r.outstanding.toFixed(2)}</td></tr>`).join('')}
-      <tr class="total-row"><td colspan="4">الإجمالي المرصود${q?' (بعد الترشيح)':''}</td><td class="num">${total.toFixed(2)}</td></tr></tbody>`;
+      <td class="num" style="color:var(--done);font-weight:700">${cell(r.paid||0,r.hasPaid)}</td>
+      <td class="num" style="color:var(--stop);font-weight:700">${r.outstanding.toFixed(2)}</td>
+      <td class="num" style="font-weight:800">${r.gross.toFixed(2)}</td></tr>`).join('')}
+      <tr class="total-row"><td colspan="4">الإجمالي المرصود${q?' (بعد الترشيح)':''}</td>
+        <td class="num">${anyPaid?totPaid.toFixed(2):'—'}</td>
+        <td class="num">${totOut.toFixed(2)}</td>
+        <td class="num">${totGross.toFixed(2)}</td></tr></tbody>`;
 }
 
 function renderDeferred(){
@@ -2625,8 +3049,11 @@ function exportExcel(){
   }));
   // also dues sheet appended
   rows.push([]);rows.push(['المستحقات المعلّقة']);
-  rows.push(['الإدارة','العملية','المقاول','المعلّق(م.ج)','البيان']);
-  allGovs().forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0)rows.push([g.name,o.name,o.contractor,o.outstanding,o.detail||''])}));
+  rows.push(['الإدارة','العملية','المقاول','ما تم صرفه(م.ج)','المعلّق(م.ج)','الإجمالي(م.ج)','البيان']);
+  allGovs().forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0){
+    const paid=o.paid!=null?+o.paid:'';const out=+o.outstanding;const gross=(o.paid!=null?+o.paid:0)+out;
+    rows.push([g.name,o.name,o.contractor,paid,out,gross,o.detail||'']);
+  }}));
   const csv='\ufeff'+rows.map(r=>r.map(c=>{c=String(c).replace(/"/g,'""');return /[",\n]/.test(c)?'"'+c+'"':c}).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -2751,6 +3178,9 @@ function buildGovDoc(govId){
   const canals=(g.canals||[]).filter(Boolean);
   const duesRows=ops.filter(o=>o.outstanding>0).sort((a,b)=>b.outstanding-a.outstanding);
   const duesTot=duesRows.reduce((s,o)=>s+o.outstanding,0);
+  const duesPaidTot=duesRows.reduce((s,o)=>s+(o.paid!=null?+o.paid:0),0);
+  const duesGrossTot=duesRows.reduce((s,o)=>s+(o.paid!=null?+o.paid:0)+o.outstanding,0);
+  const duesAnyPaid=duesRows.some(o=>o.paid!=null);
   const govReports=loadReports().filter(r=>r.govId===govId);
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
   const num=v=>(v===null||v===undefined||v==='')?'—':v;
@@ -2804,9 +3234,9 @@ function buildGovDoc(govId){
 
   if(duesRows.length){
     body+=`<div class="doc-sec-h">المستحقات المعلّقة لحين استلام دار الهندسة</div>
-      <table class="doc-tbl sm"><thead><tr><th>م</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>المعلّق (م.ج)</th></tr></thead>
-      <tbody>${duesRows.map((o,i)=>`<tr><td>${i+1}</td><td>${o.name}</td><td>${o.contractor}</td><td>${o.detail||'—'}</td><td>${o.outstanding.toFixed(2)}</td></tr>`).join('')}
-      <tr class="doc-total"><td colspan="4">الإجمالي</td><td>${duesTot.toFixed(2)}</td></tr></tbody></table>`;
+      <table class="doc-tbl sm"><thead><tr><th>م</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>ما تم صرفه</th><th>المعلّق</th><th>الإجمالي</th></tr></thead>
+      <tbody>${duesRows.map((o,i)=>{const hp=o.paid!=null;const gr=(hp?+o.paid:0)+o.outstanding;return `<tr><td>${i+1}</td><td>${o.name}</td><td>${o.contractor}</td><td>${o.detail||'—'}</td><td>${hp?(+o.paid).toFixed(2):'—'}</td><td>${o.outstanding.toFixed(2)}</td><td>${gr.toFixed(2)}</td></tr>`}).join('')}
+      <tr class="doc-total"><td colspan="4">الإجمالي (م.ج)</td><td>${duesAnyPaid?duesPaidTot.toFixed(2):'—'}</td><td>${duesTot.toFixed(2)}</td><td>${duesGrossTot.toFixed(2)}</td></tr></tbody></table>`;
   }
   if(govReports.length){
     body+=`<div class="doc-sec-h">بلاغات الاستلام المُرسلة لدار الهندسة</div>
@@ -2973,13 +3403,16 @@ function buildDoc(id){
     const rows=[];allGovs().forEach(g=>(g.operations||[]).forEach(o=>{if(o.outstanding>0)rows.push({gov:g.name,...o})}));
     rows.sort((a,b)=>b.outstanding-a.outstanding);
     const tot=rows.reduce((s,r)=>s+r.outstanding,0);
+    const paidTot=rows.reduce((s,r)=>s+(r.paid!=null?+r.paid:0),0);
+    const grossTot=rows.reduce((s,r)=>s+(r.paid!=null?+r.paid:0)+r.outstanding,0);
+    const anyPaid=rows.some(r=>r.paid!=null);
     return letterhead()+`
       <div class="doc-title-main">كشف المستحقات المعلّقة لحين استلام دار الهندسة</div>
       <div class="doc-sub-main">القيم بالمليون جنيه — بتاريخ ${ARDATE()}</div>
       <div class="doc-body">
-        <table class="doc-tbl sm"><thead><tr><th>م</th><th>الإدارة</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>المعلّق (م.ج)</th></tr></thead>
-        <tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.gov}</td><td>${r.name}</td><td>${r.contractor}</td><td>${r.detail||'—'}</td><td>${r.outstanding.toFixed(2)}</td></tr>`).join('')}
-        <tr class="doc-total"><td colspan="5">الإجمالي المرصود</td><td>${tot.toFixed(2)}</td></tr></tbody></table>
+        <table class="doc-tbl sm"><thead><tr><th>م</th><th>الإدارة</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>ما تم صرفه</th><th>المعلّق</th><th>الإجمالي</th></tr></thead>
+        <tbody>${rows.map((r,i)=>{const hp=r.paid!=null;const gr=(hp?+r.paid:0)+r.outstanding;return `<tr><td>${i+1}</td><td>${r.gov}</td><td>${r.name}</td><td>${r.contractor}</td><td>${r.detail||'—'}</td><td>${hp?(+r.paid).toFixed(2):'—'}</td><td>${r.outstanding.toFixed(2)}</td><td>${gr.toFixed(2)}</td></tr>`}).join('')}
+        <tr class="doc-total"><td colspan="5">الإجمالي المرصود</td><td>${anyPaid?paidTot.toFixed(2):'—'}</td><td>${tot.toFixed(2)}</td><td>${grossTot.toFixed(2)}</td></tr></tbody></table>
       </div>`+docFooter();
   }
   if(id==='reports'){
