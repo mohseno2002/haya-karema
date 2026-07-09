@@ -3123,12 +3123,13 @@ function renderReports(){
 
 // ═══════════ التقارير والخطابات الرسمية ═══════════
 const ARDATE=()=>new Date().toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'long',year:'numeric'});
-function letterhead(){
+function letterhead(issuer){
+  const line3=issuer||'مفوض الوزارة لمشروع حياة كريمة';
   return `<div class="lh">
     <div class="lh-r">
       <div>وزارة الموارد المائية والري</div>
       <div>مصلحة الري</div>
-      <div>مفوض الوزارة لمشروع حياة كريمة</div>
+      <div>${line3}</div>
     </div>
     <div class="lh-l"><div class="lh-init">مبادرة<br>حياة كريمة</div></div>
   </div>
@@ -3256,7 +3257,7 @@ function buildGovDoc(govId){
   body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
       <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
     </div>`;
-  return letterhead()+body+docFooter({l1:'الإدارة المركزية للموارد المائية والري بـ'+g.name,l2:'رئيس الإدارة المركزية',name:null});
+  return letterhead('الإدارة المركزية للموارد المائية والري بـ'+g.name)+body+docFooter({l1:'الإدارة المركزية للموارد المائية والري بـ'+g.name,l2:'رئيس الإدارة المركزية',name:null});
 }
 // ═══════════════════════════════════════════════════════════════════
 // يفتح نموذج الإدخال
