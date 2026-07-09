@@ -590,6 +590,7 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .docs-intro{background:var(--cyan-soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--nile-800);margin-bottom:20px;line-height:1.8}
 .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .doc-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;cursor:pointer;transition:.18s;position:relative}
+.doc-card-hl{border:1.5px solid var(--gold,#c9b67c);background:linear-gradient(135deg,var(--cyan-soft,#e6f4f1),var(--card))}
 .doc-card:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(29,77,78,.12),0 18px 44px rgba(29,77,78,.14);border-color:var(--nile-accent)}
 .doc-ic{font-size:30px;margin-bottom:10px}
 .doc-tag{position:absolute;top:18px;inset-inline-end:18px;font-size:10.5px;font-weight:800;color:var(--nile-700);background:var(--cyan-soft);padding:3px 10px;border-radius:20px}
@@ -636,6 +637,29 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .doc-address{margin-top:40px;border-top:2px solid #111;padding-top:8px;font-size:11px;font-weight:700;text-align:center;color:#111}
 .doc-cc{margin-top:18px;font-size:11.5px;line-height:1.9;color:#222}
 .doc-cc .cc-t{font-weight:800;text-decoration:underline;margin-top:8px}
+.doc-subject{font-weight:800;text-align:center;margin:2px 0 14px;padding:6px 12px;background:#eef5f1;border-radius:8px;color:#15463d}
+/* منشئ الخطابات المخصّصة */
+.lc-overlay{position:fixed;inset:0;z-index:95;background:rgba(10,31,26,.6);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:16px}
+.lc-overlay.on{display:flex;animation:fade .2s}
+.lc-modal{background:var(--card,#fff);width:100%;max-width:560px;max-height:90vh;overflow:auto;border-radius:20px;border:1.5px solid var(--gold,#c9b67c);box-shadow:0 24px 70px rgba(0,0,0,.4)}
+.lc-head{padding:20px 22px 14px;border-bottom:1.5px solid var(--line);background:linear-gradient(135deg,var(--nile-800,#0a1f1a),var(--nile-600,#15463d));border-radius:20px 20px 0 0}
+.lc-title{font-family:'Cairo';font-weight:900;font-size:19px;color:var(--gold-bright,#e6cf8f)}
+.lc-sub{font-size:12px;color:#cfe0db;margin-top:4px;line-height:1.7}
+.lc-body{padding:18px 22px}
+.lc-lbl{display:block;font-family:'Cairo';font-weight:800;font-size:13px;color:var(--nile-700);margin:14px 0 6px}
+.lc-lbl:first-child{margin-top:0}
+.lc-req{color:#c0392b}
+.lc-inp{width:100%;box-sizing:border-box;font-family:'Cairo';font-size:13.5px;color:var(--ink,#0a1f1a);background:var(--bg,#fff);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;transition:border-color .15s}
+.lc-inp:focus{outline:none;border-color:var(--gold,#c9b67c)}
+.lc-area{resize:vertical;line-height:1.8}
+.lc-row{display:flex;gap:10px}.lc-row .lc-sel{flex:1}
+.lc-sel{cursor:pointer}
+.lc-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lc-chip{font-family:'Cairo';font-size:11.5px;font-weight:700;color:var(--nile-700);background:var(--cyan-soft,#e6f4f1);border:1.3px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;transition:all .15s}
+.lc-chip:hover{border-color:var(--gold,#c9b67c);transform:translateY(-1px)}
+.lc-check{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-top:8px;cursor:pointer}
+.lc-check input{width:16px;height:16px;accent-color:var(--nile-600)}
+.lc-foot{display:flex;gap:10px;justify-content:flex-start;padding:14px 22px 20px;border-top:1.5px solid var(--line)}
 .doc-sec-h{font-family:'Cairo';font-weight:800;font-size:15px;margin:18px 0 4px;color:#15463d;border-bottom:2px solid #cfe0d8;padding-bottom:4px}
 .gov-export{background:linear-gradient(120deg,var(--nile-800),var(--nile-600));border:1.5px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:18px;text-align:center}
 .btn-export{background:#fff;color:var(--nile-800);font-weight:800;border:none;width:100%;justify-content:center;padding:12px}
@@ -1376,6 +1400,10 @@ table.tbl td{background-clip:padding-box}
     <button class="btn" onclick="closeDoc()">إغلاق</button>
   </div>
   <div class="doc-scroll"><div class="doc-page" id="docPage"></div></div>
+</div>
+
+<div class="lc-overlay" id="lcOverlay">
+  <div class="lc-modal" id="lcModal"></div>
 </div>
 
 <div class="drawer-wrap" id="drawer">
@@ -2673,10 +2701,9 @@ function letterhead(){
   <div class="lh-rule"></div>`;
 }
 function docFooter(sign,extra){
-  // التوقيع الافتراضي = مفوّض الوزارة (لتقارير المشروع العامة)
-  // يمكن تمرير توقيع مخصّص (مثل رئيس الإدارة المركزية) لتقرير إدارة بعينها
-  // extra = محتوى إضافي (مثل "صورة مرسلة") يظهر بعد التوقيع وقبل العنوان
-  const s=sign||{l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
+  // بناءً على التوجيه: توقيع كل الخطابات موحّد = مفوّض الوزارة المهندسة سلوى عبد الغني عثمان
+  // (يُتجاهل أي توقيع مخصّص يُمرَّر، لضمان توحيد جهة الإصدار)
+  const s={l1:'مستشار مصلحة الري',l2:'مفوض الوزارة بمشروع حياة كريمة',name:'سلوى عبد الغني عثمان'};
   return `<div class="doc-foot"><div class="doc-sign">
       <div>${s.l1}</div>
       <div>${s.l2}</div>
@@ -2694,7 +2721,14 @@ function renderDocs(){
     {id:'reports',icon:'🔔',title:'تقرير بلاغات الاستلام',desc:'موقف الترع المُرسلة لدار الهندسة ومواعيد استلامها والمتأخّر منها.',tag:'متابعة'},
     {id:'escalation',icon:'⚠️',title:'خطاب تصعيد لتأخّر المعاينة',desc:'خطاب لدار الهندسة بشأن الترع المتأخّرة عن موعد الاستلام المقرر.',tag:'خطاب'},
   ];
-  document.getElementById('docsGrid').innerHTML=docs.map(d=>`
+  document.getElementById('docsGrid').innerHTML=`
+    <div class="doc-card doc-card-hl" onclick="openLetterComposer()">
+      <div class="doc-ic">✍️</div>
+      <div class="doc-tag">جديد</div>
+      <div class="doc-title">إنشاء خطاب مخصّص</div>
+      <div class="doc-desc">اكتب المُرسَل إليه وموضوع الخطاب والصور المرسلة، وأرفق جدول ترع إن رغبت — ويُصاغ رسمياً بالترويسة والتوقيع.</div>
+      <div class="doc-open">فتح النموذج ←</div>
+    </div>`+docs.map(d=>`
     <div class="doc-card" onclick="openDoc('${d.id}')">
       <div class="doc-ic">${d.icon}</div>
       <div class="doc-tag">${d.tag}</div>
@@ -2728,6 +2762,8 @@ function buildGovDoc(govId){
     <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
     <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
     <div class="doc-body">
+      <div class="doc-to">السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
+      <div class="doc-greet">تحية طيبة وبعد ،،،</div>
       <p>فيما يلي الموقف التنفيذي التفصيلي لاستلامات الإدارة المركزية بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
       <table class="doc-tbl"><thead><tr>
         <th>المرحلة</th><th>إجمالي الترع</th><th>المنفّذ</th><th>دار الهندسة</th><th>استثماري</th><th>المُسلّم</th><th>المتبقّي</th></tr></thead>
@@ -2780,15 +2816,119 @@ function buildGovDoc(govId){
   body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
       <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
     </div>`;
-  // توقيع رئيس الإدارة المركزية — للقاهرة والجيزة يُستخدم الاسم المعتمد
-  let govSign;
-  if(govId==='giza'||govId==='qalyubia'||g.region==='القاهرة الكبرى'){
-    govSign={l1:'رئيس الإدارة المركزية للموارد المائية والرى',l2:'لمحافظتى القاهرة والجيزة',name:'محسن عبد الرشيد'};
-  } else {
-    govSign={l1:'رئيس الإدارة المركزية',l2:`للموارد المائية والري بـ${g.name}`,name:'.........................'};
-  }
-  return letterhead()+body+docFooter(govSign);
+  return letterhead()+body+docFooter();
 }
+// ═══════════════════════════════════════════════════════════════════
+//  منشئ الخطابات المخصّصة — نموذج تفاعلي يبني خطاباً رسمياً احترافياً
+// ═══════════════════════════════════════════════════════════════════
+// يفتح نموذج الإدخال
+function openLetterComposer(preTo,preSubject){
+  const gOpts=allGovs().map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  const html=`
+    <div class="lc-head">
+      <div class="lc-title">✍️ إنشاء خطاب رسمي</div>
+      <div class="lc-sub">املأ البيانات ليُصاغ الخطاب بالترويسة والتوقيع المعتمد — جاهزاً للطباعة أو حفظ PDF.</div>
+    </div>
+    <div class="lc-body">
+      <label class="lc-lbl">موجَّه إلى <span class="lc-req">*</span></label>
+      <input id="lcTo" class="lc-inp" placeholder="مثال: السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بالجيزة" value="${(preTo||'').replace(/"/g,'&quot;')}">
+      <div class="lc-quick" id="lcToQuick"></div>
+
+      <label class="lc-lbl">موضوع الخطاب <span class="lc-req">*</span></label>
+      <input id="lcSubject" class="lc-inp" placeholder="مثال: سرعة التنسيق لاستلام الترع الجاهزة" value="${(preSubject||'').replace(/"/g,'&quot;')}">
+
+      <label class="lc-lbl">نص / ملخص الموضوع <span class="lc-req">*</span></label>
+      <textarea id="lcContent" class="lc-inp lc-area" rows="5" placeholder="اكتب ملخص الموضوع بلغة طبيعية… سيُصاغ في فقرات رسمية تلقائياً. يمكنك كتابة عدة أسطر."></textarea>
+      <label class="lc-check"><input type="checkbox" id="lcVerbatim"> إدراج النص كما هو دون إعادة صياغة</label>
+
+      <label class="lc-lbl">إرفاق جدول ترع (اختياري)</label>
+      <div class="lc-row">
+        <select id="lcTblGov" class="lc-inp lc-sel"><option value="">— بدون جدول —</option>${gOpts}</select>
+        <select id="lcTblStatus" class="lc-inp lc-sel">
+          <option value="all">كل الترع</option>
+          <option value="done">الجاهزة (بانتظار التسليم)</option>
+          <option value="submitted">المُسلّمة لدار الهندسة</option>
+          <option value="stopped">المتوقفة</option>
+          <option value="deferred">المؤجلة</option>
+          <option value="accepted">المقبولة نهائياً</option>
+        </select>
+      </div>
+
+      <label class="lc-lbl">صور مرسلة إلى (اختياري — سطر لكل جهة)</label>
+      <textarea id="lcCc" class="lc-inp lc-area" rows="3" placeholder="مثال:&#10;السادة الأفاضل / رؤساء الإدارات المركزية&#10;السيد المهندس / مدير مكتب دار الهندسة"></textarea>
+    </div>
+    <div class="lc-foot">
+      <button class="btn btn-primary" onclick="generateCustomLetter()">📄 إنشاء الخطاب</button>
+      <button class="btn" onclick="closeLetterComposer()">إلغاء</button>
+    </div>`;
+  document.getElementById('lcModal').innerHTML=html;
+  document.getElementById('lcOverlay').classList.add('on');
+  // أزرار سريعة لتعبئة المُرسَل إليه
+  const quick=[
+    ['رئيس الإدارة المركزية','السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بـ'],
+    ['دار الهندسة','السيد المهندس / مدير مكتب دار الهندسة للاستشارات الهندسية'],
+    ['رئيس مصلحة الري','السيد الأستاذ المهندس / رئيس مصلحة الري']
+  ];
+  document.getElementById('lcToQuick').innerHTML=quick.map(q=>`<button class="lc-chip" onclick="lcSetTo('${q[1].replace(/'/g,"\\'")}')">${q[0]}</button>`).join('');
+}
+function lcSetTo(v){document.getElementById('lcTo').value=v;}
+function closeLetterComposer(){document.getElementById('lcOverlay').classList.remove('on');}
+
+// يبني الخطاب من مدخلات النموذج ويعرضه في معاينة الطباعة
+function generateCustomLetter(){
+  const to=(document.getElementById('lcTo').value||'').trim();
+  const subject=(document.getElementById('lcSubject').value||'').trim();
+  const content=(document.getElementById('lcContent').value||'').trim();
+  const verbatim=document.getElementById('lcVerbatim').checked;
+  const tblGov=document.getElementById('lcTblGov').value;
+  const tblStatus=document.getElementById('lcTblStatus').value;
+  const cc=(document.getElementById('lcCc').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!to||!subject||!content){toast&&toast('يرجى إكمال: المُرسَل إليه، الموضوع، والنص',true);return;}
+  const html=buildCustomLetter({to,subject,content,verbatim,tblGov,tblStatus,cc});
+  document.getElementById('docPage').innerHTML=html;
+  closeLetterComposer();
+  document.getElementById('docOverlay').classList.add('on');
+}
+
+// يصوغ نص الملخص في فقرات رسمية
+function lcFormalize(content,subject){
+  const paras=content.split(/\n{1,}/).map(s=>s.trim()).filter(Boolean);
+  const opener=`إشارةً إلى مشروع تبطين الترع بمبادرة «حياة كريمة»، وبخصوص ${subject}، نفيد سيادتكم بما يلي:`;
+  const bodyParas=paras.map(p=>`<p>${p}</p>`).join('');
+  return `<p>${opener}</p>${bodyParas}`;
+}
+function buildCustomLetter(o){
+  const num=n=>n==null?'—':Number(n).toLocaleString('en');
+  // جدول اختياري
+  let table='';
+  if(o.tblGov){
+    const g=gov(o.tblGov);let rows=(g.canals||[]).filter(Boolean);
+    if(o.tblStatus&&o.tblStatus!=='all')rows=rows.filter(c=>c.statusCode===o.tblStatus);
+    const label={all:'',done:'الجاهزة بانتظار التسليم',submitted:'المُسلّمة لدار الهندسة',stopped:'المتوقفة',deferred:'المؤجلة',accepted:'المقبولة نهائياً'}[o.tblStatus]||'';
+    if(rows.length){
+      table=`<div class="doc-sec-h">بيان بترع ${g.name}${label?' — '+label:''} (عدد ${rows.length})</div>
+      <table class="doc-tbl sm"><thead><tr><th>م</th><th>الترعة</th><th>العملية</th><th>المقاول</th><th>الطول (كم)</th><th>التنفيذ</th><th>الموقف</th></tr></thead>
+      <tbody>${rows.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name||'—'}</td><td>${c.op||'—'}</td><td>${c.contractor||'—'}</td><td>${c.length!=null?c.length:'—'}</td><td>${c.pct!=null?c.pct+'%':'—'}</td><td>${ASST_CODE_AR[c.statusCode]||c.status||'—'}</td></tr>`).join('')}</tbody>
+      <tr class="doc-total"><td colspan="4">الإجمالي</td><td>${num(rows.reduce((s,c)=>s+(c.length||0),0).toFixed(2))}</td><td colspan="2">—</td></tr></table>`;
+    }else{
+      table=`<div class="doc-note-box">لا توجد ترع مطابقة${label?' ('+label+')':''} بإدارة ${g.name} حالياً.</div>`;
+    }
+  }
+  const bodyContent=o.verbatim?o.content.split(/\n{1,}/).filter(Boolean).map(p=>`<p>${p}</p>`).join(''):lcFormalize(o.content,o.subject);
+  // صورة مرسلة
+  const ccBlock=o.cc.length?`<div class="doc-cc"><div class="cc-t">صورة مرسلة:</div>${o.cc.map(x=>`<div>${x}</div>`).join('')}</div>`:'';
+  const body=`
+    <div class="doc-body">
+      <div class="doc-to">${o.to}</div>
+      <div class="doc-greet">تحية طيبة وبعد ،،،</div>
+      <div class="doc-subject">الموضوع: ${o.subject}</div>
+      ${bodyContent}
+      ${table}
+      <p>وتفضلوا سيادتكم بقبول وافر الاحترام والتقدير ،،،</p>
+    </div>`;
+  return letterhead()+body+docFooter(null,ccBlock);
+}
+
 function buildDoc(id){
   const of=PROJECT.official,dt=PROJECT.detailTotals;
   if(id==='monthly'){
@@ -2873,6 +3013,35 @@ function buildDoc(id){
       </div>`+docFooter();
   }
   return '';
+}
+
+// ═══ خطاب موضوعي: سرعة التنسيق مع دار الهندسة لاستلام الترع الجاهزة لإدارة بعينها ═══
+// يكتب خطاباً رسمياً كامل الصياغة ويُرفق جدول الترع المنفّذة بانتظار التسليم.
+function openReadyCanalsLetter(govId){
+  document.getElementById('docPage').innerHTML=buildReadyCanalsLetter(govId);
+  document.getElementById('docOverlay').classList.add('on');
+}
+function buildReadyCanalsLetter(govId){
+  const g=gov(govId);
+  // الترع الجاهزة = منفّذة بانتظار التسليم (done)
+  const ready=(g.canals||[]).filter(c=>c&&c.statusCode==='done');
+  const submitted=(g.canals||[]).filter(c=>c&&['submitted','inspecting'].includes(c.statusCode));
+  const num=n=>n==null?'—':Number(n).toLocaleString('en');
+  const body=`
+    <div class="doc-body">
+      <div class="doc-to">السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
+      <div class="doc-greet">تحية طيبة وبعد ،،،</div>
+      <p>إشارةً إلى مشروع تبطين الترع بمبادرة «حياة كريمة»، وحيث إن استلام الترع بعد تنفيذ أعمال التبطين يتم أولاً عن طريق مكتب دار الهندسة قبل استلام الإدارات وصرف مستحقات المقاولين؛ فقد بلغ عدد الترع التي تم الانتهاء من تنفيذها بإدارتكم وأصبحت جاهزة للمعاينة والاستلام عدد <strong>${num(ready.length)}</strong> ترعة.</p>
+      <p>لذا يُرجى من سيادتكم سرعة التنسيق مع مكتب دار الهندسة لإيفاد اللجان الفنية لمعاينة هذه الترع واستلامها، تيسيراً لإنجاز أعمال المشروع في مواعيدها المقررة وصرف المستحقات المرتبطة بها. وفيما يلي بيان بالترع الجاهزة:</p>
+      ${ready.length?`<table class="doc-tbl sm"><thead><tr><th>م</th><th>الترعة</th><th>العملية</th><th>المقاول</th><th>الطول (كم)</th><th>نسبة التنفيذ</th></tr></thead>
+        <tbody>${ready.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name||'—'}</td><td>${c.op||'—'}</td><td>${c.contractor||'—'}</td><td>${c.length!=null?c.length:'—'}</td><td>${c.pct!=null?c.pct+'%':'—'}</td></tr>`).join('')}</tbody>
+        <tr class="doc-total"><td colspan="4">الإجمالي</td><td>${num(ready.reduce((s,c)=>s+(c.length||0),0).toFixed(2))}</td><td>—</td></tr></table>`
+        :'<p style="text-align:center;padding:20px;color:#666">لا توجد ترع منتهية بانتظار التسليم حالياً بهذه الإدارة.</p>'}
+      ${submitted.length?`<p>كما يوجد عدد <strong>${num(submitted.length)}</strong> ترعة سبق إرسال بياناتها ولا تزال بانتظار إتمام المعاينة، ويُرجى متابعة موقفها مع دار الهندسة.</p>`:''}
+      <p>ونظراً لأهمية عنصر الوقت في هذه المرحلة، نأمل سرعة اتخاذ اللازم، ولسيادتكم جزيل الشكر.</p>
+      <div class="doc-regard">وتفضلوا بقبول وافر الاحترام والتقدير ،،،</div>
+    </div>`;
+  return letterhead()+body+docFooter();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2963,7 +3132,7 @@ const NLU_COLLOQUIAL=[
   [/\b(خلصت|خلصانه|اتعملت|اتنفذت|كملت|جاهزه للتسليم)\b/g,'منفذه'],
   [/\b(لسه بتتعمل|لسه شغاله|شغالة دلوقتي|بتتنفذ)\b/g,'جاري التنفيذ'],
   // خطابات
-  [/\b(اعمل خطاب|اكتبلي خطاب|جهزلي خطاب|عايز خطاب|محتاج خطاب|اعملي مذكره|اكتبلي مذكره)\b/g,'اكتب خطاب'],
+  [/\b(اعمل خطاب|اكتبلي خطاب|جهزلي خطاب|عايز خطاب|محتاج خطاب|اعملي مذكره|اكتبلي مذكره|اعمل جواب|اكتبلي جواب|جهزلي جواب|عايز جواب|محتاج جواب|عاوز جواب)\b/g,'اكتب خطاب'],
   [/\b(اعمل مذكره للمقاول|مذكره للمقاول|انذار للمقاول|نبه المقاول)\b/g,'مذكره مقاول'],
   // نفي شائع
   [/\bمفيش\b/g,'لا يوجد'],[/\bمش\b/g,'غير'],[/\bماتسلمتش|متسلمتش\b/g,'لم تسلم'],
@@ -3074,6 +3243,9 @@ function nluParse(q){
   if(/خطاب|اكتب|مذكره|مكاتبه|مخاطبه|افاده|رساله|تصعيد/.test(nq))intent='letter';
   const gov=nluGov(nq), govs=nluGovs(nq), status=nluStatusCode(nq),
         phase=nluPhase(nq), topN=nluTopN(nq), numF=nluNumFilter(nq);
+  // «جواب» بالعامية = خطاب/مكاتبة. نعتبره طلب خطاب حين يقترن بإدارة أو بسياق رسمي
+  // (دار الهندسة/تنسيق/مخاطبة/استلام)، لا حين يُقصد به «إجابة» مجرّدة.
+  if(intent!=='letter'&&/(^| )جواب|جوابات/.test(nq)&&(gov||/دار الهندسه|تنسيق|مخاطبه|رسمي|تصعيد|استلام الترع/.test(nq)))intent='letter';
   // مرشّح تقريبي لاسم الإدارة (يُستخدم فقط كملاذ أخير عند غياب أي تطابق)
   const govFuzzy=gov?null:nluFuzzyGov(nq);
   // rawNq: النص الأصلي المطبّع (للبحث الحر عن أسماء ترع/مقاولين لم تُمسّ بالعامية)
@@ -3411,9 +3583,23 @@ function nluAnswer(q){
 
   // (أولوية 3) — توليد خطاب رسمي من السؤال
   if(p.intent==='letter'){
-    if(p.gov){ // خطاب خاص بإدارة → تقرير الإدارة الرسمي
+    // خطاب مخصّص عبر النموذج التفاعلي
+    if(/مخصص|جديد|انشئ|انشاء|نموذج|من عندي|بصيغتي|فارغ/.test(p.nq)){
+      const preTo=p.gov?`السيد المهندس / رئيس الإدارة المركزية للموارد المائية والري بـ${p.gov.name}`:'';
+      return {body:`<span class="ab-h">✍️ إنشاء خطاب مخصّص</span>سيُفتح نموذج إنشاء الخطاب — تكتب فيه المُرسَل إليه والموضوع والنص والصور المرسلة، ويمكنك إرفاق جدول ترع، ثم يُصاغ رسمياً بالترويسة والتوقيع المعتمد.`,
+        acts:[{l:'✍️ فتح نموذج الخطاب',fn:`openLetterComposer('${preTo.replace(/'/g,"\\'")}','')`}]};
+    }
+    if(p.gov){ // خطاب خاص بإدارة
+      // خطاب موضوعي: التنسيق مع دار الهندسة لاستلام الترع الجاهزة
+      const readyTopic=/جاهز|استلام|تنسيق|دار الهندسه|معاينه|جاهزه للتسليم|منفذه/.test(p.nq);
+      if(readyTopic){
+        const ready=(p.gov.canals||[]).filter(c=>c&&c.statusCode==='done').length;
+        return {body:`<span class="ab-h">📄 خطاب رسمي — سرعة التنسيق مع دار الهندسة</span>سيُحرَّر خطاب رسمي موجَّه إلى دار الهندسة بشأن سرعة معاينة واستلام <b>${AR_NUM(ready)}</b> ترعة جاهزة (منفّذة بانتظار التسليم) بإدارة <b>${p.gov.name}</b>، مُرفقاً به بيان تفصيلي بالترع، وبترويسة المشروع والتوقيع المعتمد.`,
+          acts:[{l:'📄 فتح الخطاب وطباعته',fn:`openReadyCanalsLetter('${p.gov.id}')`},{l:'🏛️ عرض الترع الجاهزة',fn:`asstAsk('الترع الجاهزة بانتظار التسليم في ${p.gov.name}')`}]};
+      }
+      // خطاب تقرير الإدارة العام
       return {body:`<span class="ab-h">📄 خطاب رسمي — ${p.gov.name}</span>سيُفتح تقرير الإدارة الرسمي بالترويسة والتوقيع المعتمد، مملوءاً بالأرقام الحيّة الحالية جاهزاً للطباعة.`,
-        acts:[{l:'📄 فتح خطاب '+p.gov.name,fn:`openGovDoc('${p.gov.id}')`}]};
+        acts:[{l:'📄 فتح خطاب '+p.gov.name,fn:`openGovDoc('${p.gov.id}')`},{l:'📨 خطاب تنسيق استلام الترع الجاهزة',fn:`openReadyCanalsLetter('${p.gov.id}')`}]};
     }
     // خطاب تصعيد إن ذُكر التأخير/دار الهندسة، وإلا الخطاب الشهري
     const esc=p.nq.includes('تصعيد')||p.nq.includes('متاخر')||p.nq.includes('دار الهندسه');
