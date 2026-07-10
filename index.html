@@ -2040,6 +2040,18 @@ function openDrawer(id){
     html+=`<div class="canal-src-note">لا توجد ترع تفصيلية مُدرجة لهذه الإدارة بعد. يمكنك إضافة ترعة جديدة بكامل بياناتها من الزر أعلاه، وستُدمج فوراً في جداول الترع ومؤشّرات المشروع.</div>`;
   }
   html+=`</div>`;
+  // ── خطاب رسمي لمكتب دار الهندسة (تحديد موعد الاستلام) ──
+  const readyForDar=canals.filter(c=>c&&c.statusCode==='done').length;
+  html+=`<div class="sec"><div class="sec-t">مخاطبة مكتب دار الهندسة</div>
+    <div class="edit-block">
+      <div class="rpt-intro">خطاب رسمي باسم «رئيس الإدارة المركزية» موجَّه لمكتب دار الهندسة لطلب تحديد موعد معاينة واستلام الترع الجاهزة، وصورة إلى مفوض الوزارة م/ سلوى عبد الغني عثمان. قبل التوليد تختار المرحلة (افتراضياً الأولى) والترع المطلوب إرسالها.</div>
+      <div class="save-row">
+        <button class="btn btn-primary" onclick="openDarLetter('${id}')">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          اختيار الترع وتوليد الخطاب (${readyForDar} جاهزة)</button>
+      </div>
+    </div>
+  </div>`;
   // ── بلاغات الاستلام لهذه الإدارة ──
   const canalOpts=(canals.length?canals:[]);
   const govReports=loadReports().filter(r=>r.govId===id);
@@ -3546,6 +3558,104 @@ function buildReadyCanalsLetter(govId){
       <div class="doc-regard">وتفضلوا بقبول وافر الاحترام والتقدير ،،،</div>
     </div>`;
   return letterhead()+body+docFooter();
+}
+
+// ═══ خطاب رسمي من رئيس الإدارة المركزية إلى مكتب دار الهندسة: طلب تحديد موعد استلام الترع الجاهزة ═══
+// صادر باسم «رئيس الإدارة المركزية» للإدارة المعنية، وصورة إلى مفوض الوزارة م/ سلوى عبد الغني عثمان.
+// يفتح أولاً نافذة اختيار: فلتر المرحلة (افتراضياً الأولى — الاستلامات الحالية) ثم انتقاء الترع المطلوب إرسالها.
+let _darPickGov=null;
+function darPhaseMatch(c,f){return f==='all'?true:f==='none'?c.phase==null:c.phase===+f;}
+function openDarLetter(govId){
+  const g=gov(govId);
+  const ready=(g.canals||[]).filter(c=>c&&c.statusCode==='done');
+  if(!ready.length){toast&&toast('لا توجد ترع منفّذة بانتظار التسليم حالياً بهذه الإدارة');return;}
+  _darPickGov=govId;
+  let ovl=document.getElementById('darPickOverlay');
+  if(!ovl){ovl=document.createElement('div');ovl.id='darPickOverlay';ovl.className='lc-overlay';document.body.appendChild(ovl);}
+  // الافتراضي: المرحلة الأولى إن وُجدت بها ترع جاهزة (الاستلامات الحالية)، ثم غير المحدّدة، ثم الثانية، ثم الكل
+  const has1=ready.some(c=>c.phase===1),has2=ready.some(c=>c.phase===2),hasN=ready.some(c=>c.phase==null);
+  const def=has1?'1':(hasN?'none':(has2?'2':'all'));
+  const cnt=f=>ready.filter(c=>darPhaseMatch(c,f)).length;
+  ovl.innerHTML=`<div class="lc-modal">
+    <div class="lc-head"><div class="lc-title">اختيار الترع — خطاب مكتب دار الهندسة</div>
+      <div class="lc-sub">${g.name} — حدّد الترع الجاهزة التي سيشملها طلب تحديد موعد المعاينة والاستلام.</div></div>
+    <div class="lc-body">
+      <label class="lc-lbl">المرحلة</label>
+      <select id="darPickPhase" class="lc-inp lc-sel" onchange="renderDarPickList()">
+        <option value="1" ${def==='1'?'selected':''}>المرحلة الأولى (${cnt('1')})</option>
+        <option value="2" ${def==='2'?'selected':''}>المرحلة الثانية (${cnt('2')})</option>
+        <option value="none" ${def==='none'?'selected':''}>غير محدّدة المرحلة (${cnt('none')})</option>
+        <option value="all" ${def==='all'?'selected':''}>كل المراحل (${ready.length})</option>
+      </select>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px">
+        <label class="lc-lbl" style="margin:0">الترع الجاهزة</label>
+        <span style="font-size:12px">
+          <a href="#" onclick="darPickAll(true);return false" style="color:var(--nile-600,#15463d);font-weight:700">تحديد الكل</a> •
+          <a href="#" onclick="darPickAll(false);return false" style="color:#b23b2e;font-weight:700">إلغاء الكل</a>
+        </span></div>
+      <div id="darPickList" style="max-height:300px;overflow:auto;border:1.5px solid var(--line,#dfe8e3);border-radius:12px;padding:6px 12px"></div>
+      <div class="save-row" style="margin-top:14px">
+        <button class="btn btn-primary" id="darPickGen" onclick="genDarLetter()">توليد الخطاب</button>
+        <button class="btn" onclick="closeDarPick()">إلغاء</button>
+      </div>
+    </div></div>`;
+  ovl.classList.add('on');
+  renderDarPickList();
+}
+function closeDarPick(){const o=document.getElementById('darPickOverlay');if(o)o.classList.remove('on');}
+function renderDarPickList(){
+  const g=gov(_darPickGov);if(!g)return;
+  const f=document.getElementById('darPickPhase').value;
+  const list=(g.canals||[]).filter(c=>c&&c.statusCode==='done'&&darPhaseMatch(c,f));
+  const el=document.getElementById('darPickList');
+  el.innerHTML=list.length?list.map(c=>`<label style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line,#dfe8e3);cursor:pointer;font-size:13px">
+      <input type="checkbox" class="darPickCb" value="${c.id}" checked onchange="darPickCount()">
+      <span style="flex:1"><b>${c.name}</b> <span style="color:#777;font-size:11px">(${c.id})</span></span>
+      <span style="font-size:11.5px;color:#555;white-space:nowrap">${c.length!=null?c.length+' كم':'—'}</span>
+    </label>`).join('')
+    :`<div style="text-align:center;color:#777;padding:16px;font-size:13px">لا توجد ترع جاهزة بهذه المرحلة.</div>`;
+  darPickCount();
+}
+function darPickCount(){
+  const n=document.querySelectorAll('#darPickList .darPickCb:checked').length;
+  const b=document.getElementById('darPickGen');
+  if(b){b.textContent='توليد الخطاب ('+n+' ترعة)';b.disabled=!n;}
+}
+function darPickAll(on){document.querySelectorAll('#darPickList .darPickCb').forEach(c=>c.checked=on);darPickCount();}
+function genDarLetter(){
+  const ids=[...document.querySelectorAll('#darPickList .darPickCb:checked')].map(c=>c.value);
+  if(!ids.length){toast&&toast('اختر ترعة واحدة على الأقل');return;}
+  const f=document.getElementById('darPickPhase').value;
+  closeDarPick();
+  document.getElementById('docPage').innerHTML=buildDarLetter(_darPickGov,ids,f);
+  document.getElementById('docOverlay').classList.add('on');
+}
+function buildDarLetter(govId,selIds,phaseSel){
+  const g=gov(govId);
+  const issuer='الإدارة المركزية للموارد المائية والري بـ'+g.name;
+  let ready=(g.canals||[]).filter(c=>c&&c.statusCode==='done');
+  if(selIds&&selIds.length)ready=ready.filter(c=>selIds.includes(c.id));
+  const waiting=(g.canals||[]).filter(c=>c&&['submitted','inspecting'].includes(c.statusCode)&&(!phaseSel||darPhaseMatch(c,phaseSel)));
+  const num=n=>n==null?'—':Number(n).toLocaleString('en');
+  const phT=p=>p===1?'الأولى':p===2?'الثانية':'—';
+  const phLabel=phaseSel==='1'?' — المرحلة الأولى':phaseSel==='2'?' — المرحلة الثانية':'';
+  const totLen=ready.reduce((s,c)=>s+(+c.length||0),0);
+  const body=`
+    <div class="doc-body">
+      <div class="doc-to">السيد المهندس / مدير مكتب دار الهندسة للاستشارات الهندسية</div>
+      <div class="doc-greet">تحية طيبة وبعد ،،،</div>
+      <div class="doc-subject">الموضوع: طلب تحديد موعد لمعاينة واستلام الترع الجاهزة${phLabel} — ${g.name} — مشروع تأهيل وتبطين الترع (مبادرة «حياة كريمة»)</div>
+      <p>إشارةً إلى مشروع تبطين الترع بالمبادرة الرئاسية «حياة كريمة»، وحيث إن استلام الترع بعد تنفيذ أعمال التبطين يتم أولاً عن طريق مكتبكم قبل استلام الإدارات وصرف مستحقات المقاولين؛ نحيط سيادتكم علماً بأنه تم الانتهاء من تنفيذ عدد <strong>${num(ready.length)}</strong> ترعة بإجمالي أطوال <strong>${totLen.toFixed(2)}</strong> كم بنطاق إدارتنا، وأصبحت جاهزة للمعاينة والاستلام، وبيانها كالتالي:</p>
+      <table class="doc-tbl sm"><thead><tr><th>م</th><th>الترعة</th><th>العملية</th><th>المقاول</th><th>الطول (كم)</th><th>نسبة التنفيذ</th><th>المرحلة</th></tr></thead>
+        <tbody>${ready.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name||'—'}</td><td>${c.op||'—'}</td><td>${c.contractor||'—'}</td><td>${c.length!=null?c.length:'—'}</td><td>${c.pct!=null?c.pct+'%':'—'}</td><td>${phT(c.phase)}</td></tr>`).join('')}
+        <tr class="doc-total"><td colspan="4">الإجمالي</td><td>${totLen.toFixed(2)}</td><td>—</td><td>—</td></tr></tbody></table>
+      ${waiting.length?`<p>كما نرجو التكرم بالإفادة عن موقف عدد <strong>${num(waiting.length)}</strong> ترعة سبق تسليم بياناتها لمكتبكم ولا تزال بانتظار إتمام المعاينة.</p>`:''}
+      <p>لذا نرجو من سيادتكم التكرم بتحديد موعد لإيفاد اللجان الفنية لمعاينة الترع المذكورة واستلامها وإخطارنا به، تيسيراً لاستكمال إجراءات الاستلام وصرف المستحقات المرتبطة بها في مواعيدها المقررة.</p>
+      <div class="doc-regard">وتفضلوا بقبول وافر الاحترام والتقدير ،،،</div>
+    </div>`;
+  const cc=`<div class="doc-cc"><div class="cc-t">صورة إلى:</div>
+    <div>السيدة المهندسة / سلوى عبد الغني عثمان — مستشار مصلحة الري ومفوض الوزارة بمشروع حياة كريمة — للتفضل بالإحاطة.</div></div>`;
+  return letterhead(issuer)+body+docFooter({l1:issuer,l2:'رئيس الإدارة المركزية',name:null},cc);
 }
 
 // ═══════════════════════════════════════════════════════════════════
