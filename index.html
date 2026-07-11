@@ -1584,6 +1584,13 @@ function gov(id){
   if(!o)return g;
   const m={...g,_edited:true,lastUpdate:o.lastUpdate||g.lastUpdate,
     duesOutstanding:o.duesOutstanding!=null?o.duesOutstanding:g.duesOutstanding};
+  // ── بنود المستحقات المعدّلة من درج الإدارة: تحل محل الرسمية، والإجمالي يُشتق منها جبرياً ──
+  if(o.operations){
+    m.operations=o.operations.map(x=>({...x}));
+    m._opsEdited=true;
+    if(o.duesOutstanding==null)
+      m.duesOutstanding=+(m.operations.reduce((s,x)=>s+(+x.outstanding||0),0).toFixed(3));
+  }
   if(o.phase1&&g.phase1)m.phase1={...g.phase1,...o.phase1};
   if(o.phase2&&g.phase2)m.phase2={...g.phase2,...o.phase2};
   // دمج تعديلات مواقف الترع الفردية (o.canals = { canalId: {statusCode,status,stage,_edited} })
@@ -2044,7 +2051,7 @@ function openDrawer(id){
       <div class="c"><div class="n" style="color:var(--stop)">${p2.canals-p2.delivered}</div><div class="l">بانتظار</div></div>
     </div>
     <div class="dnote">جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${p2.delivPct!=null?p2.delivPct+'%':'—'}${p2.note?'<br>'+p2.note:''}</div></div>`;
-  if(ops.length)html+=`<div class="sec"><div class="sec-t">العمليات والمقاولون (${ops.length})</div>${ops.map(opCard).join('')}</div>`;
+  html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span><span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span></div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
   const canals=g.canals||[];
   window._curCanals=canals;
   html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})
@@ -2278,16 +2285,102 @@ function filterCanals(){
   if(q)list=list.filter(c=>c.name.includes(q)||(c.op||'').includes(q)||(c.contractor||'').includes(q)||(c.id||'').includes(q));
   renderCanals(list);
 }
-function opCard(o){
+function opCard(o,govId,idx){
   const ch=[];
   if(o.executed!=null)ch.push(`<span class="chip chip-exe">منفّذة ${o.executed}</span>`);
   if(o.delivered!=null&&o.delivered>0)ch.push(`<span class="chip chip-del">دار الهندسة ${o.delivered}</span>`);
   if(o.working)ch.push(`<span class="chip chip-work">جارٍ ${o.working}</span>`);
   if(o.deferred)ch.push(`<span class="chip chip-def">مؤجلة ${o.deferred}</span>`);
   if(o.cancelled)ch.push(`<span class="chip chip-can">ملغاة ${o.cancelled}</span>`);
-  return `<div class="op-item"><div class="oh"><div><div class="onm">${o.name}</div><div class="oc">${o.contractor}</div></div>
-    ${Math.abs(o.outstanding)>0.0005?`<div class="odue">${o.outstanding.toFixed(2)} م.ج</div>`:''}</div>
+  const tools=govId!=null?`<span style="display:flex;gap:9px;margin-inline-start:8px;flex:none;font-size:14px"><a href="#" onclick="openOpEditor('${govId}',${idx});return false" title="تعديل البند" style="text-decoration:none">✏️</a><a href="#" onclick="deleteOp('${govId}',${idx});return false" title="حذف البند" style="text-decoration:none">🗑️</a></span>`:'';
+  return `<div class="op-item"><div class="oh"><div><div class="onm">${o.name}</div><div class="oc">${o.contractor||'—'}</div></div>
+    <div style="display:flex;align-items:center">${Math.abs(o.outstanding)>0.0005?`<div class="odue">${o.outstanding.toFixed(2)} م.ج</div>`:''}${tools}</div></div>
     <div class="op-chips">${ch.join('')}</div>${o.detail?`<div class="op-detail">${o.detail}</div>`:''}</div>`;
+}
+
+// ═══ محرر بنود المستحقات المعلّقة (من درج كل إدارة): إضافة / تعديل / حذف / استرجاع ═══
+// التعديلات تُخزَّن في طبقة الأوفررايد (كل قائمة البنود)، فتتزامن سحابياً وتُسجَّل في سجل التغييرات،
+// والإجمالي الرسمي للإدارة يُشتق تلقائياً من مجموع البنود المعدَّلة (جبرياً — التسويات السالبة محسوبة).
+let _opEdit={gov:null,idx:null};
+function openOpEditor(govId,idx){
+  _opEdit={gov:govId,idx:(idx==null?null:+idx)};
+  const g=gov(govId);const o=(idx!=null&&g.operations)?g.operations[idx]:null;
+  let ovl=document.getElementById('opEditOverlay');
+  if(!ovl){ovl=document.createElement('div');ovl.id='opEditOverlay';ovl.className='lc-overlay';document.body.appendChild(ovl);}
+  const esc=s=>String(s).replace(/"/g,'&quot;');
+  const v=x=>(x==null?'':x);
+  ovl.innerHTML=`<div class="lc-modal">
+    <div class="lc-head"><div class="lc-title">${o?'تعديل بند مستحقات':'إضافة بند مستحقات'}</div>
+      <div class="lc-sub">${g.name} — القيم المالية بالمليون جنيه. الإجمالي = المنصرف + المتبقي، والمتبقي يقبل قيمة سالبة للتسويات.</div></div>
+    <div class="lc-body">
+      <label class="lc-lbl">اسم العملية / البند *</label><input id="opeName" class="lc-inp" value="${o?esc(o.name):''}">
+      <label class="lc-lbl">المقاول / الجهة</label><input id="opeCont" class="lc-inp" value="${o&&o.contractor?esc(o.contractor):''}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="lc-lbl">عدد الترع</label><input id="opeCanals" class="lc-inp" type="number" min="0" value="${v(o&&o.canals)}"></div>
+        <div><label class="lc-lbl">المنفّذ منها</label><input id="opeExec" class="lc-inp" type="number" min="0" value="${v(o&&o.executed)}"></div>
+        <div><label class="lc-lbl">المنصرف (م.ج)</label><input id="opePaid" class="lc-inp" type="number" step="0.001" value="${v(o&&o.paid)}"></div>
+        <div><label class="lc-lbl">المتبقي (م.ج)</label><input id="opeOut" class="lc-inp" type="number" step="0.001" value="${o?v(o.outstanding):''}"></div>
+      </div>
+      <label class="lc-lbl">البيان / التفصيل</label><input id="opeDetail" class="lc-inp" value="${o&&o.detail?esc(o.detail):''}">
+      <div class="save-row" style="margin-top:14px">
+        <button class="btn btn-primary" onclick="saveOpEdit()">حفظ البند</button>
+        <button class="btn" onclick="closeOpEditor()">إلغاء</button>
+      </div>
+    </div></div>`;
+  ovl.classList.add('on');
+}
+function closeOpEditor(){const o=document.getElementById('opEditOverlay');if(o)o.classList.remove('on');}
+function saveOpEdit(){
+  const govId=_opEdit.gov;if(!govId)return;
+  const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
+  const merged=gov(govId);
+  const name=(document.getElementById('opeName').value||'').trim();
+  if(!name){toast&&toast('اسم البند مطلوب',true);return;}
+  const num=id=>{const s=(document.getElementById(id).value||'').trim();if(s==='')return null;const f=+s;return isNaN(f)?undefined:f;};
+  const canals=num('opeCanals'),exec=num('opeExec'),paid=num('opePaid');let out=num('opeOut');
+  if([canals,exec,paid,out].some(x=>x===undefined)){toast&&toast('قيمة رقمية غير صالحة',true);return;}
+  if(out==null)out=0;out=+out.toFixed(3);
+  const cont=(document.getElementById('opeCont').value||'').trim()||null;
+  const detail=(document.getElementById('opeDetail').value||'').trim()||null;
+  const list=(merged.operations||[]).map(x=>({...x}));
+  const base=(_opEdit.idx!=null&&list[_opEdit.idx])?{...list[_opEdit.idx]}:{};
+  const item={...base,name,contractor:cont,canals:canals==null?null:Math.round(canals),
+    executed:exec==null?null:Math.round(exec),outstanding:out,detail};
+  if(paid!=null)item.paid=+paid.toFixed(3);else delete item.paid;
+  let before='—';
+  if(_opEdit.idx==null)list.push(item);
+  else{before=(+list[_opEdit.idx].outstanding||0).toFixed(3)+' م.ج';list[_opEdit.idx]=item;}
+  const o=ov[govId]||{};o.operations=list;o.lastUpdate=new Date().toISOString().slice(0,10);ov[govId]=o;saveOv(ov);
+  logAudit({gov:g.name,phase:'بند مستحقات: '+name,field:_opEdit.idx==null?'إضافة بند':'تعديل بند',before,after:out.toFixed(3)+' م.ج'});
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  closeOpEditor();refreshAll();openDrawer(govId);
+  toast&&toast('تم حفظ بند المستحقات وانعكس في كل الأماكن');
+}
+function deleteOp(govId,idx){
+  const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
+  const merged=gov(govId);
+  const list=(merged.operations||[]).map(x=>({...x}));
+  const it=list[idx];if(!it)return;
+  if(!confirm('حذف بند «'+it.name+'» من مستحقات '+g.name+'؟'))return;
+  list.splice(idx,1);
+  const o=ov[govId]||{};o.operations=list;o.lastUpdate=new Date().toISOString().slice(0,10);ov[govId]=o;saveOv(ov);
+  logAudit({gov:g.name,phase:'بند مستحقات: '+it.name,field:'حذف بند',before:(+it.outstanding||0).toFixed(3)+' م.ج',after:'حُذف'});
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  refreshAll();openDrawer(govId);
+  toast&&toast('تم حذف البند');
+}
+function resetOpsEdits(govId){
+  const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
+  if(!ov[govId]||!ov[govId].operations)return;
+  if(!confirm('استرجاع بنود المستحقات الرسمية لـ«'+g.name+'» وإلغاء تعديلاتكم عليها؟'))return;
+  delete ov[govId].operations;
+  const rest=Object.keys(ov[govId]).filter(k=>k!=='lastUpdate');
+  if(!rest.length){delete ov[govId];saveOv(ov);
+    try{if(typeof pushOverrideDelete==='function')pushOverrideDelete(govId);}catch(e){}}
+  else{saveOv(ov);
+    try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}}
+  refreshAll();openDrawer(govId);
+  toast&&toast('استُرجعت البنود الرسمية');
 }
 function saveGov(id){
   const g=PROJECT.govs.find(x=>x.id===id);
