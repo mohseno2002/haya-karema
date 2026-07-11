@@ -1289,11 +1289,12 @@ table.tbl td{background-clip:padding-box}
           <span><i style="background:var(--silt-500)"></i> منفّذ بانتظار الاستلام</span>
           <span><i style="background:#cdd8d4"></i> جارٍ / لم يُنفّذ</span>
         </div>
+        <div class="ct-note">أرقام كل بطاقة أدناه هي الأرقام الرسمية المعتمدة للإدارة (مجموع المرحلتين) كما وردت بتقرير المفوّض — وليست عدد الترع المرصودة تفصيلياً. <span id="govCoverage" style="font-weight:800"></span></div>
         <div class="gov-grid" id="govGrid"></div>
       </section>
 
       <section class="view" id="v-canaltable">
-        <div class="ct-note">بيان تفصيلي بكل الترع المرصودة في الإدارات التي اكتمل إدخال تفاصيلها. استخدم الفلاتر للتصنيف حسب الإدارة أو الموقف أو المرحلة أو المقاول، أو غيّر التجميع من القائمة. الأرقام الرسمية المعتمدة تظل كما وردت بتقرير المفوّض.</div>
+        <div class="ct-note">بيان تفصيلي بكل الترع المرصودة في الإدارات التي اكتمل إدخال تفاصيلها. استخدم الفلاتر للتصنيف حسب الإدارة أو الموقف أو المرحلة أو المقاول، أو غيّر التجميع من القائمة. الأرقام الرسمية المعتمدة تظل كما وردت بتقرير المفوّض. <span id="ctCoverage" style="font-weight:800"></span></div>
         <div class="ct-kpis" id="ctKpis"></div>
         <div class="ct-tools">
           <div class="search ct-search"><input id="ctSearch" oninput="renderCanalTable()" placeholder="بحث باسم الترعة / المقاول / العملية…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
@@ -1667,7 +1668,7 @@ function renderCanalTable(){
   const stop=rows.filter(r=>['stopped','deferred','cancelled'].includes(r.statusCode)).length;
   const totLen=rows.reduce((a,r)=>a+(r.length||0),0);
   document.getElementById('ctKpis').innerHTML=
-    ctKpi(rows.length,'إجمالي الترع','var(--nile-500)')+
+    ctKpi(rows.length,'الترع المرصودة تفصيلياً','var(--nile-500)')+
     ctKpi(done,'منفّذة / مقبولة','var(--done)')+
     ctKpi(prog,'جارٍ التنفيذ','var(--wait)')+
     ctKpi(stop,'متوقفة / مؤجلة','var(--stop)')+
@@ -1786,10 +1787,27 @@ function refreshAll(){
       if(ctv.classList.contains('on'))initCanalTable();     // نشط: أعد البناء فوراً
       else _ctDirty=true;                                    // غير نشط: علّمه ليُعاد بناؤه عند فتحه
     }
+    if(typeof updateCoverageNotes==='function')updateCoverageNotes(); // سطرا توضيح تغطية البيان التفصيلي
     updateReportBadge();   // شارة التأخّر في القائمة الجانبية
     // تحديث الرؤى الاستباقية للمساعد إن كان مفتوحاً
     try{if(typeof asstRenderInsights==='function'&&document.getElementById('v-assistant')&&document.getElementById('v-assistant').classList.contains('on'))asstRenderInsights();}catch(_){}
   }catch(e){console.warn('refresh',e);try{toast&&toast('تعذّر تحديث بعض العناصر — راجع وحدة التحكم',true);}catch(_){}}
+}
+
+// ═══ سطرا توضيح التغطية: العلاقة بين الأرقام الرسمية (بطاقات الإدارات) والبيان التفصيلي (جدول الترع) ═══
+function updateCoverageNotes(){
+  try{
+    const gs=allGovs();
+    let det=0,detGovs=0,offTot=0;
+    gs.forEach(g=>{
+      const n=(g.canals||[]).length; det+=n; if(n)detGovs++;
+      [g.phase1,g.phase2].forEach(p=>{if(p)offTot+=(p.canals||0);});
+    });
+    const ct=document.getElementById('ctCoverage');
+    if(ct)ct.textContent=`يغطي هذا البيان حالياً ${detGovs} إدارة من ${gs.length} بواقع ${det} ترعة مرصودة تفصيلياً، بينما إجمالي الأرقام الرسمية للإدارات ${offTot.toLocaleString('en')} ترعة — ويُستكمل الفارق تباعاً مع ورود بيانات باقي الإدارات.`;
+    const gv=document.getElementById('govCoverage');
+    if(gv)gv.textContent=`المرصود تفصيلياً حتى الآن: ${det} ترعة في ${detGovs} إدارة، وتظهر في تبويب «جدول الترع».`;
+  }catch(_){}
 }
 
 // تجميع حيّ من البيانات المعدّلة — يضمن انعكاس أي تعديل على اللوحة الرئيسية
@@ -1980,7 +1998,7 @@ function renderGovs(){
           ${remW>0.5?`<div class="seg s-rem" style="width:${remW}%" title="جارٍ/لم يُنفّذ: ${canals-exe}">${remW>9?(canals-exe):''}</div>`:''}
         </div>
       </div>
-      <div class="gcard-f"><span>${(g.canals&&g.canals.length)?'📋 '+g.canals.length+' ترعة مفصّلة':'آخر تحديث '+g.lastUpdate}</span>
+      <div class="gcard-f"><span>${(g.canals&&g.canals.length)?'📋 '+g.canals.length+' ترعة مفصّلة':'أرقام رسمية — لا بيان تفصيلي بعد'}</span>
         <span class="dues ${g.duesOutstanding>10?'hot':''}">${g.duesOutstanding>0?g.duesOutstanding.toFixed(1)+' م.ج':'—'}</span></div>
     </div>`;
   }).join('')||'<div style="padding:40px;text-align:center;color:var(--muted)">لا توجد نتائج مطابقة</div>';
