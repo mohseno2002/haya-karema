@@ -1429,6 +1429,45 @@ table.tbl td{background-clip:padding-box}
   </div>
 </div>
 
+<style>
+#loginOverlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(1200px 600px at 80% -10%,rgba(201,182,124,.16),transparent 60%),linear-gradient(155deg,#0b2a24,#123a32 55%,#0d2e28)}
+.login-card{width:min(430px,100%);background:rgba(255,255,255,.06);backdrop-filter:blur(14px);border:1px solid rgba(201,182,124,.28);
+  border-radius:22px;padding:34px 30px;color:#eef7f3;box-shadow:0 30px 80px rgba(0,0,0,.35);text-align:center}
+.login-card .lg-drop{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#2ec4d6,#0f8fa8);box-shadow:0 10px 26px rgba(24,150,170,.35)}
+.login-card h1{font-size:21px;margin:0 0 4px;font-weight:800}
+.login-card .lg-sub{font-size:12.5px;color:#cfe3db;margin-bottom:22px;line-height:1.9}
+.login-card label{display:block;text-align:start;font-size:12.5px;font-weight:700;color:#d9c9a0;margin:0 2px 6px}
+.login-card input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.09);border:1.5px solid rgba(201,182,124,.35);color:#fff;
+  border-radius:12px;padding:12px 14px;font-size:15px;letter-spacing:1px;outline:none;text-align:center}
+.login-card input:focus{border-color:#c9b67c;box-shadow:0 0 0 3px rgba(201,182,124,.18)}
+.login-btn{width:100%;margin-top:16px;background:linear-gradient(135deg,#c9b67c,#ab9257);border:none;color:#1d2a20;font-weight:800;
+  font-size:15px;padding:12px;border-radius:12px;cursor:pointer;transition:.18s}
+.login-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+#loginErr{display:none;margin-top:12px;font-size:12.5px;color:#ffb3a6;background:rgba(201,79,79,.16);border:1px solid rgba(201,79,79,.35);border-radius:10px;padding:8px 10px}
+.login-hint{margin-top:18px;font-size:11.5px;color:#b9d2c8;line-height:1.9}
+#roleBar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 10px 10px;padding:8px 10px;border-radius:12px;
+  background:rgba(201,182,124,.1);border:1px solid rgba(201,182,124,.22);font-size:11.5px}
+.role-chip{color:#e9dcb8;font-weight:800;line-height:1.7}
+.role-link{color:#bff5ff;font-weight:700;text-decoration:none;white-space:nowrap}
+.role-out{color:#ffb3a6}
+body[data-role="gov"] .nav a[data-view="overview"],body[data-role="gov"] .nav a[data-view="docs"],body[data-role="gov"] .nav a[data-view="assistant"]{display:none}
+body[data-role="gov"] #addGovBtn,body[data-role="viewer"] #addGovBtn{display:none!important}
+body[data-role="viewer"] #canalCard select,body[data-role="viewer"] #canalCard .btn-primary{display:none!important}
+</style>
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="lg-drop"><svg viewBox="0 0 24 24" width="34" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2.7C12 2.7 5.5 10 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10 12 2.7 12 2.7z"/></svg></div>
+    <h1>لوحة دار الهندسة</h1>
+    <div class="lg-sub">مشروع تأهيل وتبطين الترع — المبادرة الرئاسية «حياة كريمة»<br>وزارة الموارد المائية والري</div>
+    <label>كود الدخول</label>
+    <input id="loginCode" type="password" dir="ltr" autocomplete="off" placeholder="••••••••">
+    <button class="login-btn" onclick="tryLogin()">دخول</button>
+    <div id="loginErr"></div>
+    <div class="login-hint">لكل إدارة مركزية كود خاص بها، وللاطّلاع فقط كود العرض.<br>للحصول على الكود تواصلوا مع مكتب مفوض الوزارة.</div>
+  </div>
+</div>
 <div class="doc-overlay" id="docOverlay">
   <div class="doc-toolbar no-print">
     <button class="btn btn-primary" onclick="printDoc()"><svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>طباعة / حفظ PDF</button>
@@ -1520,6 +1559,99 @@ const STORE='darElHandasa_v2';
 function loadOv(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
 function saveOv(o){localStorage.setItem(STORE,JSON.stringify(o))}
 let ov=loadOv();
+
+/* ═══════════════════════════════════════════════════════════════
+   بوابة الدخول والصلاحيات (ثلاثة أدوار)
+   ───────────────────────────────────────────────────────────────
+   • مفوض الوزارة  admin2026 : وصول وتعديل كاملان لكل الإدارات والتبويبات.
+   • إدارة مركزية <govId>2026 : معزولة على إدارتها عرضاً وتعديلاً
+     (بطاقتها، ترعها، بنود مستحقاتها، بلاغاتها، سجلها، خطاب الدار الخاص بها).
+   • عرض فقط      view2026  : مشاهدة كل شيء دون أي تعديل.
+   الجلسة تُحفظ محلياً؛ الإخفاء البصري مدعوم دوماً بحراسة برمجية
+   عند كل نقطة تعديل، فلا يغني تجاوز الواجهة عن الصلاحية.
+   ═══════════════════════════════════════════════════════════════ */
+const AUTH_STORE='deh_auth_v1';
+let SESSION=(function(){try{const s=JSON.parse(localStorage.getItem(AUTH_STORE)||'null');return (s&&s.role)?s:null}catch(e){return null}})();
+function currentRole(){return SESSION?SESSION.role:null}
+function myGovId(){return (SESSION&&SESSION.role==='gov')?SESSION.govId:null}
+function roleOfCode(code){
+  code=(code||'').trim();
+  if(!code)return null;
+  if(code==='admin2026')return {role:'admin',label:'مفوض الوزارة — صلاحية كاملة'};
+  if(code==='view2026')return {role:'viewer',label:'عرض فقط'};
+  const g=PROJECT.govs.find(x=>x.id+'2026'===code);
+  if(g)return {role:'gov',govId:g.id,label:'الإدارة المركزية — '+g.name};
+  return null;
+}
+function can(action,govId){
+  if(!SESSION)return false;
+  if(SESSION.role==='admin')return true;
+  if(SESSION.role==='viewer')return action==='view';
+  if(SESSION.role==='gov'){
+    if(action==='view')return true;
+    return (action==='edit'||action==='report')&&govId===SESSION.govId;
+  }
+  return false;
+}
+function visibleGovs(){
+  const all=allGovs();
+  return (SESSION&&SESSION.role==='gov')?all.filter(g=>g.id===SESSION.govId):all;
+}
+const GOV_HIDDEN_VIEWS=['overview','docs','assistant'];
+function canSeeView(v){return !(SESSION&&SESSION.role==='gov'&&GOV_HIDDEN_VIEWS.includes(v));}
+function authDeny(){toast&&toast('صلاحياتكم الحالية لا تسمح بهذا الإجراء',true);}
+function tryLogin(){
+  const inp=document.getElementById('loginCode');
+  const r=roleOfCode(inp?inp.value:'');
+  const err=document.getElementById('loginErr');
+  if(!r){if(err){err.textContent='كود الدخول غير صحيح — راجعوا مكتب مفوض الوزارة.';err.style.display='block';}
+    if(inp){inp.value='';inp.focus();}return;}
+  SESSION=r;localStorage.setItem(AUTH_STORE,JSON.stringify(r));
+  if(err)err.style.display='none';if(inp)inp.value='';
+  applyRoleUI();refreshAll();
+  toast&&toast('أهلاً بكم — '+r.label);
+}
+function logout(){
+  if(!confirm('تسجيل الخروج من اللوحة؟'))return;
+  SESSION=null;localStorage.removeItem(AUTH_STORE);
+  document.body.removeAttribute('data-role');
+  const bar=document.getElementById('roleBar');if(bar)bar.remove();
+  const lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
+  const inp=document.getElementById('loginCode');if(inp)setTimeout(()=>inp.focus(),80);
+}
+function showLoginCodes(){
+  if(!can('edit'))return authDeny();
+  let ovl=document.getElementById('codesOverlay');
+  if(!ovl){ovl=document.createElement('div');ovl.id='codesOverlay';ovl.className='lc-overlay';document.body.appendChild(ovl);}
+  ovl.innerHTML=`<div class="lc-modal"><div class="lc-head"><div class="lc-title">أكواد الدخول</div>
+    <div class="lc-sub">وزّعوا على كل إدارة كودها الخاص. كود المفوض admin2026 — كود العرض فقط view2026.</div></div>
+    <div class="lc-body"><div style="max-height:320px;overflow:auto;border:1.5px solid var(--line,#dfe8e3);border-radius:12px;padding:6px 12px">
+      ${PROJECT.govs.map(g=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line,#dfe8e3);font-size:13px"><b>${g.name}</b><code dir="ltr">${g.id}2026</code></div>`).join('')}
+    </div><div class="save-row" style="margin-top:14px"><button class="btn" onclick="document.getElementById('codesOverlay').classList.remove('on')">إغلاق</button></div></div></div>`;
+  ovl.classList.add('on');
+}
+function applyRoleUI(){
+  if(!SESSION)return;
+  document.body.setAttribute('data-role',SESSION.role);
+  const lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
+  let bar=document.getElementById('roleBar');
+  const nav=document.querySelector('.nav');
+  if(!bar&&nav){bar=document.createElement('div');bar.id='roleBar';nav.parentNode.insertBefore(bar,nav);}
+  if(bar)bar.innerHTML=`<span class="role-chip">${SESSION.label||SESSION.role}</span>
+    <span style="display:flex;gap:8px">${SESSION.role==='admin'?'<a href="#" class="role-link" onclick="showLoginCodes();return false">أكواد الدخول</a>':''}
+    <a href="#" class="role-link role-out" onclick="logout();return false">خروج</a></span>`;
+  const cur=document.querySelector('.nav a.on');
+  if(cur&&!canSeeView(cur.dataset.view)){
+    const t=document.querySelector('.nav a[data-view="govs"]');
+    if(t&&t.onclick)t.onclick();
+  }
+}
+function initAuth(){
+  const inp=document.getElementById('loginCode');
+  if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+  if(SESSION){applyRoleUI();}
+  else{const lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';if(inp)setTimeout(()=>inp.focus(),120);}
+}
 
 /* ═══════════════════════════════════════════════════════════════
    طبقة الإدارات المُضافة يدوياً (Custom Administrations)
@@ -1629,7 +1761,7 @@ const allGovs=()=>PROJECT.govs.map(g=>gov(g.id));
 // ═══════════ جدول الترع المصنّف ═══════════
 function ctFlatCanals(){
   const rows=[];
-  allGovs().forEach(g=>{
+  visibleGovs().forEach(g=>{
     (g.canals||[]).forEach(c=>{
       rows.push({govId:g.id,govName:g.name,region:g.region||'',
         id:c.id,name:c.name,op:c.op||'',contractor:c.contractor||'',
@@ -1763,6 +1895,7 @@ const titles={overview:['النظرة العامة','الموقف التنفيذ
   audit:['سجل التغييرات','توثيق كل تعديل على مواقف الاستلام والمستحقات'],
   assistant:['المساعد الذكي','مساعد هندسي داخلي يقرأ كل بيانات المشروع ويُعِدّ الجداول والتقارير والخطابات']};
 document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>{
+  if(typeof canSeeView==='function'&&!canSeeView(a.dataset.view)){authDeny();return;}
   // نتذكّر التبويب السابق (قبل الانتقال) لاستخدامه في الرقائق السياقية للمساعد
   const prev=document.querySelector('.nav a.on');
   if(prev&&prev.dataset.view&&prev.dataset.view!=='assistant')window._prevView=prev.dataset.view;
@@ -1809,6 +1942,14 @@ function refreshAll(){
 // ═══ سطرا توضيح التغطية: العلاقة بين الأرقام الرسمية (بطاقات الإدارات) والبيان التفصيلي (جدول الترع) ═══
 function updateCoverageNotes(){
   try{
+    if(SESSION&&SESSION.role==='gov'){
+      const g=gov(SESSION.govId);const n=(g.canals||[]).length;
+      const ct=document.getElementById('ctCoverage');
+      if(ct)ct.textContent=`هذا البيان خاص بإدارتكم (${g.name}) — ${n} ترعة مرصودة تفصيلياً.`;
+      const gv=document.getElementById('govCoverage');
+      if(gv)gv.textContent=`المرصود تفصيلياً لإدارتكم: ${n} ترعة، ويظهر في تبويب «جدول الترع».`;
+      return;
+    }
     const gs=allGovs();
     let det=0,detGovs=0,offTot=0;
     gs.forEach(g=>{
@@ -1983,7 +2124,7 @@ document.querySelectorAll('#phaseToggle button').forEach(b=>b.onclick=()=>{
 function renderGovs(){
   const q=(document.getElementById('govSearch').value||'').trim();
   const f=document.getElementById('govFilter').value;
-  let list=allGovs().filter(g=>curPhase===1?g.phase1:g.phase2);
+  let list=visibleGovs().filter(g=>curPhase===1?g.phase1:g.phase2);
   list=list.map(g=>({...g,_ds:darState(curPhase===1?g.phase1:g.phase2)}));
   if(f!=='all')list=list.filter(g=>g._ds===f);
   if(q)list=list.filter(g=>g.name.includes(q)||g.region.includes(q));
@@ -2019,6 +2160,7 @@ document.getElementById('govSearch').oninput=renderGovs;
 document.getElementById('govFilter').onchange=renderGovs;
 
 function openDrawer(id){
+  if(SESSION&&SESSION.role==='gov'&&id!==SESSION.govId){authDeny();return;}
   const g=gov(id);
   document.getElementById('dName').innerHTML=g.name+(g._edited?' <span style="font-size:14px;opacity:.7">✎</span>':'');
   document.getElementById('dRegion').textContent=g.region;
@@ -2051,13 +2193,13 @@ function openDrawer(id){
       <div class="c"><div class="n" style="color:var(--stop)">${p2.canals-p2.delivered}</div><div class="l">بانتظار</div></div>
     </div>
     <div class="dnote">جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${p2.delivPct!=null?p2.delivPct+'%':'—'}${p2.note?'<br>'+p2.note:''}</div></div>`;
-  html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span><span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span></div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
+  html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span>${can('edit',g.id)?`<span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span>`:''}</div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
   const canals=g.canals||[];
   window._curCanals=canals;
   html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})
-      <button class="btn-add-canal" onclick="openAddCanal('${id}')">
+      ${can('edit',id)?`<button class="btn-add-canal" onclick="openAddCanal('${id}')">
         <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-        إضافة ترعة جديدة</button></div>`;
+        إضافة ترعة جديدة</button>`:''}</div>`;
   if(canals.length){
     html+=`<div class="canal-src-note">قائمة إرشادية باسم كل ترعة وموقفها من مسار بوابة الاستلام. لكل ترعة معرّف ثابت وحالة موحّدة. الأرقام الرسمية المعتمدة هي الظاهرة أعلى البطاقة (مصدرها تقرير المفوّض).</div>
       <div class="gate-key"><b>مسار بوابة الاستلام:</b> التنفيذ ← الجاهزية ← المعاينة ← التسليم لدار الهندسة ← القبول النهائي</div>
@@ -2072,7 +2214,7 @@ function openDrawer(id){
   html+=`</div>`;
   // ── خطاب رسمي لمكتب دار الهندسة (تحديد موعد الاستلام) ──
   const readyForDar=canals.filter(c=>c&&c.statusCode==='done').length;
-  html+=`<div class="sec"><div class="sec-t">مخاطبة مكتب دار الهندسة</div>
+  if(can('report',id))html+=`<div class="sec"><div class="sec-t">مخاطبة مكتب دار الهندسة</div>
     <div class="edit-block">
       <div class="rpt-intro">خطاب رسمي باسم «رئيس الإدارة المركزية» موجَّه لمكتب دار الهندسة لطلب تحديد موعد معاينة واستلام الترع الجاهزة، وصورة إلى مفوض الوزارة م/ سلوى عبد الغني عثمان. قبل التوليد تختار المرحلة (افتراضياً الأولى) والترع المطلوب إرسالها.</div>
       <div class="save-row">
@@ -2085,7 +2227,7 @@ function openDrawer(id){
   // ── بلاغات الاستلام لهذه الإدارة ──
   const canalOpts=(canals.length?canals:[]);
   const govReports=loadReports().filter(r=>r.govId===id);
-  html+=`<div class="sec"><div class="sec-t">الإبلاغ عن ترعة جاهزة للاستلام</div>
+  if(can('report',id))html+=`<div class="sec"><div class="sec-t">الإبلاغ عن ترعة جاهزة للاستلام</div>
     <div class="edit-block">
       <div class="rpt-intro">سجّل ترعة أُرسلت بياناتها لدار الهندسة وحُدّد لها موعد استلام. تُتابَع تلقائياً ويظهر تأخّرها في لوحة المديرة.</div>
       <div class="field"><label>الترعة${canalOpts.length?'':' (اكتب الاسم يدوياً)'}</label>
@@ -2109,7 +2251,7 @@ function openDrawer(id){
     ${govReports.length?`<div class="rpt-list-title">بلاغات هذه الإدارة (${govReports.length})</div>
       <div class="rpt-list">${govReports.map(r=>reportCard(r,true)).join('')}</div>`:''}
   </div>`;
-  html+=`<div class="sec"><div class="sec-t">تحديث موقف الاستلام</div>
+  if(can('edit',id))html+=`<div class="sec"><div class="sec-t">تحديث موقف الاستلام</div>
     <div class="edit-block">
       ${p1?`<div class="edit-phase"><div class="ephase-t">المرحلة الأولى</div>
         <div class="efield"><label>إجمالي الترع</label><input id="e1-canals" type="number" min="0" value="${p1.canals||0}"></div>
@@ -2245,6 +2387,7 @@ function openCanalCard(cid){
 // حفظ تعديل موقف الترعة — ينعكس على كل الأماكن المرتبطة
 function saveCanalStatus(govId,cid){
   if(!govId){toast&&toast('تعذّر تحديد الإدارة');return;}
+  if(!can('edit',govId)){authDeny();return;}
   const sel=document.getElementById('ccdStatusSel');if(!sel)return;
   const newCode=sel.value;
   const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
@@ -2292,7 +2435,7 @@ function opCard(o,govId,idx){
   if(o.working)ch.push(`<span class="chip chip-work">جارٍ ${o.working}</span>`);
   if(o.deferred)ch.push(`<span class="chip chip-def">مؤجلة ${o.deferred}</span>`);
   if(o.cancelled)ch.push(`<span class="chip chip-can">ملغاة ${o.cancelled}</span>`);
-  const tools=govId!=null?`<span style="display:flex;gap:9px;margin-inline-start:8px;flex:none;font-size:14px"><a href="#" onclick="openOpEditor('${govId}',${idx});return false" title="تعديل البند" style="text-decoration:none">✏️</a><a href="#" onclick="deleteOp('${govId}',${idx});return false" title="حذف البند" style="text-decoration:none">🗑️</a></span>`:'';
+  const tools=(govId!=null&&can('edit',govId))?`<span style="display:flex;gap:9px;margin-inline-start:8px;flex:none;font-size:14px"><a href="#" onclick="openOpEditor('${govId}',${idx});return false" title="تعديل البند" style="text-decoration:none">✏️</a><a href="#" onclick="deleteOp('${govId}',${idx});return false" title="حذف البند" style="text-decoration:none">🗑️</a></span>`:'';
   return `<div class="op-item"><div class="oh"><div><div class="onm">${o.name}</div><div class="oc">${o.contractor||'—'}</div></div>
     <div style="display:flex;align-items:center">${Math.abs(o.outstanding)>0.0005?`<div class="odue">${o.outstanding.toFixed(2)} م.ج</div>`:''}${tools}</div></div>
     <div class="op-chips">${ch.join('')}</div>${o.detail?`<div class="op-detail">${o.detail}</div>`:''}</div>`;
@@ -2303,6 +2446,7 @@ function opCard(o,govId,idx){
 // والإجمالي الرسمي للإدارة يُشتق تلقائياً من مجموع البنود المعدَّلة (جبرياً — التسويات السالبة محسوبة).
 let _opEdit={gov:null,idx:null};
 function openOpEditor(govId,idx){
+  if(!can('edit',govId)){authDeny();return;}
   _opEdit={gov:govId,idx:(idx==null?null:+idx)};
   const g=gov(govId);const o=(idx!=null&&g.operations)?g.operations[idx]:null;
   let ovl=document.getElementById('opEditOverlay');
@@ -2332,6 +2476,7 @@ function openOpEditor(govId,idx){
 function closeOpEditor(){const o=document.getElementById('opEditOverlay');if(o)o.classList.remove('on');}
 function saveOpEdit(){
   const govId=_opEdit.gov;if(!govId)return;
+  if(!can('edit',govId)){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
   const merged=gov(govId);
   const name=(document.getElementById('opeName').value||'').trim();
@@ -2357,6 +2502,7 @@ function saveOpEdit(){
   toast&&toast('تم حفظ بند المستحقات وانعكس في كل الأماكن');
 }
 function deleteOp(govId,idx){
+  if(!can('edit',govId)){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
   const merged=gov(govId);
   const list=(merged.operations||[]).map(x=>({...x}));
@@ -2370,6 +2516,7 @@ function deleteOp(govId,idx){
   toast&&toast('تم حذف البند');
 }
 function resetOpsEdits(govId){
+  if(!can('edit',govId)){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===govId)||gov(govId);
   if(!ov[govId]||!ov[govId].operations)return;
   if(!confirm('استرجاع بنود المستحقات الرسمية لـ«'+g.name+'» وإلغاء تعديلاتكم عليها؟'))return;
@@ -2383,6 +2530,7 @@ function resetOpsEdits(govId){
   toast&&toast('استُرجعت البنود الرسمية');
 }
 function saveGov(id){
+  if(!can('edit',id)){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===id);
   const prev=gov(id);
   const o=ov[id]||{};
@@ -2424,7 +2572,7 @@ function saveGov(id){
   document.getElementById('savedFlag').classList.add('show');
   setTimeout(()=>{openDrawer(id);refreshAll();},700);
 }
-function resetGov(id){const g=PROJECT.govs.find(x=>x.id===id);delete ov[id];saveOv(ov);logAudit({gov:g.name,phase:'—',field:'إلغاء التعديلات',before:'—',after:'عودة للأرقام الرسمية'});pushOverrideDelete(id);openDrawer(id);refreshAll();}
+function resetGov(id){if(!can('edit',id)){authDeny();return;}const g=PROJECT.govs.find(x=>x.id===id);delete ov[id];saveOv(ov);logAudit({gov:g.name,phase:'—',field:'إلغاء التعديلات',before:'—',after:'عودة للأرقام الرسمية'});pushOverrideDelete(id);openDrawer(id);refreshAll();}
 function closeDrawer(){document.getElementById('drawer').classList.remove('on')}
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2452,6 +2600,7 @@ function phaseFields(n){
   </div>`;
 }
 function openAddGov(){
+  if(currentRole()!=='admin'){authDeny();return;}
   const regions=knownRegions();
   const body=`
     <div class="edit-block">
@@ -2569,6 +2718,7 @@ function saveNewGov(){
 }
 // حذف إدارة مُضافة يدوياً (الرسمية غير قابلة للحذف)
 function deleteCustomGov(id){
+  if(currentRole()!=='admin'){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===id);
   if(!g||!g._custom)return;
   if(!confirm(`حذف الإدارة المُضافة «${g.name}»؟ لا يمكن التراجع.`))return;
@@ -2600,6 +2750,7 @@ function suggestCanalId(g){
   return id;
 }
 function openAddCanal(govId){
+  if(!can('edit',govId)){authDeny();return;}
   const g=gov(govId);
   window._addCanalGov=govId;
   const hasP1=!!g.phase1, hasP2=!!g.phase2;
@@ -2748,6 +2899,7 @@ function fillCanalMeta(govId){
   if(c)meta.value=[c.op,c.contractor].filter(Boolean).join(' — ');
 }
 function submitReport(govId){
+  if(!can('report',govId)){authDeny();return;}
   const g=gov(govId);
   const due=document.getElementById('rp-due').value;
   if(!due){toast('حدّد تاريخ الاستلام المقرر',true);return;}
@@ -2907,7 +3059,7 @@ function duesRow(gov,src,extra){
 function renderDues(){
   const q=(document.getElementById('duesSearch')?.value||'').trim();
   let rows=[];
-  allGovs().forEach(g=>{
+  visibleGovs().forEach(g=>{
     const edited=ov[g.id]&&ov[g.id].duesOutstanding!=null;
     const ops=(g.operations||[]).filter(o=>Math.abs(o.outstanding)>0.0005);
     const opsSum=ops.reduce((s,o)=>s+o.outstanding,0);
@@ -2962,7 +3114,11 @@ function renderDues(){
 }
 
 function renderDeferred(){
-  const D=DEFERRED_CANALS,budget=D.byGov.reduce((s,x)=>s+x.remaining,0);
+  const D0=DEFERRED_CANALS;
+  const gname=(SESSION&&SESSION.role==='gov')?gov(SESSION.govId).name:null;
+  const byGov=gname?D0.byGov.filter(x=>x.gov===gname):D0.byGov;
+  const D={...D0,byGov,total:gname?byGov.reduce((s,x)=>s+x.count,0):D0.total};
+  const budget=D.byGov.reduce((s,x)=>s+x.remaining,0);
   document.getElementById('defKpi').innerHTML=`
     <div class="kpi edge"><div class="cap">إجمالي الترع المؤجلة</div><div class="val">${D.total}<small> ترعة</small></div><div class="foot"><span>من م1 إلى م2</span><span></span></div></div>
     <div class="kpi edge-wait"><div class="cap">إدارات متأثرة</div><div class="val">${D.byGov.length}</div><div class="foot"><span>إدارات مركزية</span><span></span></div></div>
@@ -3150,7 +3306,8 @@ const REPORT_OUTCOMES={
 };
 function addReport(rep){const a=loadReports();rep.id='RPT-'+Date.now().toString(36).toUpperCase();rep.createdAt=new Date().toISOString();rep.outcome='waiting';a.unshift(rep);saveReports(a);
   logAudit({gov:rep.govName,phase:'—',field:'بلاغ استلام جديد',before:'—',after:rep.canalName+' — موعد '+rep.dueDate});pushReport(rep);return rep;}
-function updateReportOutcome(id,outcome,note){const a=loadReports();const r=a.find(x=>x.id===id);if(!r)return;
+function updateReportOutcome(id,outcome,note){const _r=loadReports().find(x=>x.id===id);if(_r&&!can('edit',_r.govId)){authDeny();return;}return _updateReportOutcome0(id,outcome,note);}
+function _updateReportOutcome0(id,outcome,note){const a=loadReports();const r=a.find(x=>x.id===id);if(!r)return;
   const prev=REPORT_OUTCOMES[r.outcome].label;r.outcome=outcome;r.outcomeNote=note||'';r.outcomeAt=new Date().toISOString();saveReports(a);
   logAudit({gov:r.govName,phase:'—',field:'نتيجة بلاغ ('+r.canalName+')',before:prev,after:REPORT_OUTCOMES[outcome].label});pushReport(r);
   // ── ربط عكسي: قبول البلاغ يُحدِّث موقف الترعة المرتبطة إلى «مقبولة نهائياً» ──
@@ -3168,7 +3325,7 @@ function updateReportOutcome(id,outcome,note){const a=loadReports();const r=a.fi
       try{if(typeof pushOverride==='function')pushOverride(r.govId,r.govName,ov[r.govId]);}catch(e){}
     }
   }}
-function deleteReport(id){saveReports(loadReports().filter(x=>x.id!==id));pushDelete(id);}
+function deleteReport(id){const r=loadReports().find(x=>x.id===id);if(r&&!can('edit',r.govId)){authDeny();return;}saveReports(loadReports().filter(x=>x.id!==id));pushDelete(id);}
 // حساب حالة الموعد تلقائياً (يوم كامل)
 function reportTiming(rep){
   const today=new Date();today.setHours(0,0,0,0);
@@ -3209,13 +3366,13 @@ function importJSON(ev){
 function exportExcel(){
   // build CSV of all canals + status across govs (opens in Excel)
   const rows=[['المعرّف','الإدارة','الترعة','العملية','المقاول','الطول(كم)','نسبة التنفيذ%','موقف دار الهندسة']];
-  allGovs().forEach(g=>(g.canals||[]).forEach(c=>{
+  visibleGovs().forEach(g=>(g.canals||[]).forEach(c=>{
     rows.push([c.id,g.name,c.name,c.op||'',c.contractor||'',c.length!=null?c.length:'',c.pct!=null?c.pct:'',c.status]);
   }));
   // also dues sheet appended
   rows.push([]);rows.push(['المستحقات المعلّقة']);
   rows.push(['الإدارة','العملية','المقاول','ما تم صرفه(م.ج)','المعلّق(م.ج)','الإجمالي(م.ج)','البيان']);
-  allGovs().forEach(g=>(g.operations||[]).forEach(o=>{if(Math.abs(o.outstanding)>0.0005){
+  visibleGovs().forEach(g=>(g.operations||[]).forEach(o=>{if(Math.abs(o.outstanding)>0.0005){
     const paid=o.paid!=null?+o.paid:'';const out=+o.outstanding;const gross=(o.paid!=null?+o.paid:0)+out;
     rows.push([g.name,o.name,o.contractor,paid,out,gross,o.detail||'']);
   }}));
@@ -3230,6 +3387,7 @@ function exportExcel(){
 function renderAudit(){
   const q=(document.getElementById('auditSearch')?.value||'').trim();
   let a=loadAudit();
+  if(SESSION&&SESSION.role==='gov')a=a.filter(x=>x.gov===gov(SESSION.govId).name);
   if(q)a=a.filter(x=>(x.gov||'').includes(q)||(x.field||'').includes(q)||(x.phase||'').includes(q));
   document.getElementById('auditCount').textContent=a.length+' تعديل';
   const fmt=t=>{const d=new Date(t);return d.toLocaleString('ar-EG',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})};
@@ -3243,7 +3401,7 @@ function renderAudit(){
       <td style="font-size:12px;color:var(--nile-600);font-weight:600">${x.after}</td></tr>`).join('')
       :'<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">لا توجد تعديلات مسجّلة بعد. أي تحديث تجريه على إدارة سيُسجّل هنا تلقائياً.</td></tr>'}</tbody>`;
 }
-function clearAudit(){if(confirm('مسح كل سجل التغييرات؟ لا يمكن التراجع.')){localStorage.removeItem(AUDIT);renderAudit();toast('تم مسح السجل')}}
+function clearAudit(){if(currentRole()!=='admin'){authDeny();return;}if(confirm('مسح كل سجل التغييرات؟ لا يمكن التراجع.')){localStorage.removeItem(AUDIT);renderAudit();toast('تم مسح السجل')}}
 
 // ═══ لوحة بلاغات الاستلام (للمديرة) ═══
 function renderReports(){
@@ -3251,6 +3409,7 @@ function renderReports(){
   const q=(document.getElementById('reportSearch')?.value||'').trim();
   const f=document.getElementById('reportFilter')?.value||'all';
   let reps=loadReports().map(r=>({...r,_t:reportTiming(r)}));
+  if(SESSION&&SESSION.role==='gov')reps=reps.filter(r=>r.govId===SESSION.govId);
   // KPIs
   const overdue=reps.filter(r=>r._t.state==='overdue').length;
   const today=reps.filter(r=>r._t.state==='today').length;
@@ -3427,7 +3586,8 @@ function buildGovDoc(govId){
 // ═══════════════════════════════════════════════════════════════════
 // يفتح نموذج الإدخال
 function openLetterComposer(preTo,preSubject){
-  const gOpts=allGovs().map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  if(!can('edit')){authDeny();return;}
+  const gOpts=visibleGovs().map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
   const html=`
     <div class="lc-head">
       <div class="lc-title">✍️ إنشاء خطاب رسمي</div>
@@ -3682,6 +3842,7 @@ function buildReadyCanalsLetter(govId){
 let _darPickGov=null;
 function darPhaseMatch(c,f){return f==='all'?true:f==='none'?c.phase==null:c.phase===+f;}
 function openDarLetter(govId){
+  if(!can('report',govId)){authDeny();return;}
   const g=gov(govId);
   const ready=(g.canals||[]).filter(c=>c&&c.statusCode==='done');
   if(!ready.length){toast&&toast('لا توجد ترع منفّذة بانتظار التسليم حالياً بهذه الإدارة');return;}
@@ -4773,6 +4934,7 @@ if(getSyncUrl()){setTimeout(()=>pullReports(true),400);}
 setInterval(()=>{if(getSyncUrl()&&!syncing)pullReports(true);},60000);
 </script>
 <script>
+initAuth();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 </script>
 </body>
