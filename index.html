@@ -1680,17 +1680,68 @@ const CUSTOM_CANALS_STORE='darElHandasa_customCanals_v1';
 function loadCustomCanals(){try{return JSON.parse(localStorage.getItem(CUSTOM_CANALS_STORE)||'[]')}catch(e){return[]}}
 function saveCustomCanals(list){localStorage.setItem(CUSTOM_CANALS_STORE,JSON.stringify(list))}
 let customCanals=loadCustomCanals();
-(function mergeCustomCanals(){
-  const byGov={};
-  PROJECT.govs.forEach(g=>{ byGov[g.id]=new Set((g.canals||[]).map(c=>c.id)); });
-  customCanals.forEach(c=>{
-    const g=PROJECT.govs.find(x=>x.id===c._gov);
-    if(!g)return;
-    if(!g.canals)g.canals=[];
-    if(!byGov[g.id])byGov[g.id]=new Set(g.canals.map(x=>x.id));
-    if(!byGov[g.id].has(c.id)){ g.canals.push(c); byGov[g.id].add(c.id); }
-  });
+/* ═══ تجسيد الكيانات المُضافة يدوياً من طبقة الأوفررايد المتزامنة ═══
+   الترع والإدارات المُضافة تُخزَّن داخل ov (addedCanals / _govBody) فتُدفع
+   للسحابة وتصل كل الأجهزة. الدالة idempotent: تحقن الجديد الوارد وتزيل
+   الترع المُضافة التي حُذفت سحابياً — تُستدعى عند الإقلاع وبعد كل سحب/استيراد. */
+function materializeCustomEntities(){
+  try{
+    Object.keys(ov).forEach(k=>{
+      const o=ov[k];
+      if(o&&o._custom&&o._govBody&&!PROJECT.govs.some(g=>g.id===k)){
+        PROJECT.govs.push({id:o._govBody.id,name:o._govBody.name,region:o._govBody.region||'—',
+          phase1:o.phase1?{...o.phase1}:null,phase2:o.phase2?{...o.phase2}:null,
+          darStatus:o._govBody.darStatus||'متوقف',duesOutstanding:o.duesOutstanding||0,
+          operations:[],canals:[],lastUpdate:o.lastUpdate||new Date().toISOString().slice(0,10),_custom:true});
+      }
+    });
+    PROJECT.govs.forEach(g=>{
+      const added=(ov[g.id]&&Array.isArray(ov[g.id].addedCanals))?ov[g.id].addedCanals:[];
+      if(!g.canals&&!added.length)return;
+      if(!g.canals)g.canals=[];
+      const ids=new Set(added.map(c=>c.id));
+      g.canals=g.canals.filter(c=>!c._custom||ids.has(c.id));
+      const have=new Set(g.canals.map(c=>c.id));
+      added.forEach(c=>{ if(!have.has(c.id)){ g.canals.push({...c}); have.add(c.id);} });
+    });
+  }catch(e){console.warn('materialize',e);}
+}
+
+/* ═══ هجرة لمرة واحدة: نقل الترع/الإدارات المُضافة من التخزين المحلي القديم إلى ov المتزامن ═══ */
+(function migrateLocalCustoms(){
+  try{
+    const touched=new Set();
+    if(customCanals.length){
+      customCanals.forEach(c=>{
+        const gid=c._gov;if(!gid)return;
+        const o=ov[gid]||(ov[gid]={});
+        o.addedCanals=o.addedCanals||[];
+        if(!o.addedCanals.some(x=>x.id===c.id)){o.addedCanals.push(c);touched.add(gid);}
+      });
+      localStorage.removeItem(CUSTOM_CANALS_STORE);customCanals=[];
+    }
+    if(customGovs.length){
+      customGovs.forEach(g=>{
+        const o=ov[g.id]||(ov[g.id]={});
+        if(!o._govBody){o._custom=true;o._govBody={id:g.id,name:g.name,region:g.region,darStatus:g.darStatus};
+          if(o.phase1==null&&g.phase1)o.phase1={...g.phase1};
+          if(o.phase2==null&&g.phase2)o.phase2={...g.phase2};
+          if(o.duesOutstanding==null)o.duesOutstanding=g.duesOutstanding||0;
+          o.lastUpdate=o.lastUpdate||g.lastUpdate;touched.add(g.id);}
+      });
+      localStorage.removeItem(CUSTOM_STORE);customGovs=[];
+    }
+    if(touched.size){
+      saveOv(ov);
+      // الدفع بعد اكتمال تحميل السكربت (ثوابت المزامنة تُعرَّف لاحقاً في الملف)
+      setTimeout(()=>{touched.forEach(gid=>{
+        const g=PROJECT.govs.find(x=>x.id===gid);
+        try{if(typeof pushOverride==='function')pushOverride(gid,(g&&g.name)||gid,ov[gid]);}catch(e){}
+      });},0);
+    }
+  }catch(e){console.warn('migrate customs',e);}
 })();
+materializeCustomEntities();
 
 
 // أكواد الموقف التي تُعتبر «استُلمت عبر دار الهندسة» (قبول نهائي/جزئي)
@@ -2702,14 +2753,16 @@ function saveNewGov(){
     lastUpdate:new Date().toISOString().slice(0,10),
     _custom:true
   };
-  // التخزين والدمج الفوري
-  customGovs.push(newGov);
-  saveCustomGovs(customGovs);
+  // التخزين في طبقة الأوفررايد المتزامنة (الجسم كاملاً ليتجسّد على كل الأجهزة) + الدمج الفوري
+  ov[id]={_custom:true,_govBody:{id,name,region,darStatus},
+    phase1:phase1?{...phase1}:null,phase2:phase2?{...phase2}:null,
+    duesOutstanding:dues,lastUpdate:newGov.lastUpdate};
+  saveOv(ov);
   PROJECT.govs.push(newGov);
   logAudit({gov:name,phase:'—',field:'إضافة إدارة جديدة',before:'—',
     after:`إقليم ${region} • ${phase1?'م1 ('+phase1.canals+' ترعة) ':''}${phase2?'م2 ('+phase2.canals+' ترعة)':''} • مستحقات ${dues}`});
-  // مزامنة سحابية إن توفّرت (كتعديل على معرّف الإدارة الجديد)
-  try{if(typeof pushOverride==='function')pushOverride(id,name,{_custom:true,phase1,phase2,duesOutstanding:dues,lastUpdate:newGov.lastUpdate});}catch(e){}
+  // مزامنة سحابية إن توفّرت (الجسم كاملاً — يصل كل الأجهزة ويتجسّد تلقائياً)
+  try{if(typeof pushOverride==='function')pushOverride(id,name,ov[id]);}catch(e){}
   closeAddGov();
   refreshAll();
   toast('تمت إضافة الإدارة ودمجها في جميع المؤشّرات');
@@ -2722,7 +2775,6 @@ function deleteCustomGov(id){
   const g=PROJECT.govs.find(x=>x.id===id);
   if(!g||!g._custom)return;
   if(!confirm(`حذف الإدارة المُضافة «${g.name}»؟ لا يمكن التراجع.`))return;
-  customGovs=customGovs.filter(x=>x.id!==id);saveCustomGovs(customGovs);
   const i=PROJECT.govs.findIndex(x=>x.id===id);if(i>=0)PROJECT.govs.splice(i,1);
   if(ov[id]){delete ov[id];saveOv(ov);try{pushOverrideDelete(id)}catch(e){}}
   logAudit({gov:g.name,phase:'—',field:'حذف إدارة مُضافة',before:g.name,after:'—'});
@@ -2840,14 +2892,16 @@ function saveNewCanal(){
       cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
       cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
       o[key]=cur;o.lastUpdate=new Date().toISOString().slice(0,10);
-      ov[govId]=o;saveOv(ov);
-      try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+      ov[govId]=o;
       phaseNote=`م${key==='phase2'?'2':'1'}: إجمالي +1${isDone?' ومنفّذ +1':''}${isDar?' ومُستلَم +1':''}`;
     }
   }
-  // التخزين والدمج الفوري (بعد ضبط ذاكرة الأثر لتُحفظ معها)
-  customCanals.push(canal);
-  saveCustomCanals(customCanals);
+  // التخزين في طبقة الأوفررايد المتزامنة (تصل جميع الأجهزة) + الدمج الفوري
+  const oC=ov[govId]||(ov[govId]={});
+  oC.addedCanals=[...(oC.addedCanals||[]),canal];
+  oC.lastUpdate=new Date().toISOString().slice(0,10);
+  saveOv(ov);
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
   if(!g.canals)g.canals=[];
   g.canals.push(canal);
   logAudit({gov:g.name,phase:id+' — '+name,field:'إضافة ترعة جديدة',before:'—',
@@ -2863,8 +2917,8 @@ function deleteCustomCanal(govId,cid){
   const c=(g.canals||[]).find(x=>x.id===cid);
   if(!c||!c._custom)return;
   if(!confirm(`حذف الترعة المُضافة «${c.name}»؟ لا يمكن التراجع.`))return;
-  customCanals=customCanals.filter(x=>!(x.id===cid&&x._gov===govId));
-  saveCustomCanals(customCanals);
+  const oD=ov[govId]||(ov[govId]={});
+  oD.addedCanals=(oD.addedCanals||[]).filter(x=>x.id!==cid);saveOv(ov);
   const i=g.canals.findIndex(x=>x.id===cid);if(i>=0)g.canals.splice(i,1);
   // ── عكس أثر الترعة عن إجماليات المرحلة إن كانت قد عُكست عند إضافتها ──
   // نعتمد على ذاكرة الأثر (_counted) المحفوظة مع الترعة، فيُخصم بالضبط ما أُضيف (بحدّ أدنى صفر).
@@ -3227,6 +3281,7 @@ async function pullReports(silent){
         try{merged[o.govId]=(typeof o.data==='string')?JSON.parse(o.data):o.data;}catch(e){}
       });
       ov=merged;saveOv(ov);
+      if(typeof materializeCustomEntities==='function')materializeCustomEntities();
       msg.push(data.overrides.length+' تعديل إدارة');
     }
     refreshAll();updateSyncStatus('on');
@@ -3356,6 +3411,7 @@ function importJSON(ev){
     const d=JSON.parse(r.result);
     if(!d.overrides)throw new Error('bad');
     ov=d.overrides;saveOv(ov);
+    if(typeof materializeCustomEntities==='function')materializeCustomEntities();
     if(d.audit)localStorage.setItem(AUDIT,JSON.stringify(d.audit));
     if(d.reports)saveReports(d.reports);
     refreshAll();toast('تم استيراد النسخة بنجاح');
