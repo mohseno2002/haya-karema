@@ -2254,7 +2254,7 @@ function openDrawer(id){
     <div class="dnote">جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${p2.delivPct!=null?p2.delivPct+'%':'—'}${p2.note?'<br>'+p2.note:''}</div></div>`;
   html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span>${can('edit',g.id)?`<span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span>`:''}</div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
   const canals=g.canals||[];
-  window._curCanals=canals;
+  window._curCanals=canals;window._curGov=id;
   html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})
       ${can('edit',id)?`<button class="btn-add-canal" onclick="openAddCanal('${id}')">
         <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
@@ -2446,7 +2446,14 @@ function openCanalCard(cid){
 }
 // حفظ تعديل موقف الترعة — ينعكس على كل الأماكن المرتبطة
 function saveCanalStatus(govId,cid){
-  if(!govId){toast&&toast('تعذّر تحديد الإدارة');return;}
+  // استرداد الإدارة إن فُقدت (فتح الكارت بعد بحث/فلترة): من فهرس الكارت ثم الدرج الحالي
+  if(!govId){govId=((window._canalIndex||{})[cid]||{}).govId||window._curGov||'';}
+  if(!govId){
+    // آخر محاولة: ابحث عن الإدارة التي تملك هذه الترعة
+    const owner=allGovs().find(g=>(g.canals||[]).some(c=>c.id===cid));
+    if(owner)govId=owner.id;
+  }
+  if(!govId){toast&&toast('تعذّر تحديد الإدارة — أعِد فتح الترعة');return;}
   if(!can('edit',govId)){authDeny();return;}
   const sel=document.getElementById('ccdStatusSel');if(!sel)return;
   const newCode=sel.value;
@@ -2486,7 +2493,7 @@ function filterCanals(){
   let list=window._curCanals||[];
   if(f!=='all')list=list.filter(c=>c.status===f);
   if(q)list=list.filter(c=>c.name.includes(q)||(c.op||'').includes(q)||(c.contractor||'').includes(q)||(c.id||'').includes(q));
-  renderCanals(list);
+  renderCanals(list,window._curGov);
 }
 function opCard(o,govId,idx){
   const ch=[];
