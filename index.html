@@ -278,6 +278,7 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .donut-num{font-family:'Cairo';font-weight:900;font-size:26px;fill:var(--ink)}
 .donut-sub{font-size:8px;fill:var(--muted)}
 .donut-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
+.donut-note{margin-top:8px;font-size:10.5px;line-height:1.7;color:var(--muted);background:rgba(201,182,124,.08);border:1px dashed rgba(201,182,124,.35);border-radius:8px;padding:6px 9px;text-align:center}
 .donut-legend span{display:inline-flex;align-items:center;gap:5px}
 .donut-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
 .donut-legend b{color:var(--ink);font-family:'IBM Plex Mono'}
@@ -2054,15 +2055,21 @@ function liveTotals(){
 // يُضاف إليها صافي تعديلات الإدارات الرسمية (دلتا) + الإدارات المُضافة يدوياً بقيمتها الكاملة.
 // تُستخدم في اللوحة الرئيسية والمساعد الذكي والخطابات معاً، فلا يظهر رقمان مختلفان لنفس المؤشر أبداً.
 function livePhases(){
-  const of=PROJECT.official;
+  const of=PROJECT.official,dtl=PROJECT.detailTotals;
   const _offG=PROJECT.govs.filter(g=>!g._custom);
   const S=(ph,k)=>allGovs().reduce((a,g)=>a+((g[ph]&&g[ph][k])||0),0);
   const B=(ph,k)=>_offG.reduce((a,g)=>a+((g[ph]&&g[ph][k])||0),0);
   const D=(ph,k)=>S(ph,k)-B(ph,k);
-  const mk=(o,ph)=>{const total=o.total+D(ph,'canals'),done=o.done+D(ph,'executed'),del=o.delivered+D(ph,'delivered');
-    return{total,done,delivered:del,donePct:total?Math.round(done/total*100):0,
+  // عقيدة الاستلام المعتمدة (وحدة واحدة في كل التقارير): «تم تسليمه» = المصنَّف بالكشوف
+  // التفصيلية فقط (دار الهندسة + استثماري). ما ورد «مُسلَّماً» بالتقرير الرسمي دون تصنيف
+  // مساره يُعامَل بانتظار الاستلام لحين تصنيفه. الرقم الرسمي يُحفظ في officialDelivered للمرجعية.
+  const mk=(o,d,ph)=>{const total=o.total+D(ph,'canals'),done=o.done+D(ph,'executed');
+    const del=Math.min(total,(d.dar+D(ph,'dar'))+(d.invest+D(ph,'invest')));
+    const offDel=Math.min(total,o.delivered+D(ph,'delivered'));
+    return{total,done,delivered:del,officialDelivered:offDel,
+      donePct:total?Math.round(done/total*100):0,
       deliveredPct:total?Math.round(del/total*100):0,remainingDeliver:Math.max(0,total-del)};};
-  return {p1:mk(of.phase1,'phase1'),p2:mk(of.phase2,'phase2')};
+  return {p1:mk(of.phase1,dtl.p1,'phase1'),p2:mk(of.phase2,dtl.p2,'phase2')};
 }
 // عدّاد متحرّك للأرقام (count-up) — لمسة مبهرة عند عرض المؤشرات
 function animateCounts(){
@@ -2152,25 +2159,34 @@ function donut(segments,centerLabel,centerSub){
     +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" class="donut-sub">'+centerSub+'</text></svg>';
 }
 function renderDonuts(dt,lp){
-  const mk=(dt,title,total)=>{
-    const rem=Math.max(0,total-(dt.dar+dt.invest));
+  // قاعدة الاستلام المعتمدة: لا تُحتسب الترعة «مستلَمة» إلا إذا صُنِّف مسارها بالكشوف التفصيلية
+  // (دار الهندسة أو استثماري). أي ترعة وردت «مُسلَّمة» بالتقرير الرسمي دون تصنيف مسارها
+  // تُعامَل بانتظار الاستلام إلى أن يتم تصنيفها — لذا الرمادي = الإجمالي − (دار + استثماري).
+  const mk=(d,title,ph)=>{
+    const total=ph.total;
+    const classified=d.dar+d.invest;
+    const rem=Math.max(0,total-classified);
+    const offD=(ph.officialDelivered!=null?ph.officialDelivered:(ph.delivered!=null?ph.delivered:classified));
+    const officialRem=Math.max(0,Math.min(rem,total-offD));
+    const pendClass=rem-officialRem; // مُسلَّمة بالتقرير الرسمي، بانتظار تصنيف مسارها
     const segs=[
-      {l:'دار الهندسة',v:dt.dar,c:'var(--nile-500)'},
-      {l:'استثماري',v:dt.invest,c:'var(--invest)'},
+      {l:'دار الهندسة',v:d.dar,c:'var(--nile-500)'},
+      {l:'استثماري',v:d.invest,c:'var(--invest)'},
       {l:'بانتظار الاستلام',v:rem,c:'#cdd8d4'}
     ];
-    const pct=Math.round((dt.dar/total)*100);
+    const pct=Math.round((d.dar/total)*100);
     return `<div class="donut-card">
       <div class="donut-title">${title}</div>
       ${donut(segs,pct+'%',' عبر دار الهندسة')}
       <div class="donut-legend">${segs.map(s=>`<span><i style="background:${s.c}"></i>${s.l} <b>${s.v}</b></span>`).join('')}</div>
+      ${pendClass>0?`<div class="donut-note">بانتظار الاستلام ${rem} = ${officialRem} متبقٍّ بالتقرير الرسمي + ${pendClass} وردت «مُسلَّمة» بالتقرير دون تصنيف مسارها بالكشوف التفصيلية، وتُعامَل بانتظار الاستلام لحين تصنيفها.</div>`:''}
     </div>`;
   };
-  const _t1=(lp&&lp.p1)?lp.p1.total:PROJECT.official.phase1.total;
-  const _t2=(lp&&lp.p2)?lp.p2.total:PROJECT.official.phase2.total;
+  const p1o=(lp&&lp.p1)?lp.p1:PROJECT.official.phase1;
+  const p2o=(lp&&lp.p2)?lp.p2:PROJECT.official.phase2;
   document.getElementById('donutRow').innerHTML=
-    mk(dt.p1,'توزيع استلام المرحلة الأولى',_t1)+
-    mk(dt.p2,'توزيع استلام المرحلة الثانية',_t2);
+    mk(dt.p1,'توزيع استلام المرحلة الأولى',p1o)+
+    mk(dt.p2,'توزيع استلام المرحلة الثانية',p2o);
   wireDonutTips();
 }
 // تفاصيل تفاعلية على المخطط الدائري عند التمرير
