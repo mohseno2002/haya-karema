@@ -1565,6 +1565,34 @@ const STORE='darElHandasa_v2';
 function loadOv(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
 function saveOv(o){localStorage.setItem(STORE,JSON.stringify(o))}
 let ov=loadOv();
+/* ═══ محرك تأكيد المزامن (علاج «عودة التعديلات من تلقاء نفسها») ═══
+   السبب الجذري: الدفع كان fire-and-forget (no-cors فلا نعرف نجاحه) والسحب كان «السحابة تغلب دائماً».
+   فإذا تعثّر دفعُ تعديلٍ بصمت، عاد السحب التلقائي (كل 60 ثانية وعند كل فتح) بالنسخة القديمة فمسحه.
+   العلاج: طابع زمني _ts داخل بيانات كل إدارة + صندوق صادر DIRTY محفوظ محلياً:
+   • المحلي غير المؤكَّد لا تمسّه السحابة أبداً.
+   • يُعاد دفعه تلقائياً بعد كل سحب حتى يتأكد وصوله (تأكيد بالصدى: نسخة السحابة تحمل طابعنا أو أحدث).
+   • لغير ذلك: الأحدث طابعاً يغلب — فلا يهزم صفٌّ قديم تعديلاً مختوماً.
+   ملاحظة: _ts يسافر داخل عمود data نفسه، فلا يلزم أي تعديل على كود Apps Script المنشور حالياً. */
+const DIRTY_KEY='deh_dirty_v1', OVDEL_KEY='deh_ovdel_v1', RDIRTY_KEY='deh_rdirty_v1', RDEL_KEY='deh_rdel_v1';
+let DIRTY=new Set(); try{DIRTY=new Set(JSON.parse(localStorage.getItem(DIRTY_KEY)||'[]'))}catch(e){}
+let OVDEL={};  try{OVDEL=JSON.parse(localStorage.getItem(OVDEL_KEY)||'{}')}catch(e){}
+let RDIRTY=new Set(); try{RDIRTY=new Set(JSON.parse(localStorage.getItem(RDIRTY_KEY)||'[]'))}catch(e){}
+let RDEL={};  try{RDEL=JSON.parse(localStorage.getItem(RDEL_KEY)||'{}')}catch(e){}
+function saveDirty(){localStorage.setItem(DIRTY_KEY,JSON.stringify([...DIRTY]));localStorage.setItem(OVDEL_KEY,JSON.stringify(OVDEL));}
+function saveRSync(){localStorage.setItem(RDIRTY_KEY,JSON.stringify([...RDIRTY]));localStorage.setItem(RDEL_KEY,JSON.stringify(RDEL));}
+function syncPendingCount(){return DIRTY.size+RDIRTY.size+Object.keys(OVDEL).length+Object.keys(RDEL).length;}
+const DEVICE_ID=(function(){try{let v=localStorage.getItem('deh_dev');if(!v){v='DV-'+Math.random().toString(36).slice(2,8).toUpperCase();localStorage.setItem('deh_dev',v);}return v;}catch(e){return 'DV-X'}})();
+window.__sync={dirty:()=>[...DIRTY],ovdel:()=>({...OVDEL}),rdirty:()=>[...RDIRTY],rdel:()=>({...RDEL}),dev:()=>DEVICE_ID};
+// تزامن تبويبات نفس الجهاز: أي تغيير خارجي يُحمَّل فوراً بدل الكتابة فوقه بنسخة قديمة
+window.addEventListener('storage',function(e){try{
+  if(!e||!e.key)return;
+  if(e.key===STORE){ov=loadOv();if(typeof refreshAll==='function')refreshAll();}
+  else if(e.key===DIRTY_KEY)DIRTY=new Set(JSON.parse(e.newValue||'[]'));
+  else if(e.key===OVDEL_KEY)OVDEL=JSON.parse(e.newValue||'{}');
+  else if(e.key===RDIRTY_KEY)RDIRTY=new Set(JSON.parse(e.newValue||'[]'));
+  else if(e.key===RDEL_KEY)RDEL=JSON.parse(e.newValue||'{}');
+  else if(e.key==='deh_reports'&&typeof refreshAll==='function')refreshAll();
+}catch(_){}});
 
 /* ═══════════════════════════════════════════════════════════════
    بوابة الدخول والصلاحيات (ثلاثة أدوار)
@@ -3298,7 +3326,9 @@ function logAudit(entry){const a=loadAudit();a.unshift({...entry,ts:new Date().t
 
 // ═══ بلاغات الاستلام (Acceptance Reports) ═══
 const REPORTS='deh_reports';
-function loadReports(){try{return JSON.parse(localStorage.getItem(REPORTS)||'[]')}catch(e){return[]}}
+function loadReportsRaw(){try{return JSON.parse(localStorage.getItem(REPORTS)||'[]')}catch(e){return[]}}
+// كل الواجهات تقرأ من هنا: البلاغ المحذوف محلياً (شاهدة RDEL) يختفي فوراً ولا «يعود من قبره» بعد السحب
+function loadReports(){const raw=loadReportsRaw();try{return raw.filter(r=>!RDEL[r.id])}catch(e){return raw}}
 function saveReports(r){localStorage.setItem(REPORTS,JSON.stringify(r))}
 
 // ═══════════ التزامن مع Google Sheets ═══════════
@@ -3326,24 +3356,34 @@ function updateSyncStatus(state){
   if(!url){el.className='sync-badge off';el.innerHTML='<span class="sd"></span>غير متزامن (محلي)';return;}
   if(state==='syncing'){el.className='sync-badge busy';el.innerHTML='<span class="sd"></span>جارٍ التزامن…';return;}
   if(state==='err'){el.className='sync-badge err';el.innerHTML='<span class="sd"></span>تعذّر التزامن';return;}
+  const pend=(typeof syncPendingCount==='function')?syncPendingCount():0;
+  if(pend){el.className='sync-badge busy';el.innerHTML='<span class="sd"></span>متزامن — بانتظار تأكيد '+pend+' تغيير';return;}
   el.className='sync-badge on';el.innerHTML='<span class="sd"></span>متزامن مع Google Sheets';
 }
 // دفع بلاغ واحد للسحابة
-async function pushReport(rep){
+async function pushReport(rep,isRetry){
   const url=getSyncUrl();if(!url)return;
+  try{if(!isRetry&&rep&&rep.id){RDIRTY.add(rep.id);saveRSync();updateSyncStatus();}}catch(e){}
   try{
     await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'upsert',report:rep})});
   }catch(e){console.warn('pushReport',e);}
 }
-async function pushDelete(id){
+async function pushDelete(id,isRetry){
   const url=getSyncUrl();if(!url)return;
+  try{if(!isRetry&&id){RDEL[id]=Date.now();RDIRTY.delete(id);saveRSync();updateSyncStatus();}}catch(e){}
   try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'delete',id})});}catch(e){console.warn('pushDelete',e);}
 }
 // دفع تعديل إدارة مركزية للسحابة
-async function pushOverride(govId,govName,data){
+async function pushOverride(govId,govName,data,isRetry){
   const url=getSyncUrl();if(!url)return;
+  // ختم الدفعة الأصلية بطابع زمني وتسجيلها بالصندوق الصادر حتى يتأكد وصولها
+  // (إعادة المحاولة لا تُعيد الختم كي لا يتجدد الطابع فلا يتحقق التأكيد أبداً)
+  try{if(!isRetry){
+    if(ov[govId]&&typeof ov[govId]==='object'){ov[govId]._ts=Date.now();ov[govId]._dev=DEVICE_ID;saveOv(ov);data=ov[govId];}
+    DIRTY.add(govId);delete OVDEL[govId];saveDirty();updateSyncStatus();
+  }}catch(e){}
   try{
     // يُرفَق مع كل دفعة آخرُ قيود سجل التغييرات الخاصة بهذه الإدارة —
     // فتصل قيود أجهزة الإدارات إلى المفوض وتُدمج لديه (انظر pullReports)
@@ -3354,10 +3394,53 @@ async function pushOverride(govId,govName,data){
       body:JSON.stringify({action:'override',govId,govName,data:JSON.stringify(payload)})});
   }catch(e){console.warn('pushOverride',e);}
 }
-async function pushOverrideDelete(govId){
+async function pushOverrideDelete(govId,isRetry){
   const url=getSyncUrl();if(!url)return;
+  try{if(!isRetry&&govId){OVDEL[govId]=Date.now();DIRTY.delete(govId);saveDirty();updateSyncStatus();}}catch(e){}
   try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'overrideDelete',govId})});}catch(e){console.warn('pushOverrideDelete',e);}
+}
+// ═══ دمج آمن: «المحلي غير المؤكَّد لا يُمَس» + «الأحدث طابعاً يغلب» ═══
+function applyCloudOverrides(list){
+  if(!Array.isArray(list))return 0;
+  const merged={...ov};const cloudIds=new Set();
+  list.forEach(o=>{try{
+    const id=o.govId;if(!id)return;cloudIds.add(id);
+    const inc=(typeof o.data==='string')?JSON.parse(o.data):o.data;
+    if(!inc||typeof inc!=='object')return;
+    const lts=(ov[id]&&ov[id]._ts)||0, cts=inc._ts||0;
+    if(OVDEL[id])return;                                   // حذف محلي بانتظار تأكيده — لا إحياء
+    if(DIRTY.has(id)){                                     // تعديل محلي غير مؤكَّد: لا مساس به
+      if(lts>0&&cts>=lts){if(cts>lts)merged[id]=inc;DIRTY.delete(id);} // صدى وصولنا (أو أحدث) ⇒ تأكيد
+      return;}
+    if(cts>=lts)merged[id]=inc;                            // الأحدث يغلب — القديم بلا طابع لا يهزم مختوماً
+  }catch(e){}});
+  ov=merged;saveOv(ov);
+  Object.keys(OVDEL).forEach(id=>{if(!cloudIds.has(id))delete OVDEL[id];}); // غاب الصف ⇒ تأكد الحذف
+  saveDirty();
+  // إعادة دفع غير المؤكَّد — حلقة شفاء ذاتي تتقارب حتى بعد فشل صامت
+  DIRTY.forEach(id=>{const g=PROJECT.govs.find(x=>x.id===id);try{pushOverride(id,(g&&g.name)||id,ov[id],true);}catch(e){}});
+  Object.keys(OVDEL).forEach(id=>{try{pushOverrideDelete(id,true);}catch(e){}});
+  updateSyncStatus();
+  return list.length;
+}
+function applyCloudReports(cloud){
+  if(!Array.isArray(cloud))return 0;
+  const local=loadReportsRaw();
+  const cmap=new Map(cloud.map(r=>[r.id,r]));
+  const eq=(a,b)=>a&&b&&String(a.outcome||'')===String(b.outcome||'')&&String(a.outcomeNote||'')===String(b.outcomeNote||'')&&String(a.dueDate||'')===String(b.dueDate||'')&&String(a.note||'')===String(b.note||'');
+  const out=[];
+  local.forEach(l=>{const c=cmap.get(l.id);cmap.delete(l.id);
+    if(RDEL[l.id])return;                                  // شاهدة حذف محلية — يُطهَّر من المخزن
+    if(RDIRTY.has(l.id)){if(c&&eq(c,l))RDIRTY.delete(l.id);out.push(l);return;} // لا تمس غير المؤكَّد
+    out.push(c||l);});
+  cmap.forEach(c=>{if(!RDEL[c.id])out.push(c);});          // جديد من السحابة (ما لم يكن محذوفاً لدينا)
+  Object.keys(RDEL).forEach(id=>{if(!cloud.some(r=>r.id===id))delete RDEL[id];}); // غاب ⇒ تأكد الحذف
+  saveReports(out);saveRSync();
+  RDIRTY.forEach(id=>{const r=out.find(x=>x.id===id);if(r)try{pushReport(r,true)}catch(e){}});
+  Object.keys(RDEL).forEach(id=>{try{pushDelete(id,true)}catch(e){}});
+  updateSyncStatus();
+  return cloud.length;
 }
 // سحب البلاغات + تعديلات الإدارات من السحابة ودمجها
 async function pullReports(silent){
@@ -3368,19 +3451,11 @@ async function pullReports(silent){
     const data=await res.json();
     let msg=[];
     if(Array.isArray(data.reports)){
-      const cloud=data.reports;
-      const cloudIds=new Set(cloud.map(r=>r.id));
-      const localOnly=loadReports().filter(r=>!cloudIds.has(r.id));
-      saveReports([...cloud,...localOnly]);
-      msg.push(cloud.length+' بلاغ');
+      msg.push(applyCloudReports(data.reports)+' بلاغ');
     }
     if(Array.isArray(data.overrides)){
-      // تعديلات الإدارات: السحابة مصدر الحقيقة
-      const merged={...ov};
-      data.overrides.forEach(o=>{
-        try{merged[o.govId]=(typeof o.data==='string')?JSON.parse(o.data):o.data;}catch(e){}
-      });
-      ov=merged;saveOv(ov);
+      // دمج آمن بدل «السحابة تغلب دائماً» — انظر applyCloudOverrides أعلاه
+      msg.push(applyCloudOverrides(data.overrides)+' تعديل إدارة');
       if(typeof materializeCustomEntities==='function')materializeCustomEntities();
       // دمج قيود سجلات الإدارات الواردة ضمن الأوفررايدات في السجل المحلي (بلا تكرار)
       try{
@@ -3393,7 +3468,6 @@ async function pullReports(silent){
         if(addedA){la.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
           localStorage.setItem(AUDIT,JSON.stringify(la.slice(0,500)));}
       }catch(_){}
-      msg.push(data.overrides.length+' تعديل إدارة');
     }
     refreshAll();updateSyncStatus('on');
     if(!silent)toast('تم السحب: '+(msg.join(' و ')||'لا جديد'));
@@ -3445,6 +3519,10 @@ function doGet(e){
   return ContentService.createTextOutput(JSON.stringify({reports,overrides})).setMimeType(ContentService.MimeType.JSON);
 }
 function doPost(e){
+  // قفل يمنع تسابق كتابات الأجهزة المتزامنة (سبب ثانٍ محتمل لضياع تعديل)
+  const lock=LockService.getScriptLock();
+  try{lock.waitLock(20000);}catch(_){}
+  try{
   const body=JSON.parse(e.postData.contents);
   if(body.action==='delete'||body.action==='upsert'){
     const s=sheet_();const data=s.getDataRange().getValues();const head=data[0];
@@ -3460,6 +3538,7 @@ function doPost(e){
       const r=findRow(body.govId);if(r)s.getRange(r,1,1,row.length).setValues([row]);else s.appendRow(row);}
   }
   return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+  } finally { try{lock.releaseLock();}catch(_){} }
 }`;
 
 // حالات نتيجة الموعد
