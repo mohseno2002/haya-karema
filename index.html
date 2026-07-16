@@ -279,6 +279,7 @@ html[data-theme="dark"] .nb-stat.wait{background:#3a2e12}
 .donut-sub{font-size:8px;fill:var(--muted)}
 .donut-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
 .donut-note{margin-top:8px;font-size:10.5px;line-height:1.7;color:var(--muted);background:rgba(201,182,124,.08);border:1px dashed rgba(201,182,124,.35);border-radius:8px;padding:6px 9px;text-align:center}
+.sec-t .ctot{font-size:10.5px;font-weight:700;color:var(--muted)}
 .donut-legend span{display:inline-flex;align-items:center;gap:5px}
 .donut-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
 .donut-legend b{color:var(--ink);font-family:'IBM Plex Mono'}
@@ -1795,7 +1796,7 @@ function canalDarDelta(baseCanals,ovCanals){
   let delta=0;
   baseCanals.forEach(c=>{
     const co=ovCanals[c.id];
-    if(!co||co._removed)return;                      // لا تعديل — أو شاهدة حذف (تُحتسب بخصمها المطلق لا هنا)
+    if(!co||co._removed||co._b)return;               // لا تعديل — أو شاهدة حذف — أو تعديل «مُثبَّت» أثرُه مخصوم في الأرقام المطلقة
     const wasDar=DAR_CODES.includes(c.statusCode);   // الأصل
     const nowDar=DAR_CODES.includes(co.statusCode);  // بعد التعديل
     if(nowDar&&!wasDar)delta++;
@@ -2324,7 +2325,7 @@ function openDrawer(id){
   html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span>${can('edit',g.id)?`<span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span>`:''}</div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
   const canals=g.canals||[];
   window._curCanals=canals;window._curGov=id;
-  html+=`<div class="sec"><div class="sec-t">تفاصيل الترع (${canals.length})
+  html+=`<div class="sec"><div class="sec-t"><span>تفاصيل الترع (${canals.length})<span class="ctot"> — المرصود بالقائمة الإرشادية؛ الإجمالي الرسمي المعتمد <b>${(((p1&&p1.canals)||0)+((p2&&p2.canals)||0))}</b> ترعة</span></span>
       ${can('edit',id)?`<button class="btn-add-canal" onclick="openAddCanal('${id}')">
         <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
         إضافة ترعة جديدة</button>`:''}</div>`;
@@ -2514,6 +2515,49 @@ function openCanalCard(cid){
   document.getElementById('canalCard').classList.add('on');
 }
 // حفظ تعديل موقف الترعة — ينعكس على كل الأماكن المرتبطة
+/* ═══ التثبيت الفوري لأثر مواقف الترع (علاج «رقم مختلف في هيدر المحافظة») ═══
+   كان أثر تعديل الموقف (±1 مُستلَم) يُضاف «وقت العرض» فوق الأرقام، بينما نموذج التعديل
+   يحفظ أرقاماً مطلقة — فيتضاعف العدّ مع كل دورة حفظ ويظهر الهيدر برقم مختلف عن النموذج.
+   الحل: أثر كل تغيير موقف يُخصم/يُضاف في الأرقام المطلقة لحظةَ الكتابة ويُختم _b «مُثبَّت»؛
+   والدلتا وقت العرض بقيت للتعديلات القديمة فقط وتُثبَّت تلقائياً عند أول حفظ — تقارب ذاتي. */
+function resolvePhaseKey(govId,phaseWanted){
+  const gv=gov(govId);if(!gv)return null;
+  let key=phaseWanted===2?'phase2':(phaseWanted===1?'phase1':null);
+  if(!key||!gv[key])key=gv.phase1?'phase1':(gv.phase2?'phase2':null); // كما كان سلوك الدلتا القديم
+  return key;
+}
+function freezeCanalDelta(o){
+  if(o&&o.canals)Object.keys(o.canals).forEach(k=>{const e=o.canals[k];if(e&&!e._removed)e._b=1;});
+}
+function applyCanalStatusOv(govId,cid,newCode,label,stage){
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return false;
+  const baseC=(g.canals||[]).find(x=>x.id===cid);if(!baseC)return false;
+  const eff=(gov(govId).canals||[]).find(x=>x.id===cid)||baseC;   // الموقف الفعّال قبل التغيير
+  const key=resolvePhaseKey(govId,baseC.phase);
+  const o=ov[govId]||(ov[govId]={});
+  const darDiff=(DAR_CODES.includes(newCode)?1:0)-(DAR_CODES.includes(eff.statusCode)?1:0);
+  const invDiff=((newCode==='investment')?1:0)-((eff.statusCode==='investment')?1:0);
+  const hasLegacy=o.canals&&Object.keys(o.canals).some(k=>{const e=o.canals[k];return e&&!e._removed&&!e._b;});
+  if(key&&gov(govId)[key]&&(darDiff||invDiff||hasLegacy)){
+    const cur={...gov(govId)[key]};delete cur._darAdjusted;       // لقطة فعّالة تشمل أي دلتا قديمة — تُثبَّت أدناه
+    const cap=cur.canals!=null?cur.canals:Infinity;
+    cur.dar=Math.max(0,Math.min(cap,(cur.dar||0)+darDiff));
+    cur.invest=Math.max(0,Math.min(cap,(cur.invest||0)+invDiff));
+    cur.delivered=Math.max(0,Math.min(cap,(cur.delivered||0)+darDiff+invDiff));
+    cur.remaining=Math.max(0,(cur.canals||0)-(cur.delivered||0));
+    if(cur.canals)cur.delivPct=Math.round(cur.delivered/cur.canals*100);
+    o[key]=cur;
+    o.canals=o.canals||{};
+    o.canals[cid]={statusCode:newCode,status:label,stage,_b:1};
+    freezeCanalDelta(o);                                          // القديمة دخلت اللقطة — تُختم فلا تُحسب مرتين
+  }else{
+    o.canals=o.canals||{};
+    o.canals[cid]={statusCode:newCode,status:label,stage,_b:1};   // لا أثر رقمي (مثل جارٍ→متوقفة)
+  }
+  o.lastUpdate=new Date().toISOString().slice(0,10);
+  ov[govId]=o;saveOv(ov);
+  return true;
+}
 function saveCanalStatus(govId,cid){
   // استرداد الإدارة إن فُقدت (فتح الكارت بعد بحث/فلترة): من فهرس الكارت ثم الدرج الحالي
   if(!govId){govId=((window._canalIndex||{})[cid]||{}).govId||window._curGov||'';}
@@ -2533,12 +2577,9 @@ function saveCanalStatus(govId,cid){
   const label=(STATUS_OPTIONS.find(o=>o[0]===newCode)||[])[1]||newCode;
   const stage=gateStep(newCode,merged.pct);
   if(newCode===oldCode){toast&&toast('لا تغيير في الموقف');closeCanalCard();return;}
-  // خزّن التعديل ضمن أوفررايد الإدارة
-  const o=ov[govId]||{};
-  o.canals=o.canals||{};
-  o.canals[cid]={statusCode:newCode,status:label,stage};
-  o.lastUpdate=new Date().toISOString().slice(0,10);
-  ov[govId]=o;saveOv(ov);
+  // خزّن التعديل وثبّت أثره (±1 دار/استثماري/مُسلَّم) في الأرقام المطلقة فوراً —
+  // فيتطابق هيدر الإدارة مع نموذج «تحديث موقف الاستلام» والخطاب والدونات بلا ازدواج عدّ.
+  applyCanalStatusOv(govId,cid,newCode,label,stage);
   // سجّل في سجل التغييرات
   logAudit({gov:g.name,phase:cid+' — '+(baseC.name||''),field:'موقف الترعة',before:oldLabel||'—',after:label});
   // زامن التعديل للسحابة إن وُجدت دالة الدفع
@@ -2702,6 +2743,9 @@ function saveGov(id){
   if(errEl){errEl.style.display='none';errEl.innerHTML='';}
   if(np1)o.phase1=np1;
   if(np2)o.phase2=np2;
+  // القيم أعلاه هي الفعّالة كما كانت معروضة (شاملةً أي دلتا قديمة) — فتُختم كل تعديلات
+  // المواقف السابقة «مُثبَّتة» كي لا يُعاد حساب أثرها فوق ما حُفظ (لا تضاعف بعد اليوم).
+  freezeCanalDelta(o);
   o.duesOutstanding=val('e-dues');
   o.lastUpdate=new Date().toISOString().slice(0,10);
   ov[id]=o;saveOv(ov);
@@ -2980,21 +3024,21 @@ function saveNewCanal(){
   // عكسها على إجماليات المرحلة عبر طبقة الأوفررايد (زيادة صافية محكومة، لا مساس بالرقم الرسمي عند عدم التفعيل)
   let phaseNote='بدون تعديل الإجماليات';
   if(count){
-    const key=phase===2?'phase2':(phase===1?'phase1':(g.phase1?'phase1':(g.phase2?'phase2':null)));
-    if(key&&(g[key]||key==='phase1'||key==='phase2')){
-      const base=gov(govId)[key]||g[key]||{canals:0,executed:0,delivered:0,dar:0,invest:0,remaining:0};
+    const key=resolvePhaseKey(govId,phase);
+    if(key&&gov(govId)[key]){
+      const base=gov(govId)[key];
       const isDone=pct===100;
       const isDar=DAR_CODES.includes(statusCode); // مقبولة نهائياً أو اكتفاء = استُلمت عبر دار الهندسة
       canal._counted={key,isDone:!!isDone,isDar:!!isDar}; // ذاكرة الأثر — تُستخدم لعكسه بدقة عند الحذف
       const o=ov[govId]||{};
-      const cur=o[key]?{...base,...o[key]}:{...base};
+      const cur={...base};delete cur._darAdjusted; // base فعّالة من gov() — تشمل الأوفررايد والدلتا القديمة
       cur.canals=(cur.canals||0)+1;
       if(isDone)cur.executed=(cur.executed||0)+1;
       if(isDar){cur.dar=(cur.dar||0)+1;cur.delivered=(cur.delivered||0)+1;}
       cur.remaining=Math.max(0,cur.canals-(cur.delivered||0));
       cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
       cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
-      o[key]=cur;o.lastUpdate=new Date().toISOString().slice(0,10);
+      o[key]=cur;freezeCanalDelta(o);o.lastUpdate=new Date().toISOString().slice(0,10);
       ov[govId]=o;
       phaseNote=`م${key==='phase2'?'2':'1'}: إجمالي +1${isDone?' ومنفّذ +1':''}${isDar?' ومُستلَم +1':''}`;
     }
@@ -3027,7 +3071,7 @@ function deleteOfficialCanal(govId,cid){
   if(!confirm(`حذف الترعة الرسمية «${eff.name}» نهائياً؟\nسيُزال كل أثر لها من قائمة الإدارة والإجماليات والخطابات والبلاغات — وعلى كل الأجهزة. لا يمكن التراجع.`))return false;
   const o=ov[govId]||(ov[govId]={});
   // ١) خصم أثرها من إجماليات مرحلتها (لقطة مطلقة من الوضع الفعّال الحالي — نفس نمط حذف المُضافة)
-  const key=raw.phase===2?'phase2':(raw.phase===1?'phase1':(g.phase1?'phase1':(g.phase2?'phase2':null)));
+  const key=resolvePhaseKey(govId,raw.phase);
   const effPh=key?gov(govId)[key]:null;
   if(key&&effPh){
     const cur={...effPh};delete cur._darAdjusted;
@@ -3042,6 +3086,7 @@ function deleteOfficialCanal(govId,cid){
     cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
     cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
     o[key]=cur;
+    freezeCanalDelta(o); // اللقطة شملت أي دلتا قديمة — تُثبَّت
   }
   // ٢) شاهدة الحذف — تسافر ضمن تعديلات الإدارة فلا تعود الترعة بعد أي سحب على أي جهاز
   o.canals=o.canals||{};
@@ -3085,14 +3130,14 @@ function deleteCustomCanal(govId,cid){
     const base=gov(govId)[meta.key];
     if(base){
       const o=ov[govId]||{};
-      const cur=o[meta.key]?{...base,...o[meta.key]}:{...base};
+      const cur={...base};delete cur._darAdjusted; // base فعّالة من gov() وتشمل الأوفررايد والدلتا القديمة
       cur.canals=Math.max(0,(cur.canals||0)-1);
       if(meta.isDone)cur.executed=Math.max(0,(cur.executed||0)-1);
       if(meta.isDar){cur.dar=Math.max(0,(cur.dar||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
       cur.remaining=Math.max(0,cur.canals-(cur.delivered||0));
       cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
       cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
-      o[meta.key]=cur;o.lastUpdate=new Date().toISOString().slice(0,10);
+      o[meta.key]=cur;freezeCanalDelta(o);o.lastUpdate=new Date().toISOString().slice(0,10);
       ov[govId]=o;saveOv(ov);
     }
   }
@@ -3619,11 +3664,8 @@ function _updateReportOutcome0(id,outcome,note){const a=loadReports();const r=a.
     const bg=PROJECT.govs.find(x=>x.id===r.govId);
     const bc=bg&&(bg.canals||[]).find(x=>x.id===r.canalId);
     if(bc&&bc.statusCode!=='accepted'){
-      const o=ov[r.govId]||{}; o.canals=o.canals||{};
       const lbl=(STATUS_OPTIONS.find(x=>x[0]==='accepted')||[])[1]||'مقبولة نهائياً (استُلمت)';
-      o.canals[r.canalId]={statusCode:'accepted',status:lbl,stage:gateStep('accepted',bc.pct)};
-      o.lastUpdate=new Date().toISOString().slice(0,10);
-      ov[r.govId]=o; saveOv(ov);
+      applyCanalStatusOv(r.govId,r.canalId,'accepted',lbl,gateStep('accepted',bc.pct)); // تثبيت فوري: +1 دار/مُسلَّم
       logAudit({gov:r.govName,phase:r.canalId+' — '+(bc.name||''),field:'موقف الترعة (عبر بلاغ)',before:bc.status||'—',after:lbl});
       try{if(typeof pushOverride==='function')pushOverride(r.govId,r.govName,ov[r.govId]);}catch(e){}
     }
