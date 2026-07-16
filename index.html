@@ -2192,9 +2192,12 @@ function renderDonuts(dt,lp){
   // قاعدة الاستلام المعتمدة: لا تُحتسب الترعة «مستلَمة» إلا إذا صُنِّف مسارها بالكشوف التفصيلية
   // (دار الهندسة أو استثماري). أي ترعة وردت «مُسلَّمة» بالتقرير الرسمي دون تصنيف مسارها
   // تُعامَل بانتظار الاستلام إلى أن يتم تصنيفها — لذا الرمادي = الإجمالي − (دار + استثماري).
-  const mk=(d,title,ph)=>{
+  const mk=(d,title,ph,phKey)=>{
     const total=ph.total;
     const classified=d.dar+d.invest;
+    // المصنَّف على مستوى المشروع (بكشف التوزيع) الزائد عن مجموع كشوف الإدارات — للإفصاح لا غير
+    const sgd=allGovs().reduce((a,g)=>a+(((g[phKey]||{}).dar||0)+((g[phKey]||{}).invest||0)),0);
+    const unalloc=Math.max(0,classified-sgd);
     const rem=Math.max(0,total-classified);
     const offD=(ph.officialDelivered!=null?ph.officialDelivered:(ph.delivered!=null?ph.delivered:classified));
     const officialRem=Math.max(0,Math.min(rem,total-offD));
@@ -2209,14 +2212,14 @@ function renderDonuts(dt,lp){
       <div class="donut-title">${title}</div>
       ${donut(segs,pct+'%',' عبر دار الهندسة')}
       <div class="donut-legend">${segs.map(s=>`<span><i style="background:${s.c}"></i>${s.l} <b>${s.v}</b></span>`).join('')}</div>
-      ${pendClass>0?`<div class="donut-note">بانتظار الاستلام ${rem} = ${officialRem} متبقٍّ بالتقرير الرسمي + ${pendClass} وردت «مُسلَّمة» بالتقرير دون تصنيف مسارها بالكشوف التفصيلية، وتُعامَل بانتظار الاستلام لحين تصنيفها.</div>`:''}
+      ${(pendClass>0||unalloc>0)?`<div class="donut-note">${pendClass>0?`بانتظار الاستلام ${rem} = ${officialRem} متبقٍّ بالتقرير الرسمي + ${pendClass} وردت «مُسلَّمة» بالتقرير دون تصنيف مسارها بالكشوف التفصيلية وتُعامَل بانتظار الاستلام لحين تصنيفها.`:''}${unalloc>0?` من المُسلَّم المصنَّف ${unalloc} على مستوى المشروع دون توزيعها على إدارة بعينها بالكشوف.`:''}</div>`:''}
     </div>`;
   };
   const p1o=(lp&&lp.p1)?lp.p1:PROJECT.official.phase1;
   const p2o=(lp&&lp.p2)?lp.p2:PROJECT.official.phase2;
   document.getElementById('donutRow').innerHTML=
-    mk(dt.p1,'توزيع استلام المرحلة الأولى',p1o)+
-    mk(dt.p2,'توزيع استلام المرحلة الثانية',p2o);
+    mk(dt.p1,'توزيع استلام المرحلة الأولى',p1o,'phase1')+
+    mk(dt.p2,'توزيع استلام المرحلة الثانية',p2o,'phase2');
   wireDonutTips();
 }
 // تفاصيل تفاعلية على المخطط الدائري عند التمرير
@@ -3075,9 +3078,9 @@ function deleteOfficialCanal(govId,cid){
   const effPh=key?gov(govId)[key]:null;
   if(key&&effPh){
     const cur={...effPh};delete cur._darAdjusted;
-    const isDar=DAR_CODES.includes(eff.statusCode);
+    const isDar=DAR_CODES.includes(eff.statusCode);            // الاستلام: بحالة الآن (الأساس + التثبيتات)
     const isInv=eff.statusCode==='investment';
-    const wasExec=(+eff.pct||0)>=100||['done','inspecting','submitted','accepted','accepted_partial','investment'].includes(eff.statusCode);
+    const wasExec=(+raw.pct||0)>=100||['done','inspecting','submitted','accepted','accepted_partial','investment'].includes(raw.statusCode); // المنفّذة: بحالة الأساس — هي ما دخل العدّ الرسمي
     cur.canals=Math.max(0,(cur.canals||0)-1);
     if(wasExec)cur.executed=Math.max(0,(cur.executed||0)-1);
     if(isDar){cur.dar=Math.max(0,(cur.dar||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
@@ -3117,6 +3120,8 @@ function deleteCustomCanal(govId,cid){
   const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
   const c=(g.canals||[]).find(x=>x.id===cid);
   if(!c||!c._custom)return;
+  // الحالة الفعّالة الآن (قبل أي مسح) — بها يُعكس أثر الاستلام بدقة حتى لو تغيّر الموقف بعد الإضافة
+  const effC=((gov(govId).canals||[]).find(x=>x.id===cid))||c;
   if(!confirm(`حذف الترعة المُضافة «${c.name}»؟ لا يمكن التراجع.`))return;
   const oD=ov[govId]||(ov[govId]={});
   oD.addedCanals=(oD.addedCanals||[]).filter(x=>x.id!==cid);
@@ -3132,8 +3137,11 @@ function deleteCustomCanal(govId,cid){
       const o=ov[govId]||{};
       const cur={...base};delete cur._darAdjusted; // base فعّالة من gov() وتشمل الأوفررايد والدلتا القديمة
       cur.canals=Math.max(0,(cur.canals||0)-1);
-      if(meta.isDone)cur.executed=Math.max(0,(cur.executed||0)-1);
-      if(meta.isDar){cur.dar=Math.max(0,(cur.dar||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
+      if(meta.isDone)cur.executed=Math.max(0,(cur.executed||0)-1); // «منفّذة» عُكست عند الإضافة فقط — تُرَدّ كما أُخذت
+      // الاستلام يُرَدّ بالحالة «الآن»: أثر الإضافة + أي تثبيت لاحق لتغيير الموقف = صافي الحالة الحالية
+      const isDarNow=DAR_CODES.includes(effC.statusCode), isInvNow=effC.statusCode==='investment';
+      if(isDarNow){cur.dar=Math.max(0,(cur.dar||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
+      if(isInvNow){cur.invest=Math.max(0,(cur.invest||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
       cur.remaining=Math.max(0,cur.canals-(cur.delivered||0));
       cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
       cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
@@ -3535,9 +3543,11 @@ function applyCloudReports(cloud){
   const out=[];
   local.forEach(l=>{const c=cmap.get(l.id);cmap.delete(l.id);
     if(RDEL[l.id])return;                                  // شاهدة حذف محلية — يُطهَّر من المخزن
-    if(RDIRTY.has(l.id)){if(c&&eq(c,l))RDIRTY.delete(l.id);out.push(l);return;} // لا تمس غير المؤكَّد
-    out.push(c||l);});
-  cmap.forEach(c=>{if(!RDEL[c.id])out.push(c);});          // جديد من السحابة (ما لم يكن محذوفاً لدينا)
+    if(RDIRTY.has(l.id)){if(c&&eq(c,l)){RDIRTY.delete(l.id);l._sy=1;}out.push(l);return;} // لا تمس غير المؤكَّد
+    if(c){c._sy=1;out.push(c);return;}                     // موجود سحابياً: نسخة السحابة (مؤكَّدة المزامنة)
+    if(l._sy)return;                                       // سبق تأكيده ثم غاب من السحابة ⇒ حُذف من جهاز آخر — يُحذف هنا
+    out.push(l);});                                        // جديد محلي لم يُدفع بعد — يبقى حتى يُدفع
+  cmap.forEach(c=>{if(!RDEL[c.id]){c._sy=1;out.push(c);}});// جديد من السحابة (ما لم يكن محذوفاً لدينا)
   Object.keys(RDEL).forEach(id=>{if(!cloud.some(r=>r.id===id))delete RDEL[id];}); // غاب ⇒ تأكد الحذف
   saveReports(out);saveRSync();
   RDIRTY.forEach(id=>{const r=out.find(x=>x.id===id);if(r)try{pushReport(r,true)}catch(e){}});
