@@ -1795,7 +1795,7 @@ function canalDarDelta(baseCanals,ovCanals){
   let delta=0;
   baseCanals.forEach(c=>{
     const co=ovCanals[c.id];
-    if(!co)return;                                   // لا تعديل على هذه الترعة
+    if(!co||co._removed)return;                      // لا تعديل — أو شاهدة حذف (تُحتسب بخصمها المطلق لا هنا)
     const wasDar=DAR_CODES.includes(c.statusCode);   // الأصل
     const nowDar=DAR_CODES.includes(co.statusCode);  // بعد التعديل
     if(nowDar&&!wasDar)delta++;
@@ -1819,7 +1819,8 @@ function gov(id){
   if(o.phase2&&g.phase2)m.phase2={...g.phase2,...o.phase2};
   // دمج تعديلات مواقف الترع الفردية (o.canals = { canalId: {statusCode,status,stage,_edited} })
   if(o.canals&&g.canals&&g.canals.length){
-    m.canals=g.canals.map(c=>{
+    // شاهدة حذف ترعة رسمية: تُستبعد نهائياً من القائمة (وكل ما يُبنى عليها) وتنتشر لكل الأجهزة
+    m.canals=g.canals.filter(c=>!(o.canals[c.id]&&o.canals[c.id]._removed)).map(c=>{
       const co=o.canals[c.id];
       return co?{...c,statusCode:co.statusCode,status:co.status,stage:(co.stage!=null?co.stage:c.stage),_edited:true}:c;
     });
@@ -1830,7 +1831,7 @@ function gov(id){
     if(delta!==0){
       // نوزّع الفرق على المرحلة التي تنتمي إليها غالبية الترع المعدّلة؛ وإن لم تتحدّد
       // المرحلة (phase=null) نطبّقه على المرحلة الأولى إن وُجدت وإلا الثانية.
-      const editedPhases=g.canals.filter(c=>o.canals[c.id]).map(c=>c.phase);
+      const editedPhases=g.canals.filter(c=>o.canals[c.id]&&!o.canals[c.id]._removed).map(c=>c.phase);
       const p2count=editedPhases.filter(p=>p===2).length;
       const p1count=editedPhases.filter(p=>p===1).length;
       const targetKey=(p2count>p1count&&m.phase2)?'phase2':(m.phase1?'phase1':(m.phase2?'phase2':null));
@@ -2440,7 +2441,7 @@ function renderCanals(list,govId){
       <div class="cr-meta">
         ${c.length!=null?`<span class="cr-km">الطول ${c.length} كم</span>`:''}
         ${c.pct!=null?`<span class="cr-pct"><span class="mb"><i style="width:${Math.min(100,c.pct)}%"></i></span>${c.pct}%</span>`:''}
-        ${c._custom?`<button class="cr-del" onclick="event.stopPropagation();deleteCustomCanal('${c._gov||govId}','${c.id}')" title="حذف الترعة المُضافة"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>`:''}
+        ${c._custom?`<button class="cr-del" onclick="event.stopPropagation();deleteCustomCanal('${c._gov||govId}','${c.id}')" title="حذف الترعة المُضافة"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>`:(can('edit',(c._gov||govId))?`<button class="cr-del" onclick="event.stopPropagation();deleteOfficialCanal('${c._gov||govId}','${c.id}')" title="حذف الترعة نهائياً (كل الأجهزة)"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>`:'')}
       </div></div>`;
   }).join('')||'<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد ترع مطابقة</div>';
 }
@@ -2946,6 +2947,9 @@ function closeAddCanal(){document.getElementById('addCanalModal').classList.remo
 function ncClampPct(){const el=document.getElementById('nc-pct');if(!el)return;let v=+el.value;if(v>100)el.value=100;if(v<0)el.value=0;}
 function saveNewCanal(){
   const govId=window._addCanalGov;
+  // إن وُجدت شاهدة حذف قديمة بنفس المعرف المدخل فإضافة الترعة من جديد قرارُ إحياءٍ صريح — تُرفع الشاهدة
+  try{const _oid=(document.getElementById('nc-id')&&document.getElementById('nc-id').value||'').trim();
+      if(_oid&&ov[govId]&&ov[govId].canals&&ov[govId].canals[_oid]&&ov[govId].canals[_oid]._removed)delete ov[govId].canals[_oid];}catch(e){}
   const g=PROJECT.govs.find(x=>x.id===govId);if(!g){toast('تعذّر تحديد الإدارة');return;}
   const err=document.getElementById('nc-err');
   const name=(document.getElementById('nc-name').value||'').trim().replace(/[<>]/g,'');
@@ -3011,6 +3015,58 @@ function saveNewCanal(){
   setTimeout(()=>openDrawer(govId),200);
 }
 // حذف ترعة مُضافة يدوياً (الترع الأصلية غير قابلة للحذف)
+// ═══ حذف ترعة رسمية نهائياً — بشاهدة حذف مُزامَنة + خصم أثرها من كل الإجماليات + تطهير بلاغاتها ═══
+// «إزالة كل أثر»: القائمة والكارت والجدول المصنّف وخطابات الإدارة والإجماليات (فاللوحة والدونات
+// والخطاب الشهري والمساعد تُشتق منها آلياً — وحدة واحدة) والبلاغات، وعلى كل الأجهزة عبر محرك التأكيد.
+function deleteOfficialCanal(govId,cid){
+  if(!can('edit',govId)){authDeny();return false;}
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return false;
+  const raw=(g.canals||[]).find(x=>x.id===cid);if(!raw)return false;
+  if(raw._custom)return deleteCustomCanal(govId,cid);      // للمُضافة مسارها القائم
+  const eff=(gov(govId).canals||[]).find(x=>x.id===cid)||raw; // الوضع الفعّال (يشمل تعديل الموقف إن وُجد)
+  if(!confirm(`حذف الترعة الرسمية «${eff.name}» نهائياً؟\nسيُزال كل أثر لها من قائمة الإدارة والإجماليات والخطابات والبلاغات — وعلى كل الأجهزة. لا يمكن التراجع.`))return false;
+  const o=ov[govId]||(ov[govId]={});
+  // ١) خصم أثرها من إجماليات مرحلتها (لقطة مطلقة من الوضع الفعّال الحالي — نفس نمط حذف المُضافة)
+  const key=raw.phase===2?'phase2':(raw.phase===1?'phase1':(g.phase1?'phase1':(g.phase2?'phase2':null)));
+  const effPh=key?gov(govId)[key]:null;
+  if(key&&effPh){
+    const cur={...effPh};delete cur._darAdjusted;
+    const isDar=DAR_CODES.includes(eff.statusCode);
+    const isInv=eff.statusCode==='investment';
+    const wasExec=(+eff.pct||0)>=100||['done','inspecting','submitted','accepted','accepted_partial','investment'].includes(eff.statusCode);
+    cur.canals=Math.max(0,(cur.canals||0)-1);
+    if(wasExec)cur.executed=Math.max(0,(cur.executed||0)-1);
+    if(isDar){cur.dar=Math.max(0,(cur.dar||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
+    if(isInv){cur.invest=Math.max(0,(cur.invest||0)-1);cur.delivered=Math.max(0,(cur.delivered||0)-1);}
+    cur.remaining=Math.max(0,(cur.canals||0)-(cur.delivered||0));
+    cur.donePct=cur.canals?Math.round((cur.executed||0)/cur.canals*100):0;
+    cur.delivPct=cur.canals?Math.round((cur.delivered||0)/cur.canals*100):0;
+    o[key]=cur;
+  }
+  // ٢) شاهدة الحذف — تسافر ضمن تعديلات الإدارة فلا تعود الترعة بعد أي سحب على أي جهاز
+  o.canals=o.canals||{};
+  o.canals[cid]={_removed:true,name:eff.name||cid};
+  o.lastUpdate=new Date().toISOString().slice(0,10);
+  ov[govId]=o;saveOv(ov);
+  // ٣) تطهير بلاغات الاستلام المرتبطة بها (محلياً وسحابياً بشواهد الحذف)
+  purgeCanalReports(govId,cid);
+  // ٤) سجل + دفع مؤكَّد + إغلاق الكارت وتحديث كل العروض
+  logAudit({gov:g.name,phase:cid+' — '+(eff.name||''),field:'حذف ترعة رسمية',before:eff.status||eff.statusCode||'—',after:'أُزيلت من القائمة والإجماليات والبلاغات (كل الأجهزة)'});
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  try{closeCanalCard();}catch(e){}
+  refreshAll();
+  try{const dr=document.getElementById('drawer');
+      if(dr&&dr.classList.contains('on')&&window._curGov===govId)openDrawer(govId);}catch(e){}
+  toast('تم حذف الترعة وإزالة كل أثر لها');
+  return true;
+}
+function purgeCanalReports(govId,cid){
+  try{loadReports().filter(r=>r.govId===govId&&r.canalId===cid).forEach(r=>{
+    saveReports(loadReportsRaw().filter(x=>x.id!==r.id));
+    try{if(typeof pushDelete==='function')pushDelete(r.id);}catch(e){}
+    logAudit({gov:r.govName,phase:'—',field:'حذف بلاغ (تبعاً لحذف الترعة)',before:r.canalName||'',after:'—'});
+  });}catch(e){}
+}
 function deleteCustomCanal(govId,cid){
   if(!can('edit',govId)){authDeny();return;}
   const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
@@ -3040,6 +3096,8 @@ function deleteCustomCanal(govId,cid){
       ov[govId]=o;saveOv(ov);
     }
   }
+  // تطهير بلاغات الاستلام المرتبطة بها — «كل أثر» يشمل البلاغات
+  purgeCanalReports(govId,cid);
   // دفع الحذف للسحابة دائماً — حتى للترع غير المعكوسة على الإجماليات — كي لا تعود بعد السحب الدوري على أي جهاز
   try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
   logAudit({gov:g.name,phase:cid+' — '+(c.name||''),field:'حذف ترعة مُضافة',before:c.name,after:meta&&meta.key?'— (مع عكس أثرها عن إجماليات '+(meta.key==='phase2'?'م2':'م1')+')':'—'});
