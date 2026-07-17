@@ -1722,6 +1722,9 @@ let customCanals=loadCustomCanals();
    الترع المُضافة التي حُذفت سحابياً — تُستدعى عند الإقلاع وبعد كل سحب/استيراد. */
 function materializeCustomEntities(){
   try{
+    // إدارة مُضافة زال صفُّها كلياً من طبقة الأوفررايد (حذفٌ مؤكَّد وصل عبر السحابة):
+    // تُزال من العرض فوراً — نظير إزالة الترع المُضافة أدناه، فتكتمل وحدة الحذف.
+    for(let i=PROJECT.govs.length-1;i>=0;i--){const g=PROJECT.govs[i];if(g&&g._custom&&!ov[g.id])PROJECT.govs.splice(i,1);}
     Object.keys(ov).forEach(k=>{
       const o=ov[k];
       if(o&&o._custom&&o._deleted){
@@ -2724,13 +2727,20 @@ function saveGov(id){
   const val=eid=>{const el=document.getElementById(eid);return el?+el.value:null;};
   const before1=prev.phase1||{}, before2=prev.phase2||{};
   // ── فرض الاتساق المنطقي (نفس قواعد إضافة إدارة جديدة): المنفّذ ≤ الإجمالي، المُسلّم ≤ المنفّذ ──
+  // مع «سماحية موروثة»: بعض الأرقام الرسمية المعتمدة نفسها تحمل (مُسلّم > منفّذ) — كالأقصر م2
+  // (مُسلَّم 16 مقابل منفّذ 13 بالتقرير الرسمي) — فكان النموذج يرفض حفظ أي تعديل للإدارة كلها
+  // حتى لو لم يُمَسّ هذا الحقل. الآن لا يُحاسَب المستخدم على تجاوزٍ قائمٍ قبل تعديله،
+  // ويُمنَع فقط أن يزيد الفارقَ القائم سوءاً — فتبقى الحماية من الأخطاء الجديدة كما هي.
   const problems=[];
+  const slackTot=p=>Math.max(0,(((p&&p.executed)||0)-((p&&p.canals)||0)));
+  const slackDel=p=>{const d=(p&&p.delivered!=null)?p.delivered:(((p&&p.dar)||0)+((p&&p.invest)||0));return Math.max(0,d-((p&&p.executed)||0));};
   const buildP=(n)=>{
     if(!document.getElementById('e'+n+'-dar'))return null;
+    const prevP=(n===1?before1:before2);
     const canals=val('e'+n+'-canals')||0, exec=val('e'+n+'-exec')||0, dar=val('e'+n+'-dar')||0, inv=val('e'+n+'-inv')||0;
     const delivered=dar+inv;
-    if(exec>canals)problems.push('م'+n+': المنفّذ ('+exec+') أكبر من إجمالي الترع ('+canals+')');
-    if(delivered>exec)problems.push('م'+n+': المُسلّم (دار الهندسة '+dar+' + استثماري '+inv+' = '+delivered+') أكبر من المنفّذ ('+exec+')');
+    if(exec>canals+slackTot(prevP))problems.push('م'+n+': المنفّذ ('+exec+') أكبر من إجمالي الترع ('+canals+')');
+    if(delivered>exec+slackDel(prevP))problems.push('م'+n+': المُسلّم (دار الهندسة '+dar+' + استثماري '+inv+' = '+delivered+') أكبر من المنفّذ ('+exec+')');
     return{canals,executed:exec,dar,invest:inv,delivered,
       remaining:Math.max(0,canals-delivered),
       donePct:canals?Math.round(exec/canals*100):0,
@@ -3522,10 +3532,23 @@ function applyCloudOverrides(list){
     const lts=(ov[id]&&ov[id]._ts)||0, cts=inc._ts||0;
     if(OVDEL[id])return;                                   // حذف محلي بانتظار تأكيده — لا إحياء
     if(DIRTY.has(id)){                                     // تعديل محلي غير مؤكَّد: لا مساس به
-      if(lts>0&&cts>=lts){if(cts>lts)merged[id]=inc;DIRTY.delete(id);} // صدى وصولنا (أو أحدث) ⇒ تأكيد
+      if(lts>0&&cts>=lts){                                 // صدى وصولنا (أو أحدث) ⇒ تأكيد
+        if(cts>lts)merged[id]=inc;
+        if(merged[id]&&typeof merged[id]==='object')merged[id]._sy=1; // ختم «مؤكَّد سحابياً»
+        DIRTY.delete(id);
+      }
       return;}
-    if(cts>=lts)merged[id]=inc;                            // الأحدث يغلب — القديم بلا طابع لا يهزم مختوماً
+    if(cts>=lts){if(inc&&typeof inc==='object')inc._sy=1;merged[id]=inc;} // الأحدث يغلب — القديم بلا طابع لا يهزم مختوماً
   }catch(e){}});
+  // ═══ انتشار حذف التعديلات بين الأجهزة (نظير شاهدة _sy في البلاغات) ═══
+  // ما سبق تأكيده سحابياً (_sy) ثم غاب صفُّه من السحابة ⇒ حُذف من جهاز آخر
+  // («إلغاء التعديلات» resetGov مثلاً) — فيُحذف هنا أيضاً وتعود الإدارة لأرقامها
+  // الرسمية على كل الأجهزة، فتعمل اللوحة كوحدة واحدة حذفاً كما تعمل تعديلاً.
+  // لا يُمَسّ: المحلي غير المؤكَّد (DIRTY)، ولا حذف محلي بانتظار تأكيده (OVDEL)،
+  // ولا ما لم يُؤكَّد وصوله قط (بلا _sy) — فلا يُفقَد أي تعديل لم يصل السحابة بعد.
+  Object.keys(merged).forEach(id=>{
+    if(!cloudIds.has(id)&&merged[id]&&merged[id]._sy&&!DIRTY.has(id)&&!OVDEL[id])delete merged[id];
+  });
   ov=merged;saveOv(ov);
   Object.keys(OVDEL).forEach(id=>{if(!cloudIds.has(id))delete OVDEL[id];}); // غاب الصف ⇒ تأكد الحذف
   saveDirty();
