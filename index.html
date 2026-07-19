@@ -729,6 +729,30 @@ html[data-theme="dark"] .edit-phase{background:#0f3a45}
 html[data-theme="dark"] .rpt-card,html[data-theme="dark"] .rpt-sel,html[data-theme="dark"] .rpt-del{background:var(--card)}
 html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
 
+/* ═══════════ تقرير المفوّض النصف شهري ═══════════ */
+.cm-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.cm-tab{border:1.5px solid #15463d;background:#fff;color:#15463d;border-radius:10px;padding:7px 16px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s}
+.cm-tab:hover{background:#e7f1ec}
+.cm-tab.on{background:#15463d;color:#fff;box-shadow:0 4px 12px rgba(21,70,61,.25)}
+.cm-tab-x{border-color:#a8904f;color:#7a6428;margin-inline-start:auto}
+.cm-tab-x:hover{background:#faf3df}
+.doc-tbl .pcell{font-weight:800;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.doc-tbl td.p-hi{color:#1f7a4d;background:#e9f6ee}
+.doc-tbl td.p-md{color:#8a5f00;background:#fdf3d7}
+.doc-tbl td.p-lo{color:#a13b30;background:#fbe7e4}
+.doc-tbl th.cm-grp{color:#fff;border-color:#0f3830;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.doc-tbl th.cm-grp-exec{background:#15463d}
+.doc-tbl th.cm-grp-del{background:#a8904f;border-color:#8a7440}
+.doc-tbl td.cm-name{text-align:right;font-weight:700}
+.doc-tbl td.cm-sum{font-weight:800;background:#f4f9f6}
+.doc-tbl td.cm-note{font-size:10px;text-align:right;max-width:190px;color:#405c53}
+.cm-badge{display:inline-block;background:#faf3df;color:#7a6428;border:1px solid #d9c58a;border-radius:6px;padding:0 5px;font-size:9px;font-weight:800;vertical-align:middle}
+html[data-theme="dark"] .cm-tab{background:var(--card);color:#cfe6dd;border-color:#2c5a4e}
+html[data-theme="dark"] .cm-tab.on{background:#1f7a4d;color:#fff}
+.efield-note{grid-column:1/-1}
+.efield-note textarea{width:100%;min-height:44px;resize:vertical;border:1.5px solid var(--line,#cdd9d4);border-radius:9px;padding:7px 9px;font-family:inherit;font-size:12px;background:var(--card,#fff);color:inherit;box-sizing:border-box}
+.efield-note textarea:focus{outline:none;border-color:#15463d}
+
 /* ═══════════ المساعد الذكي ═══════════ */
 .asst-wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .asst-hero{display:flex;gap:16px;align-items:center;background:linear-gradient(120deg,var(--nile-900),var(--nile-700) 70%);border:1.5px solid var(--gold);border-radius:20px;padding:20px 22px;color:#fff;box-shadow:0 14px 40px rgba(10,31,26,.22)}
@@ -2393,12 +2417,14 @@ function openDrawer(id){
         <div class="efield"><label>عدد المنفّذة</label><input id="e1-exec" type="number" min="0" value="${p1.executed||0}"></div>
         <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e1-dar" type="number" min="0" value="${p1.dar||0}"></div>
         <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e1-inv" type="number" min="0" value="${p1.invest||0}"></div>
+        <div class="efield efield-note"><label>ملاحظات تقرير المفوّض (م1)</label><textarea id="e1-note" rows="2" placeholder="تظهر بعمود الملاحظات في تقرير المفوّض">${xmlEsc(cleanNote(p1.note))}</textarea></div>
         </div>`:''}
       ${p2?`<div class="edit-phase"><div class="ephase-t">المرحلة الثانية</div>
         <div class="efield"><label>إجمالي الترع</label><input id="e2-canals" type="number" min="0" value="${p2.canals||0}"></div>
         <div class="efield"><label>عدد المنفّذة</label><input id="e2-exec" type="number" min="0" value="${p2.executed||0}"></div>
         <div class="efield efield-hl"><label>المُستلَم عبر دار الهندسة</label><input id="e2-dar" type="number" min="0" value="${p2.dar||0}"></div>
         <div class="efield"><label>المُستلَم بالمسار الاستثماري</label><input id="e2-inv" type="number" min="0" value="${p2.invest||0}"></div>
+        <div class="efield efield-note"><label>ملاحظات تقرير المفوّض (م2)</label><textarea id="e2-note" rows="2" placeholder="تظهر بعمود الملاحظات في تقرير المفوّض">${xmlEsc(cleanNote(p2.note))}</textarea></div>
         </div>`:''}
       <div class="field"><label>المستحقات المعلّقة (مليون جنيه)</label>
         <input id="e-dues" type="number" step="0.001" min="0" value="${g.duesOutstanding||0}"></div>
@@ -2738,10 +2764,12 @@ function saveGov(id){
     if(!document.getElementById('e'+n+'-dar'))return null;
     const prevP=(n===1?before1:before2);
     const canals=val('e'+n+'-canals')||0, exec=val('e'+n+'-exec')||0, dar=val('e'+n+'-dar')||0, inv=val('e'+n+'-inv')||0;
+    const noteEl=document.getElementById('e'+n+'-note');
+    const note=noteEl?noteEl.value.trim().slice(0,300):cleanNote(prevP&&prevP.note);
     const delivered=dar+inv;
     if(exec>canals+slackTot(prevP))problems.push('م'+n+': المنفّذ ('+exec+') أكبر من إجمالي الترع ('+canals+')');
     if(delivered>exec+slackDel(prevP))problems.push('م'+n+': المُسلّم (دار الهندسة '+dar+' + استثماري '+inv+' = '+delivered+') أكبر من المنفّذ ('+exec+')');
-    return{canals,executed:exec,dar,invest:inv,delivered,
+    return{canals,executed:exec,dar,invest:inv,delivered,note:note,
       remaining:Math.max(0,canals-delivered),
       donePct:canals?Math.round(exec/canals*100):0,
       delivPct:canals?Math.round(delivered/canals*100):0};
@@ -2766,6 +2794,8 @@ function saveGov(id){
   const parts=[];
   if(o.phase1)parts.push(`م1: دار الهندسة ${before1.dar||0}→${o.phase1.dar} / استثماري ${before1.invest||0}→${o.phase1.invest}`);
   if(o.phase2)parts.push(`م2: دار الهندسة ${before2.dar||0}→${o.phase2.dar} / استثماري ${before2.invest||0}→${o.phase2.invest}`);
+  if(o.phase1&&(o.phase1.note||'')!==cleanNote(before1.note))parts.push('م1: تحديث ملاحظة التقرير');
+  if(o.phase2&&(o.phase2.note||'')!==cleanNote(before2.note))parts.push('م2: تحديث ملاحظة التقرير');
   parts.push(`مستحقات ${prev.duesOutstanding||0}→${o.duesOutstanding}`);
   logAudit({gov:g.name,phase:'—',field:'موقف الاستلام',before:'—',after:parts.join(' • ')});
   pushOverride(id,g.name,o);
@@ -3757,8 +3787,8 @@ function importJSON(ev){
    يدعم RTL، دمج خلايا، حدود، تعبئة رؤوس، محاذاة، التفاف، عرض أعمدة، وأرقاماً فعلية.
    الحزمة ZIP مخزّنة (بلا ضغط) بـCRC32 صحيح.
    ═══════════════════════════════════════════════════════════════ */
-const XLSX_FILLS=['none','gray125','FF15463D','FFC9B67C','FFEEF5F1','FFF4F9F6','FF0F3830'];
-const XLSX_FONTS=[{sz:11,name:'Arial'},{sz:11,name:'Arial',b:1,color:'FFFFFFFF'},{sz:14,name:'Arial',b:1,color:'FF15463D'},{sz:11,name:'Arial',b:1,color:'FF15463D'},{sz:11,name:'Arial',b:1,color:'FFE6CF8F'},{sz:10,name:'Arial',color:'FF5A6F68'}];
+const XLSX_FILLS=['none','gray125','FF15463D','FFC9B67C','FFEEF5F1','FFF4F9F6','FF0F3830','FFE7F5EC','FFFDF3D7','FFFBE7E4'];
+const XLSX_FONTS=[{sz:11,name:'Arial'},{sz:11,name:'Arial',b:1,color:'FFFFFFFF'},{sz:14,name:'Arial',b:1,color:'FF15463D'},{sz:11,name:'Arial',b:1,color:'FF15463D'},{sz:11,name:'Arial',b:1,color:'FFE6CF8F'},{sz:10,name:'Arial',color:'FF5A6F68'},{sz:11,name:'Arial',b:1,color:'FF1F7A4D'},{sz:11,name:'Arial',b:1,color:'FF8A5F00'},{sz:11,name:'Arial',b:1,color:'FFA13B30'}];
 function xmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const _CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
 function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=_CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
@@ -3791,31 +3821,35 @@ function xlsxStyles(){
   const fonts=XLSX_FONTS.map(f=>`<font><sz val="${f.sz}"/><name val="${f.name}"/>${f.b?'<b/>':''}${f.color?`<color rgb="${f.color}"/>`:''}</font>`).join('');
   const bThin='<border><left style="thin"><color rgb="FFB8C9C2"/></left><right style="thin"><color rgb="FFB8C9C2"/></right><top style="thin"><color rgb="FFB8C9C2"/></top><bottom style="thin"><color rgb="FFB8C9C2"/></bottom></border>';
   const X=(f,fl,al,wrap)=>`<xf numFmtId="0" fontId="${f}" fillId="${fl}" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${al||'center'}" vertical="center" readingOrder="2"${wrap?' wrapText="1"':''}/></xf>`;
+  // نسب مئوية بتنسيق رقمي 0% مع تلوين ضوئي (أخضر/كهرماني/أحمر) — لتقرير المفوّض
+  const PXF=function(f,fl){return '<xf numFmtId="164" fontId="'+f+'" fillId="'+fl+'" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" readingOrder="2"/></xf>';};
   const cellXfs=[
     `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="right" vertical="center" readingOrder="2"/></xf>`,
     `<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" readingOrder="2"/></xf>`,
-    X(1,2,'center',1),X(1,3,'center',1),X(3,4,'center'),X(0,0,'right',1),X(0,0,'center'),X(1,2,'right',1),X(4,6,'right'),X(1,2,'center'),X(3,5,'center'),X(0,5,'right',1),X(0,5,'center'),X(5,0,'center')
+    X(1,2,'center',1),X(1,3,'center',1),X(3,4,'center'),X(0,0,'right',1),X(0,0,'center'),X(1,2,'right',1),X(4,6,'right'),X(1,2,'center'),X(3,5,'center'),X(0,5,'right',1),X(0,5,'center'),X(5,0,'center'),PXF(6,7),PXF(7,8),PXF(8,9),PXF(1,2),X(5,0,'right',1)
   ].join('');
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    +'<numFmts count="1"><numFmt numFmtId="164" formatCode="0%"/></numFmts>'
     +`<fonts count="${XLSX_FONTS.length}">${fonts}</fonts><fills count="${XLSX_FILLS.length}">${fills}</fills>`
     +`<borders count="2"><border/>${bThin}</borders>`
     +'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-    +`<cellXfs count="14">${cellXfs}</cellXfs>`
+    +`<cellXfs count="19">${cellXfs}</cellXfs>`
     +'<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
 }
 function colLetter(n){let s='';n++;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=(n-m-1)/26;}return s;}
-function xlsxSheet(rows,cols){
+function xlsxSheet(rows,cols,freeze){
   let maxc=0;rows.forEach(r=>{let cc=0;r.forEach(c=>cc+=(c&&c.span?c.span:1));if(cc>maxc)maxc=cc;});
   const merges=[];
   const sheetRows=rows.map((r,ri)=>{
     let ci=0;const cells=[];
     r.forEach(c=>{
       if(!c){ci++;return;}
-      const span=c.span||1;const ref=colLetter(ci)+(ri+1);
+      const span=c.span||1;const rsp=c.rspan||1;const ref=colLetter(ci)+(ri+1);
       const isNum=(c.num===true)&&c.v!==''&&c.v!=null&&!isNaN(c.v);
-      const val=isNum?`<v>${c.v}</v>`:`<is><t xml:space="preserve">${xmlEsc(c.v)}</t></is>`;
-      cells.push(`<c r="${ref}" s="${c.s||0}"${isNum?'':' t="inlineStr"'}>${val}</c>`);
-      if(span>1){merges.push(`${ref}:${colLetter(ci+span-1)}${ri+1}`);for(let k=1;k<span;k++)cells.push(`<c r="${colLetter(ci+k)}${ri+1}" s="${c.s||0}"/>`);}
+      const isEmpty=!isNum&&(c.v==null||c.v==='');
+      const val=isNum?('<v>'+c.v+'</v>'):('<is><t xml:space="preserve">'+xmlEsc(c.v)+'</t></is>');
+      cells.push(isEmpty?('<c r="'+ref+'" s="'+(c.s||0)+'"/>'):('<c r="'+ref+'" s="'+(c.s||0)+'"'+(isNum?'':' t="inlineStr"')+'>'+val+'</c>'));
+      if(span>1||rsp>1){merges.push(ref+':'+colLetter(ci+span-1)+(ri+rsp));for(let k=1;k<span;k++)cells.push('<c r="'+colLetter(ci+k)+(ri+1)+'" s="'+(c.s||0)+'"/>');}
       ci+=span;
     });
     return `<row r="${ri+1}">${cells.join('')}</row>`;
@@ -3823,12 +3857,14 @@ function xlsxSheet(rows,cols){
   const colTags=(cols||[]).map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
   const mergeTag=merges.length?`<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>`:'';
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-    +'<sheetViews><sheetView rightToLeft="1" workbookViewId="0" tabSelected="1"/></sheetViews><sheetFormatPr defaultRowHeight="16"/>'
+    +'<sheetViews><sheetView rightToLeft="1" workbookViewId="0" tabSelected="1"'
+    +(freeze?('><pane ySplit="'+freeze+'" topLeftCell="A'+(freeze+1)+'" activePane="bottomLeft" state="frozen"/></sheetView>'):'/></sheetView>')
+    +'</sheetViews><sheetFormatPr defaultRowHeight="16"/>'
     +(colTags?`<cols>${colTags}</cols>`:'')+`<sheetData>${sheetRows}</sheetData>${mergeTag}`
     +'<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/></worksheet>';
 }
 function downloadXlsx(filename,sheets){
-  const sheetXmls=sheets.map(s=>xlsxSheet(s.rows,s.cols));
+  const sheetXmls=sheets.map(s=>xlsxSheet(s.rows,s.cols,s.freeze));
   const wbSheets=sheets.map((s,i)=>`<sheet name="${xmlEsc((s.name||('ورقة'+(i+1))).slice(0,31))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('');
   const wbRels=sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')
     +`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
@@ -3877,6 +3913,9 @@ function exportDocToXlsx(){
   if(!can('view')){authDeny();return;}
   const page=document.getElementById('docPage');
   if(!page||!page.innerHTML.trim()){toast('لا يوجد تقرير معروض',true);return;}
+  // مستند تقرير المفوّض له مصدّره المخصّص (نسب مئوية حقيقية وتلوين ضوئي ودمج رأسي وتجميد رؤوس)
+  const cmFlag=page.querySelector('#cmPhaseFlag');
+  if(cmFlag){exportCommishXlsx(+cmFlag.getAttribute('data-ph')||1);return;}
   const tables=[].slice.call(page.querySelectorAll('table'));
   if(!tables.length){toast('هذا المستند لا يحتوي جداول قابلة للتصدير',true);return;}
   const title=docTitleGuess();
@@ -4107,8 +4146,68 @@ function docFooter(sign,extra){
   ${extra||''}
   ${addr}`;
 }
+// ═══ تقرير المفوّض النصف شهري — محرّك الصفوف (مصدر واحد للمعاينة والطباعة وExcel) ═══
+// «الأولوية للمتغيرات المُدخلة»: الأرقام من gov() الفعّالة، والملاحظة اليدوية تغلب الرسمية،
+// وتُولَّد ملاحظة إنجاز تلقائياً عند اكتمال النهو والتسليم معاً.
+function cleanNote(v){
+  const s=String(v==null?'':v).trim();
+  // بيانات التوليد الآلي خلّفت قيماً رقمية عالقة بخانة الملاحظات (0.0 / 1.0) — لا تُعرض كملاحظات
+  if(!s||/^[\d.,\s%\-]+$/.test(s))return '';
+  return s;
+}
+function commishRows(ph){
+  const pk=(ph===2?'phase2':'phase1');
+  const phName=(ph===2?'الثانية':'الأولى');
+  const rows=[];
+  allGovs().forEach(function(g){
+    const p=g[pk];if(!p)return;
+    const canals=p.canals||0, fin=p.executed||0, dar=p.dar||0, inv=p.invest||0;
+    const del=(p.delivered!=null?+p.delivered:dar+inv);
+    if(!canals&&!fin&&!del)return;
+    const manual=cleanNote(p.note);
+    const auto=(canals>0&&fin>=canals&&del>=canals)?('تم نهو وتسليم المرحلة '+phName+' كاملة'):'';
+    rows.push({id:g.id,name:g.name,canals:canals,prog:Math.max(0,canals-fin),fin:fin,
+      pctFin:(canals?Math.round(fin/canals*100):0),dar:dar,inv:inv,del:del,
+      pctDel:(canals?Math.round(del/canals*100):0),note:(manual||auto),custom:!!g._custom});
+  });
+  rows.sort(function(a,b){return (b.pctDel-a.pctDel)||(b.del-a.del)||(b.canals-a.canals)||String(a.name).localeCompare(String(b.name),'ar');});
+  const T=rows.reduce(function(t,r){t.canals+=r.canals;t.prog+=r.prog;t.fin+=r.fin;t.dar+=r.dar;t.inv+=r.inv;t.del+=r.del;return t;},{canals:0,prog:0,fin:0,dar:0,inv:0,del:0});
+  T.pctFin=(T.canals?Math.round(T.fin/T.canals*100):0);
+  T.pctDel=(T.canals?Math.round(T.del/T.canals*100):0);
+  return {rows:rows,T:T};
+}
+function pctClass(p){return p>=85?'p-hi':(p>=50?'p-md':'p-lo');}
+function exportCommishXlsx(ph){
+  if(!can('view')){authDeny();return;}
+  ph=(+ph===2)?2:1;
+  const d=commishRows(ph);
+  const phName=(ph===2?'الثانية':'الأولى');
+  const W=11;const rows=[];
+  const pctS=function(p){return p>=85?14:(p>=50?15:16);};
+  rows.push([{v:'مشروع تأهيل وتبطين الترع — المبادرة الرئاسية «حياة كريمة»',s:1,span:W}]);
+  rows.push([{v:'تقرير نصف شهري لموقف ترع المرحلة '+phName,s:3,span:W}]);
+  rows.push([{v:'أرقام حيّة حتى '+ARDATE()+' — الأساس الرسمي + التعديلات المُدخلة (لها الأولوية) — عدد الإدارات: '+d.rows.length,s:13,span:W}]);
+  rows.push([]);
+  rows.push([{v:'م',s:7,rspan:2},{v:'الإدارة المركزية',s:7,rspan:2},{v:'الموقف التنفيذي',s:2,span:4},{v:'الاستلامات حتى '+ARDATE(),s:3,span:4},{v:'ملاحظات',s:7,rspan:2}]);
+  rows.push([{v:'',s:7},{v:'',s:7},{v:'عدد الترع',s:2},{v:'جارٍ العمل بها',s:2},{v:'المنتهية',s:2},{v:'نسبة النهو',s:2},{v:'دار الهندسة',s:3},{v:'استثماري',s:3},{v:'الإجمالي',s:3},{v:'نسبة التسليم',s:3},{v:'',s:7}]);
+  d.rows.forEach(function(r,i){
+    const zeb=(i%2===1);const tS=zeb?12:6, nS=zeb?11:5;
+    rows.push([{v:i+1,num:true,s:tS},{v:r.name+(r.custom?' (مُضافة)':''),s:nS},
+      {v:r.canals,num:true,s:tS},{v:r.prog,num:true,s:tS},{v:r.fin,num:true,s:tS},
+      {v:r.pctFin/100,num:true,s:pctS(r.pctFin)},
+      {v:r.dar,num:true,s:tS},{v:r.inv,num:true,s:tS},{v:r.del,num:true,s:tS},
+      {v:r.pctDel/100,num:true,s:pctS(r.pctDel)},
+      {v:r.note||'—',s:18}]);
+  });
+  const T=d.T;
+  rows.push([{v:'الإجمالي العام',s:9,span:2},{v:T.canals,num:true,s:9},{v:T.prog,num:true,s:9},{v:T.fin,num:true,s:9},{v:T.pctFin/100,num:true,s:17},{v:T.dar,num:true,s:9},{v:T.inv,num:true,s:9},{v:T.del,num:true,s:9},{v:T.pctDel/100,num:true,s:17},{v:'—',s:9}]);
+  downloadXlsx('تقرير_المفوض_المرحلة_'+phName+'_'+new Date().toISOString().slice(0,10),
+    [{name:'تقرير المفوض م'+ph,rows:rows,cols:[5,24,10,12,10,11,12,10,10,12,42],freeze:6}]);
+  toast('تم تصدير تقرير المفوّض — المرحلة '+phName+' بصيغة Excel');
+}
 function renderDocs(){
   const docs=[
+    {id:'commish1',icon:'🏛️',title:'تقرير المفوّض النصف شهري',desc:'بنموذج التقرير الرسمي المعتمد: صف لكل إدارة بالموقف التنفيذي والاستلامات (دار الهندسة/استثماري) والملاحظات — مع اختيار المرحلة وتصدير Excel منسّق.',tag:'رسمي'},
     {id:'monthly',icon:'📄',title:'خطاب التقرير الشهري',desc:'خطاب رسمي لرئيس مصلحة الري بموقف المرحلتين وملخص الأرقام — بنفس صيغة ملف المشروع.',tag:'خطاب'},
     {id:'exec',icon:'📊',title:'تقرير الموقف التنفيذي',desc:'تقرير تفصيلي بموقف كل الإدارات المركزية: المنفّذ والمستلم عبر دار الهندسة والمتبقي.',tag:'تقرير'},
     {id:'dues',icon:'💰',title:'كشف المستحقات المعلّقة',desc:'بيان بالمستحقات المحتجزة لحين استلام دار الهندسة، مجمّعة بالإدارة والمقاول.',tag:'كشف'},
@@ -4444,6 +4543,39 @@ function buildDoc(id){
         <p>نظراً لأن استلام دار الهندسة شرط لازم قبل استلام الإدارات وصرف مستحقات المقاولين، برجاء التوجيه بسرعة إنجاز المعاينة.</p>
         <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
       </div>`+docFooter();
+  }
+  if(id==='commish1'||id==='commish2'){
+    // ═══ تقرير المفوّض النصف شهري — بنموذج التقرير الرسمي حرفياً (صف لكل إدارة) ═══
+    // الأرقام من allGovs() الفعّالة: الرسمي أساساً وتعديلات المستخدم لها الأولوية دائماً،
+    // والإدارات المُضافة تدخل بصفوفها — فالجدول والإجمالي واللوحة والخطاب وحدة واحدة.
+    const ph=(id==='commish2')?2:1;
+    const d=commishRows(ph);
+    const phName=(ph===2?'الثانية':'الأولى');
+    const tabs='<div class="cm-tabs no-print">'
+      +'<button class="cm-tab'+(ph===1?' on':'')+'" onclick="openDoc(&#39;commish1&#39;)">المرحلة الأولى</button>'
+      +'<button class="cm-tab'+(ph===2?' on':'')+'" onclick="openDoc(&#39;commish2&#39;)">المرحلة الثانية</button>'
+      +'<button class="cm-tab cm-tab-x" onclick="exportCommishXlsx('+ph+')">⬇ تصدير Excel — المرحلة '+phName+'</button></div>';
+    let body='';
+    d.rows.forEach(function(r,i){
+      body+='<tr><td>'+(i+1)+'</td><td class="cm-name">'+xmlEsc(r.name)+(r.custom?' <span class="cm-badge">مُضافة</span>':'')+'</td>'
+        +'<td>'+r.canals+'</td><td>'+r.prog+'</td><td>'+r.fin+'</td>'
+        +'<td class="pcell '+pctClass(r.pctFin)+'">'+r.pctFin+'%</td>'
+        +'<td>'+r.dar+'</td><td>'+r.inv+'</td><td class="cm-sum">'+r.del+'</td>'
+        +'<td class="pcell '+pctClass(r.pctDel)+'">'+r.pctDel+'%</td>'
+        +'<td class="cm-note">'+(r.note?xmlEsc(r.note):'—')+'</td></tr>';
+    });
+    const T=d.T;
+    return letterhead()+'<span id="cmPhaseFlag" data-ph="'+ph+'" style="display:none"></span>'
+      +'<div class="doc-title-main">تقرير نصف شهري لموقف ترع المرحلة '+phName+' بمبادرة «حياة كريمة»</div>'
+      +'<div class="doc-sub-main">أرقام حيّة حتى '+ARDATE()+' — الأساس الرسمي المعتمد مضافاً إليه التعديلات المُدخلة (لها الأولوية)</div>'
+      +'<div class="doc-body">'+tabs
+      +'<table class="doc-tbl sm"><thead>'
+      +'<tr><th rowspan="2">م</th><th rowspan="2">الإدارة المركزية</th><th colspan="4" class="cm-grp cm-grp-exec">الموقف التنفيذي</th><th colspan="4" class="cm-grp cm-grp-del">الاستلامات حتى '+ARDATE()+'</th><th rowspan="2">ملاحظات</th></tr>'
+      +'<tr><th>عدد الترع</th><th>جارٍ العمل بها</th><th>المنتهية</th><th>نسبة النهو</th><th>دار الهندسة</th><th>استثماري</th><th>الإجمالي</th><th>نسبة التسليم</th></tr>'
+      +'</thead><tbody>'+body
+      +'<tr class="doc-total"><td colspan="2">الإجمالي العام</td><td>'+T.canals+'</td><td>'+T.prog+'</td><td>'+T.fin+'</td><td>'+T.pctFin+'%</td><td>'+T.dar+'</td><td>'+T.inv+'</td><td>'+T.del+'</td><td>'+T.pctDel+'%</td><td>—</td></tr>'
+      +'</tbody></table>'
+      +'</div>'+docFooter();
   }
   return '';
 }
