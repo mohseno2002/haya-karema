@@ -2737,7 +2737,10 @@ function resetOpsEdits(govId){
   if(!ov[govId]||!ov[govId].operations)return;
   if(!confirm('استرجاع بنود المستحقات الرسمية لـ«'+g.name+'» وإلغاء تعديلاتكم عليها؟'))return;
   delete ov[govId].operations;
-  const rest=Object.keys(ov[govId]).filter(k=>k!=='lastUpdate');
+  // مفاتيح المزامنة الوصفية (_ts/_dev/_sy/_audit) ليست «تعديلاً» — لا تمنع حذف الصف الفارغ،
+  // وإلا بقيت الإدارة موسومة «مُعدَّلة ✎» للأبد بصفٍّ أجوف يُزامَن بلا داعٍ.
+  const META_OV_KEYS=['lastUpdate','_ts','_dev','_sy','_audit'];
+  const rest=Object.keys(ov[govId]).filter(k=>!META_OV_KEYS.includes(k));
   if(!rest.length){delete ov[govId];saveOv(ov);
     try{if(typeof pushOverrideDelete==='function')pushOverrideDelete(govId);}catch(e){}}
   else{saveOv(ov);
@@ -3772,11 +3775,29 @@ function importJSON(ev){
   r.onload=()=>{try{
     const d=JSON.parse(r.result);
     if(!d.overrides)throw new Error('bad');
-    ov=d.overrides;saveOv(ov);
+    ov=d.overrides;
+    // ═══ الاستيراد قرارُ استرجاعٍ صريح — «التغييرات لها الأولوية كمصدر للحقيقة» ═══
+    // النسخة المستوردة قد تحمل أختام مزامنة قديمة (_sy/_ts) من وقت تصديرها؛ لو تُركت كما هي
+    // لمحاها أول سحب تلقائي (صفٌّ _sy غائب من السحابة ⇒ يُعتبر محذوفاً، وصفٌّ أحدث طابعاً يغلبها).
+    // العلاج: تُختم كل البيانات المستوردة كتعديل محلي جديد غير مؤكَّد (طابع الآن + DIRTY)
+    // وتُرفع أي شواهد حذف معلّقة، ثم تُدفع للسحابة — فتثبت النسخة المسترجَعة على كل الأجهزة.
+    const _now=Date.now();
+    Object.keys(ov).forEach(id=>{const o=ov[id];if(o&&typeof o==='object'){
+      delete o._sy;o._ts=_now;o._dev=DEVICE_ID;DIRTY.add(id);delete OVDEL[id];}});
+    saveOv(ov);saveDirty();
     if(typeof materializeCustomEntities==='function')materializeCustomEntities();
     if(d.audit)localStorage.setItem(AUDIT,JSON.stringify(d.audit));
-    if(d.reports)saveReports(d.reports);
-    refreshAll();toast('تم استيراد النسخة بنجاح');
+    if(Array.isArray(d.reports)){
+      // نفس المبدأ للبلاغات: تُجرَّد من ختم _sy وتُعلَّم غير مؤكَّدة (RDIRTY) وتُرفع شواهد حذفها المعلّقة
+      const reps=d.reports.map(r=>{const c={...r};delete c._sy;if(c.id){RDIRTY.add(c.id);delete RDEL[c.id];}return c;});
+      saveReports(reps);saveRSync();
+    }
+    // دفع النسخة المسترجَعة للسحابة فوراً (best-effort) — ومحرك التأكيد يعيد المحاولة بعد كل سحب حتى تثبت
+    try{Object.keys(ov).forEach(id=>{const g=PROJECT.govs.find(x=>x.id===id);
+      if(typeof pushOverride==='function')pushOverride(id,(g&&g.name)||id,ov[id],true);});}catch(e){}
+    try{if(typeof pushReport==='function')loadReports().forEach(r=>pushReport(r,true));}catch(e){}
+    if(typeof updateSyncStatus==='function')updateSyncStatus();
+    refreshAll();toast('تم استيراد النسخة بنجاح — وجارٍ تثبيتها سحابياً على كل الأجهزة');
   }catch(e){toast('ملف غير صالح',true)}
   ev.target.value='';};
   r.readAsText(f);
