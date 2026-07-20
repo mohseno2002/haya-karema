@@ -4195,7 +4195,23 @@ function commishRows(ph){
   const T=rows.reduce(function(t,r){t.canals+=r.canals;t.prog+=r.prog;t.fin+=r.fin;t.dar+=r.dar;t.inv+=r.inv;t.del+=r.del;return t;},{canals:0,prog:0,fin:0,dar:0,inv:0,del:0});
   T.pctFin=(T.canals?Math.round(T.fin/T.canals*100):0);
   T.pctDel=(T.canals?Math.round(T.del/T.canals*100):0);
-  return {rows:rows,T:T};
+  // ═══ توحيد الإجمالي مع الخطاب الشهري واللوحة (وحدة واحدة — رقم واحد لكل مؤشر) ═══
+  // التقرير الرسمي نفسه يحمل فارقاً قائماً بين إجمالياته المعتمدة على مستوى المشروع
+  // (م1: 999 ترعة / 988 منفّذة) ومجموع كشوفه التفصيلية للإدارات (997 / 986) — ترعتان
+  // معتمدتان بالإجمالي دون توزيعهما على إدارة بعينها بالكشوف. كان جدول المفوّض يجمع
+  // الكشوف فقط فيظهر برقم يخالف الخطاب. الآن: مجموع الكشوف يبقى صادقاً حسابياً كصفٍّ
+  // فرعي، ويُضاف صف تسوية بهذا الفارق، ثم «الإجمالي العام» يُرسى على نفس الأرقام الحيّة
+  // للخطاب واللوحة (livePhases/liveTotals) — فلا يظهر رقمان مختلفان لنفس المؤشر أبداً.
+  const lp=livePhases(), dtLive=liveTotals();
+  const L=(ph===2?lp.p2:lp.p1), D=(ph===2?dtLive.p2:dtLive.p1);
+  const gap={canals:L.total-T.canals, fin:L.done-T.fin, dar:D.dar-T.dar, inv:D.invest-T.inv};
+  gap.del=gap.dar+gap.inv; gap.prog=gap.canals-gap.fin;
+  const hasGap=!!(gap.canals||gap.fin||gap.dar||gap.inv);
+  const G={canals:L.total, prog:Math.max(0,L.total-L.done), fin:L.done,
+    pctFin:(L.total?Math.round(L.done/L.total*100):0),
+    dar:D.dar, inv:D.invest, del:D.dar+D.invest,
+    pctDel:(L.total?Math.round((D.dar+D.invest)/L.total*100):0)};
+  return {rows:rows,T:T,G:G,gap:gap,hasGap:hasGap};
 }
 function pctClass(p){return p>=85?'p-hi':(p>=50?'p-md':'p-lo');}
 function exportCommishXlsx(ph){
@@ -4220,8 +4236,12 @@ function exportCommishXlsx(ph){
       {v:r.pctDel/100,num:true,s:pctS(r.pctDel)},
       {v:r.note||'—',s:18}]);
   });
-  const T=d.T;
-  rows.push([{v:'الإجمالي العام',s:9,span:2},{v:T.canals,num:true,s:9},{v:T.prog,num:true,s:9},{v:T.fin,num:true,s:9},{v:T.pctFin/100,num:true,s:17},{v:T.dar,num:true,s:9},{v:T.inv,num:true,s:9},{v:T.del,num:true,s:9},{v:T.pctDel/100,num:true,s:17},{v:'—',s:9}]);
+  const T=d.T, G=d.G, gp=d.gap;
+  if(d.hasGap){
+    rows.push([{v:'مجموع الكشوف التفصيلية للإدارات',s:8,span:2},{v:T.canals,num:true,s:8},{v:T.prog,num:true,s:8},{v:T.fin,num:true,s:8},{v:T.pctFin/100,num:true,s:8},{v:T.dar,num:true,s:8},{v:T.inv,num:true,s:8},{v:T.del,num:true,s:8},{v:T.pctDel/100,num:true,s:8},{v:'—',s:8}]);
+    rows.push([{v:'تسوية: أرصدة معتمدة على مستوى المشروع (غير موزَّعة بالكشوف)',s:5,span:2},{v:gp.canals,num:true,s:5},{v:gp.prog,num:true,s:5},{v:gp.fin,num:true,s:5},{v:'—',s:5},{v:gp.dar,num:true,s:5},{v:gp.inv,num:true,s:5},{v:gp.del,num:true,s:5},{v:'—',s:5},{v:'ليطابق الإجمالي العام الخطابَ الشهري واللوحة',s:18}]);
+  }
+  rows.push([{v:'الإجمالي العام',s:9,span:2},{v:G.canals,num:true,s:9},{v:G.prog,num:true,s:9},{v:G.fin,num:true,s:9},{v:G.pctFin/100,num:true,s:17},{v:G.dar,num:true,s:9},{v:G.inv,num:true,s:9},{v:G.del,num:true,s:9},{v:G.pctDel/100,num:true,s:17},{v:'—',s:9}]);
   downloadXlsx('تقرير_المفوض_المرحلة_'+phName+'_'+new Date().toISOString().slice(0,10),
     [{name:'تقرير المفوض م'+ph,rows:rows,cols:[5,24,10,12,10,11,12,10,10,12,42],freeze:6}]);
   toast('تم تصدير تقرير المفوّض — المرحلة '+phName+' بصيغة Excel');
@@ -4585,7 +4605,12 @@ function buildDoc(id){
         +'<td class="pcell '+pctClass(r.pctDel)+'">'+r.pctDel+'%</td>'
         +'<td class="cm-note">'+(r.note?xmlEsc(r.note):'—')+'</td></tr>';
     });
-    const T=d.T;
+    const T=d.T, G=d.G, gp=d.gap;
+    const totalRows=(d.hasGap
+      ?'<tr class="doc-total" style="opacity:.85"><td colspan="2">مجموع الكشوف التفصيلية للإدارات</td><td>'+T.canals+'</td><td>'+T.prog+'</td><td>'+T.fin+'</td><td>'+T.pctFin+'%</td><td>'+T.dar+'</td><td>'+T.inv+'</td><td>'+T.del+'</td><td>'+T.pctDel+'%</td><td>—</td></tr>'
+       +'<tr><td colspan="2" class="cm-name">تسوية: أرصدة معتمدة بالتقرير الرسمي على مستوى المشروع دون توزيعها على إدارة بعينها بالكشوف</td><td>'+gp.canals+'</td><td>'+gp.prog+'</td><td>'+gp.fin+'</td><td>—</td><td>'+gp.dar+'</td><td>'+gp.inv+'</td><td class="cm-sum">'+gp.del+'</td><td>—</td><td class="cm-note">تُدرج ليطابق الإجمالي العام الخطابَ الشهري واللوحة حرفياً</td></tr>'
+      :'')
+      +'<tr class="doc-total"><td colspan="2">الإجمالي العام</td><td>'+G.canals+'</td><td>'+G.prog+'</td><td>'+G.fin+'</td><td>'+G.pctFin+'%</td><td>'+G.dar+'</td><td>'+G.inv+'</td><td>'+G.del+'</td><td>'+G.pctDel+'%</td><td>—</td></tr>';
     return letterhead()+'<span id="cmPhaseFlag" data-ph="'+ph+'" style="display:none"></span>'
       +'<div class="doc-title-main">تقرير نصف شهري لموقف ترع المرحلة '+phName+' بمبادرة «حياة كريمة»</div>'
       +'<div class="doc-sub-main">أرقام حيّة حتى '+ARDATE()+' — الأساس الرسمي المعتمد مضافاً إليه التعديلات المُدخلة (لها الأولوية)</div>'
@@ -4594,7 +4619,7 @@ function buildDoc(id){
       +'<tr><th rowspan="2">م</th><th rowspan="2">الإدارة المركزية</th><th colspan="4" class="cm-grp cm-grp-exec">الموقف التنفيذي</th><th colspan="4" class="cm-grp cm-grp-del">الاستلامات حتى '+ARDATE()+'</th><th rowspan="2">ملاحظات</th></tr>'
       +'<tr><th>عدد الترع</th><th>جارٍ العمل بها</th><th>المنتهية</th><th>نسبة النهو</th><th>دار الهندسة</th><th>استثماري</th><th>الإجمالي</th><th>نسبة التسليم</th></tr>'
       +'</thead><tbody>'+body
-      +'<tr class="doc-total"><td colspan="2">الإجمالي العام</td><td>'+T.canals+'</td><td>'+T.prog+'</td><td>'+T.fin+'</td><td>'+T.pctFin+'%</td><td>'+T.dar+'</td><td>'+T.inv+'</td><td>'+T.del+'</td><td>'+T.pctDel+'%</td><td>—</td></tr>'
+      +totalRows
       +'</tbody></table>'
       +'</div>'+docFooter();
   }
