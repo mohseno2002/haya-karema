@@ -2090,43 +2090,31 @@ function updateCoverageNotes(){
 function liveTotals(){
   const gs=allGovs();
   const sum=(ph,key)=>gs.reduce((a,g)=>a+((g[ph]&&g[ph][key])||0),0);
-  const off=PROJECT.official, dtl=PROJECT.detailTotals;
-  // الأساس يُحسب من الإدارات الرسمية فقط (بدون المُضافة يدوياً). بذلك:
-  //  • تعديلات الإدارات الرسمية تدخل كفرق (دلتا) عن الرقم الرسمي المعتمد.
-  //  • الإدارات المُضافة يدوياً تدخل بقيمتها الكاملة كزيادة صافية (لأنها غير ممثَّلة في الأساس).
-  const officialGovs=PROJECT.govs.filter(g=>!g._custom);
-  const base=(ph,key)=>officialGovs.reduce((a,g)=>a+((g[ph]&&g[ph][key])||0),0);
-  const p1={dar:dtl.p1.dar+(sum('phase1','dar')-base('phase1','dar')), invest:dtl.p1.invest+(sum('phase1','invest')-base('phase1','invest'))};
-  const p2={dar:dtl.p2.dar+(sum('phase2','dar')-base('phase2','dar')), invest:dtl.p2.invest+(sum('phase2','invest')-base('phase2','invest'))};
-  // فرق إجمالي الترع (تعديل رسمي أو إدارة مُضافة) مطبّق على الإجمالي الرسمي
-  const totalCanals=off.phase1.total+off.phase2.total
-    +(sum('phase1','canals')-base('phase1','canals'))
-    +(sum('phase2','canals')-base('phase2','canals'));
-  // إجمالي المنفّذ (النهو) مطبّقاً عليه فرق الإدارات المُضافة والتعديلات
-  const exec1=off.phase1.done+(sum('phase1','executed')-base('phase1','executed'));
-  const exec2=off.phase2.done+(sum('phase2','executed')-base('phase2','executed'));
+  // ═══ المرجع المعتمد (بقرار رئيس الإدارة المركزية): الكشوف التفصيلية للإدارات هي مصدر الحقيقة ═══
+  // الإجماليات كلها = مجموع كشوف الإدارات الفعّالة (الرسمية بعد التعديلات + المُضافة يدوياً).
+  // لا ارتكاز بعد اليوم على إجماليات الترويسة العامة للتقرير — فالكشوف هي الفعلي المعتمد،
+  // وأي تعديل أو إضافة يدخل الجمع تلقائياً (وحدة واحدة، رقم واحد لكل مؤشر في كل المواضع).
+  const p1={dar:sum('phase1','dar'), invest:sum('phase1','invest')};
+  const p2={dar:sum('phase2','dar'), invest:sum('phase2','invest')};
+  const totalCanals=sum('phase1','canals')+sum('phase2','canals');
+  const exec1=sum('phase1','executed');
+  const exec2=sum('phase2','executed');
   return {p1,p2,totalCanals,exec1,exec2,totExec:exec1+exec2};
 }
 // ═══ الأرقام الحيّة للمرحلتين — مصدر واحد للحقيقة (وحدة واحدة) ═══
-// نفس عقيدة الخطاب الشهري حرفياً: الأساس هو الأرقام الرسمية المعتمدة من تقرير المفوّض،
-// يُضاف إليها صافي تعديلات الإدارات الرسمية (دلتا) + الإدارات المُضافة يدوياً بقيمتها الكاملة.
-// تُستخدم في اللوحة الرئيسية والمساعد الذكي والخطابات معاً، فلا يظهر رقمان مختلفان لنفس المؤشر أبداً.
+// المرجع المعتمد: مجموع الكشوف التفصيلية للإدارات (م1: 997/986 — م2: 550/347 قبل أي تعديل)،
+// والتعديلات المُدخلة والإدارات المُضافة تدخل الجمع مباشرة. تُستخدم في اللوحة الرئيسية
+// والخطاب الشهري وجدول المفوّض والمساعد معاً — فلا يظهر رقمان مختلفان لنفس المؤشر أبداً.
 function livePhases(){
-  const of=PROJECT.official,dtl=PROJECT.detailTotals;
-  const _offG=PROJECT.govs.filter(g=>!g._custom);
   const S=(ph,k)=>allGovs().reduce((a,g)=>a+((g[ph]&&g[ph][k])||0),0);
-  const B=(ph,k)=>_offG.reduce((a,g)=>a+((g[ph]&&g[ph][k])||0),0);
-  const D=(ph,k)=>S(ph,k)-B(ph,k);
-  // عقيدة الاستلام المعتمدة (وحدة واحدة في كل التقارير): «تم تسليمه» = المصنَّف بالكشوف
-  // التفصيلية فقط (دار الهندسة + استثماري). ما ورد «مُسلَّماً» بالتقرير الرسمي دون تصنيف
-  // مساره يُعامَل بانتظار الاستلام لحين تصنيفه. الرقم الرسمي يُحفظ في officialDelivered للمرجعية.
-  const mk=(o,d,ph)=>{const total=o.total+D(ph,'canals'),done=o.done+D(ph,'executed');
-    const del=Math.min(total,(d.dar+D(ph,'dar'))+(d.invest+D(ph,'invest')));
-    const offDel=Math.min(total,o.delivered+D(ph,'delivered'));
+  // عقيدة الاستلام: «تم تسليمه» = المصنَّف بالكشوف (دار الهندسة + استثماري) لكل إدارة.
+  const mk=(ph)=>{const total=S(ph,'canals'),done=S(ph,'executed');
+    const del=Math.min(total,S(ph,'dar')+S(ph,'invest'));
+    const offDel=Math.min(total,S(ph,'delivered'));
     return{total,done,delivered:del,officialDelivered:offDel,
       donePct:total?Math.round(done/total*100):0,
       deliveredPct:total?Math.round(del/total*100):0,remainingDeliver:Math.max(0,total-del)};};
-  return {p1:mk(of.phase1,dtl.p1,'phase1'),p2:mk(of.phase2,dtl.p2,'phase2')};
+  return {p1:mk('phase1'),p2:mk('phase2')};
 }
 // عدّاد متحرّك للأرقام (count-up) — لمسة مبهرة عند عرض المؤشرات
 function animateCounts(){
@@ -4223,7 +4211,7 @@ function exportCommishXlsx(ph){
   const pctS=function(p){return p>=85?14:(p>=50?15:16);};
   rows.push([{v:'مشروع تأهيل وتبطين الترع — المبادرة الرئاسية «حياة كريمة»',s:1,span:W}]);
   rows.push([{v:'تقرير نصف شهري لموقف ترع المرحلة '+phName,s:3,span:W}]);
-  rows.push([{v:'أرقام حيّة حتى '+ARDATE()+' — الأساس الرسمي + التعديلات المُدخلة (لها الأولوية) — عدد الإدارات: '+d.rows.length,s:13,span:W}]);
+  rows.push([{v:'أرقام حيّة حتى '+ARDATE()+' — المرجع: الكشوف التفصيلية للإدارات (مصدر الحقيقة) + التعديلات المُدخلة (لها الأولوية) — عدد الإدارات: '+d.rows.length,s:13,span:W}]);
   rows.push([]);
   rows.push([{v:'م',s:7,rspan:2},{v:'الإدارة المركزية',s:7,rspan:2},{v:'الموقف التنفيذي',s:2,span:4},{v:'الاستلامات حتى '+ARDATE(),s:3,span:4},{v:'ملاحظات',s:7,rspan:2}]);
   rows.push([{v:'',s:7},{v:'',s:7},{v:'عدد الترع',s:2},{v:'جارٍ العمل بها',s:2},{v:'المنتهية',s:2},{v:'نسبة النهو',s:2},{v:'دار الهندسة',s:3},{v:'استثماري',s:3},{v:'الإجمالي',s:3},{v:'نسبة التسليم',s:3},{v:'',s:7}]);
@@ -4613,7 +4601,7 @@ function buildDoc(id){
       +'<tr class="doc-total"><td colspan="2">الإجمالي العام</td><td>'+G.canals+'</td><td>'+G.prog+'</td><td>'+G.fin+'</td><td>'+G.pctFin+'%</td><td>'+G.dar+'</td><td>'+G.inv+'</td><td>'+G.del+'</td><td>'+G.pctDel+'%</td><td>—</td></tr>';
     return letterhead()+'<span id="cmPhaseFlag" data-ph="'+ph+'" style="display:none"></span>'
       +'<div class="doc-title-main">تقرير نصف شهري لموقف ترع المرحلة '+phName+' بمبادرة «حياة كريمة»</div>'
-      +'<div class="doc-sub-main">أرقام حيّة حتى '+ARDATE()+' — الأساس الرسمي المعتمد مضافاً إليه التعديلات المُدخلة (لها الأولوية)</div>'
+      +'<div class="doc-sub-main">أرقام حيّة حتى '+ARDATE()+' — المرجع: الكشوف التفصيلية للإدارات (مصدر الحقيقة) مضافاً إليها التعديلات المُدخلة (لها الأولوية)</div>'
       +'<div class="doc-body">'+tabs
       +'<table class="doc-tbl sm"><thead>'
       +'<tr><th rowspan="2">م</th><th rowspan="2">الإدارة المركزية</th><th colspan="4" class="cm-grp cm-grp-exec">الموقف التنفيذي</th><th colspan="4" class="cm-grp cm-grp-del">الاستلامات حتى '+ARDATE()+'</th><th rowspan="2">ملاحظات</th></tr>'
