@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-07-28 · def-detail v1 + receipts-split v1 · sw deh-v7 -->
+<!-- build 2026-07-28 · def-detail v1 + receipts-split v1 + deck-builder v1 · sw deh-v8 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -730,6 +730,104 @@ html[data-theme="dark"] .edit-phase{background:#0f3a45}
 html[data-theme="dark"] .rpt-card,html[data-theme="dark"] .rpt-sel,html[data-theme="dark"] .rpt-del{background:var(--card)}
 html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
 
+/* ═══════════ معد العروض التقديمية ═══════════ */
+.dk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;background:var(--cyan-soft,#e6f4f1);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.dk-grid-sm{grid-template-columns:repeat(3,1fr);max-height:150px;overflow:auto}
+.dk-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--nile-700,#15463d);cursor:pointer;line-height:1.5}
+.dk-chk input{width:15px;height:15px;accent-color:var(--nile-600,#15463d);flex:none}
+.dk-mini{font-size:11.5px;margin-top:6px;color:var(--muted)}
+.dk-mini a{color:var(--nile-600,#15463d);font-weight:800;text-decoration:none}
+.dk-opts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;margin-top:14px;background:var(--cyan-soft,#e6f4f1);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.dk-foot{flex-wrap:wrap}
+.deck-overlay{position:fixed;inset:0;z-index:120;background:#0a1512;display:none;flex-direction:column}
+.deck-overlay.on{display:flex}
+.deck-bar{display:flex;align-items:center;gap:7px;padding:8px 12px;background:#08201b;border-bottom:1px solid #1d4a3f;flex-wrap:wrap;flex:none}
+.dkb{background:#123b32;color:#dff0e9;border:1px solid #22604f;border-radius:9px;padding:7px 11px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;line-height:1}
+.dkb:hover{background:#1a5245}
+.dkb.wide{font-size:12px}
+.dk-count{color:#e6cf8f;font-family:'IBM Plex Mono';font-size:13px;font-weight:700;min-width:56px;text-align:center}
+.dk-sp{flex:1}
+.deck-stage{position:relative;flex:1;display:grid;place-items:center;overflow:hidden;padding:18px}
+.deck-notes{display:none;background:#08201b;color:#cfe4dc;border-top:1px solid #1d4a3f;padding:10px 16px;font-size:13px;line-height:1.8;flex:none}
+.deck-notes b{color:#e6cf8f}
+.dslide{display:none;position:relative;flex-direction:column;background:var(--dk-bg,#fff);color:var(--dk-ink,#10241f);border-radius:8px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.55);padding:2.1em 2.3em 1.2em;font-family:'Cairo','Tajawal',sans-serif;box-sizing:border-box}
+.dslide.on{display:flex}
+.ds-band{position:absolute;top:0;left:0;right:0;height:.3em;background:var(--dk-head,#15463d)}
+.ds-head{text-align:center;margin-bottom:.9em;flex:none}
+.ds-t{font-size:2em;font-weight:900;color:var(--dk-head,#15463d);line-height:1.25}
+.ds-s{font-size:.92em;opacity:.72;margin-top:.2em}
+.ds-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.85em;overflow:hidden}
+.ds-foot{display:flex;justify-content:space-between;align-items:center;gap:1em;font-size:.6em;opacity:.65;border-top:1px solid var(--dk-line,#cfe0d8);padding-top:.5em;margin-top:.5em;flex:none}
+.ds-num{font-family:'IBM Plex Mono';font-weight:700;opacity:.9}
+.ds-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.7em}
+.ds-kpis.three{grid-template-columns:repeat(3,1fr)}
+.ds-kc{background:var(--dk-soft,#eef5f1);border:1px solid var(--dk-line,#cfe0d8);border-radius:.7em;padding:.85em .5em;text-align:center}
+.ds-kc .n{font-size:2.35em;font-weight:900;color:var(--dk-head,#15463d);line-height:1.1}
+.ds-kc .l{font-size:.74em;opacity:.75;margin-top:.15em}
+.ds-gate{display:flex;align-items:stretch;gap:.4em;justify-content:center}
+.ds-gs{flex:1;background:var(--dk-soft,#eef5f1);border:1px solid var(--dk-line,#cfe0d8);border-radius:.7em;padding:.9em .3em;text-align:center}
+.ds-gs .n{font-size:2em;font-weight:900;color:var(--dk-head,#15463d)}
+.ds-gs .l{font-size:.68em;opacity:.75;margin-top:.2em;line-height:1.4}
+.ds-gate .ds-gs:nth-child(5){background:var(--dk-head,#15463d)}
+.ds-gate .ds-gs:nth-child(5) .n{color:#fff}
+.ds-gate .ds-gs:nth-child(5) .l{color:var(--dk-cvAcc,#e6cf8f);opacity:1}
+.ds-arrow{align-self:center;font-size:1.1em;color:var(--dk-acc,#a8904f);font-weight:900}
+.ds-tbl{width:100%;border-collapse:collapse;font-size:.78em}
+.ds-tbl th{background:var(--dk-head,#15463d);color:#fff;padding:.5em .3em;font-weight:800;border:1px solid var(--dk-head,#15463d)}
+.ds-tbl td{border:1px solid var(--dk-line,#cfe0d8);padding:.42em .3em;text-align:center}
+.ds-tbl td.nm{text-align:right;font-weight:800}
+.ds-tbl tbody tr:nth-child(even) td{background:rgba(21,70,61,.045)}
+.ds-tbl tr.tot td{background:var(--dk-head,#15463d);color:#fff;font-weight:900;border-color:var(--dk-head,#15463d)}
+.ds-tbl.mini{font-size:.72em;margin-top:.4em}
+.ds-bul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.55em}
+.ds-bul li{display:flex;gap:.6em;align-items:flex-start;font-size:1.02em;line-height:1.55}
+.ds-bul li b{flex:none;min-width:1.5em;height:1.5em;border-radius:.35em;background:var(--dk-head,#15463d);color:#fff;display:grid;place-items:center;font-size:.72em;font-weight:900}
+.ds-bul.warn li b{background:#a13b30}
+.ds-rank{display:grid;grid-template-columns:1fr 1fr;gap:1em}
+.ds-rcol{display:flex;flex-direction:column;gap:.4em}
+.ds-rh{text-align:center;font-weight:900;font-size:.85em;color:#fff;border-radius:.5em;padding:.35em}
+.ds-rh.up{background:var(--dk-head,#15463d)}
+.ds-rh.dn{background:#a13b30}
+.ds-rr{display:grid;grid-template-columns:auto 1fr auto;gap:.4em;align-items:center;font-size:.72em}
+.ds-rr .l{font-weight:800;min-width:5.5em}
+.ds-rr .bar{background:var(--dk-soft,#eef5f1);border-radius:.4em;height:.75em;overflow:hidden;grid-column:2}
+.ds-rr .bar i{display:block;height:100%;background:var(--dk-head,#15463d);border-radius:.4em}
+.ds-rr .v{font-family:'IBM Plex Mono';font-weight:800;color:var(--dk-head,#15463d)}
+.ds-rr .s{grid-column:1/-1;opacity:.6;font-size:.9em;margin-top:-.25em}
+.ds-bars{display:flex;flex-direction:column;gap:.32em;margin-top:.5em}
+.ds-lg{font-size:.65em;opacity:.75;display:flex;align-items:center;gap:.4em}
+.ds-lg span{display:inline-block;width:.8em;height:.8em;border-radius:.2em}
+.ds-lg .k1{background:var(--dk-head,#15463d)}
+.ds-lg .k2{background:#8a7ac4}
+.ds-br{display:grid;grid-template-columns:6.5em 1fr 6em;gap:.5em;align-items:center;font-size:.7em}
+.ds-br .l{font-weight:800;text-align:left;direction:rtl}
+.ds-br .t{display:flex;flex-direction:row-reverse;background:var(--dk-soft,#eef5f1);border-radius:.4em;height:.85em;overflow:hidden}
+.ds-br .t i{display:block;height:100%}
+.ds-br .t .s1{background:var(--dk-head,#15463d)}
+.ds-br .t .s2{background:#8a7ac4}
+.ds-br .v{font-family:'IBM Plex Mono';font-weight:800;opacity:.85;text-align:left}
+.ds-cover{background:linear-gradient(150deg,var(--dk-cvA,#0a1f1a),var(--dk-cvB,#15463d));color:var(--dk-cvInk,#fff);justify-content:center;padding:3em}
+.dsc-in{text-align:right}
+.dsc-badge{display:inline-block;border:1px solid var(--dk-cvAcc,#e6cf8f);color:var(--dk-cvAcc,#e6cf8f);border-radius:.5em;padding:.25em .8em;font-size:.7em;font-weight:800;margin-bottom:1em}
+.ds-cover h1{font-size:2.6em;font-weight:900;color:var(--dk-cvAcc,#e6cf8f);line-height:1.3;margin:0}
+.ds-cover h2{font-size:1.05em;font-weight:600;opacity:.92;margin:.5em 0 0;line-height:1.6}
+.dsc-rule{height:.18em;width:22%;background:var(--dk-cvAcc,#e6cf8f);border-radius:.2em;margin:1.2em 0}
+.dsc-meta{font-size:.85em;line-height:1.9;opacity:.95}
+.dsc-by{font-weight:900;color:var(--dk-cvAcc,#e6cf8f)}
+.dsc-date{opacity:.75;font-size:.9em}
+.ds-end{align-items:center;text-align:center}
+.ds-end .dsc-in{text-align:center}
+.ds-end .dsc-rule{margin:1.2em auto}
+@media(max-width:700px){.dk-grid,.dk-opts{grid-template-columns:1fr}.dk-grid-sm{grid-template-columns:repeat(2,1fr)}.deck-bar{gap:5px;padding:6px 8px}.dkb{padding:6px 9px;font-size:12px}.dkb.wide{font-size:11px}}
+@page deckpage{size:A4 landscape;margin:7mm}
+@media print{
+  body.deck-print .deck-overlay,body.deck-print .deck-overlay *{visibility:visible!important}
+  body.deck-print .deck-overlay{position:absolute;inset:0;background:#fff;display:block!important;z-index:9999}
+  body.deck-print .deck-stage{display:block;padding:0;overflow:visible;height:auto}
+  body.deck-print .dslide{display:flex!important;page:deckpage;page-break-after:always;break-after:page;width:100%;height:96vh;font-size:12pt;box-shadow:none;border-radius:0;margin:0 0 4mm}
+  body.deck-print .dslide:last-child{page-break-after:auto;break-after:auto}
+  body.deck-print .no-print,body.deck-print .deck-bar,body.deck-print .deck-notes{display:none!important}
+}
 /* ═══════════ مجموع الاستلامات: دار الهندسة + استثماري ═══════════ */
 .gstat{grid-template-columns:repeat(5,1fr);gap:5px}
 .gstat .b .n{font-size:17px}
@@ -4650,6 +4748,13 @@ function renderDocs(){
     {id:'escalation',icon:'⚠️',title:'خطاب تصعيد لتأخّر المعاينة',desc:'خطاب لدار الهندسة بشأن الترع المتأخّرة عن موعد الاستلام المقرر.',tag:'خطاب'},
   ];
   document.getElementById('docsGrid').innerHTML=`
+    <div class="doc-card doc-card-hl doc-card-deck" onclick="openDeckBuilder()">
+      <div class="doc-ic">🎞️</div>
+      <div class="doc-tag">عروض</div>
+      <div class="doc-title">معد العرض التقديمي</div>
+      <div class="doc-desc">قوالب جاهزة (تنفيذي للقيادة، شهري، إدارة واحدة، الترع المؤجلة، المستحقات، متابعة) مع اختيار الشرائح والمرحلة والإدارات والسمة والنسبة وحجم الخط والتوصيات — ثم اعرضه داخل التطبيق أو اطبعه PDF أو نزّله PowerPoint.</div>
+      <div class="doc-open">فتح معد العرض ←</div>
+    </div>
     <div class="doc-card doc-card-hl" onclick="openLetterComposer()">
       <div class="doc-ic">✍️</div>
       <div class="doc-tag">جديد</div>
@@ -4672,6 +4777,850 @@ function renderDocs(){
       <div class="doc-open">معاينة وطباعة ←</div>
     </div>`).join('');
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   معد العروض التقديمية — من داخل لوحة الاستلامات
+   ───────────────────────────────────────────────────────────────────
+   • كل شريحة تُبنى من الأرقام الحيّة (livePhases/liveTotals/allGovs/
+     الترع المؤجلة/المستحقات/البلاغات) — فأي تعديل يظهر بالعرض فوراً.
+   • ثلاثة مخارج من نفس النموذج: عرض داخل التطبيق، طباعة/PDF،
+     وملف PowerPoint حقيقي (.pptx) يُبنى محلياً بمولّد ZIP الموجود
+     أصلاً بالتطبيق — بلا أي مكتبة خارجية وبلا إنترنت.
+   • دور «إدارة مركزية» يرى إدارته فقط (visibleGovs).
+   ═══════════════════════════════════════════════════════════════════ */
+var DECK_SLIDES=[
+  ['cover','شريحة الغلاف'],
+  ['agenda','محتويات العرض'],
+  ['kpis','المؤشّرات الرئيسية'],
+  ['gate','مسار بوابة الاستلام'],
+  ['phases','موقف المرحلتين'],
+  ['receipts','الاستلامات: دار الهندسة والاستثماري'],
+  ['ranking','ترتيب الإدارات بنسبة الاستلام'],
+  ['govtable','جدول الإدارات التفصيلي'],
+  ['deferred','الترع المؤجلة'],
+  ['dues','المستحقات المعلّقة'],
+  ['reports','بلاغات الاستلام والمتأخّر'],
+  ['risks','المعوقات والمخاطر'],
+  ['recos','التوصيات والإجراءات'],
+  ['end','الشريحة الختامية']
+];
+var DECK_TPL={
+  exec:{name:'عرض تنفيذي شامل للقيادة',s:['cover','agenda','kpis','gate','phases','receipts','ranking','govtable','deferred','dues','risks','recos','end']},
+  monthly:{name:'الموقف الشهري المختصر',s:['cover','kpis','phases','receipts','ranking','risks','recos','end']},
+  gov:{name:'عرض إدارة مركزية واحدة',s:['cover','kpis','phases','receipts','govtable','deferred','dues','reports','recos','end']},
+  deferred:{name:'عرض الترع المؤجلة',s:['cover','kpis','deferred','risks','recos','end']},
+  dues:{name:'عرض المستحقات المعلّقة',s:['cover','kpis','dues','govtable','recos','end']},
+  followup:{name:'عرض متابعة الاستلامات',s:['cover','gate','receipts','ranking','reports','risks','recos','end']},
+  custom:{name:'عرض مخصّص — اختيار حر',s:['cover','kpis','end']}
+};
+var DECK_THEMES={
+  official:{name:'رسمي (هوية المشروع)',bg:'#ffffff',ink:'#10241f',head:'#15463d',accent:'#a8904f',soft:'#eef5f1',line:'#cfe0d8',coverA:'#0a1f1a',coverB:'#15463d',coverInk:'#ffffff',coverAcc:'#e6cf8f'},
+  dark:{name:'داكن (قاعة العرض)',bg:'#0d1f1b',ink:'#e8f3ee',head:'#e6cf8f',accent:'#39c5e0',soft:'#14302a',line:'#27564b',coverA:'#04100d',coverB:'#0f3a31',coverInk:'#ffffff',coverAcc:'#e6cf8f'},
+  light:{name:'فاتح هادئ',bg:'#ffffff',ink:'#1c2b28',head:'#1f5f8b',accent:'#c98a1f',soft:'#eef4f8',line:'#d6e3ec',coverA:'#123f5c',coverB:'#1f6f9c',coverInk:'#ffffff',coverAcc:'#ffe7ab'}
+};
+var DECK={opt:null,slides:[],i:0,notes:false};
+
+function deckDefaultRecos(){
+  return 'سرعة إنهاء إجراءات سحب العمل وإعادة الطرح للترع المتعثرة\n'
+    +'التنسيق مع مكتب دار الهندسة لتحديد مواعيد معاينة للترع المنتهية والجاهزة\n'
+    +'صرف المستحقات المعلّقة فور إتمام الاستلام النهائي\n'
+    +'استكمال الكشوف التفصيلية للترع المؤجلة بالإدارات الناقصة\n'
+    +'متابعة أسبوعية للإدارات ذات الاستلام المتوقف حتى انتظام المسار';
+}
+function deckEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function deckN(v){return (v==null||isNaN(v))?'—':Number(v).toLocaleString('en');}
+
+/* ═══ 1) نموذج الخيارات ═══ */
+function deckOverlayEl(id,cls){
+  var el=document.getElementById(id);
+  if(!el){el=document.createElement('div');el.id=id;el.className=cls;document.body.appendChild(el);}
+  return el;
+}
+function closeDeckBuilder(){var e=document.getElementById('deckBuildOverlay');if(e)e.classList.remove('on');}
+function openDeckBuilder(){
+  if(!can('view')){authDeny();return;}
+  var mine=(SESSION&&SESSION.role==='gov')?SESSION.govId:null;
+  var prev=DECK.opt||{};
+  var tpl=prev.tpl||(mine?'gov':'exec');
+  var chosen=prev.slides||DECK_TPL[tpl].s;
+  var govs=visibleGovs();
+  var tplOpts=Object.keys(DECK_TPL).map(function(k){
+    return '<option value="'+k+'"'+(k===tpl?' selected':'')+'>'+DECK_TPL[k].name+'</option>';}).join('');
+  var thOpts=Object.keys(DECK_THEMES).map(function(k){
+    return '<option value="'+k+'"'+(k===(prev.theme||'official')?' selected':'')+'>'+DECK_THEMES[k].name+'</option>';}).join('');
+  var slideBoxes=DECK_SLIDES.map(function(p){
+    var on=chosen.indexOf(p[0])>=0;
+    return '<label class="dk-chk"><input type="checkbox" class="dk-slide" value="'+p[0]+'"'+(on?' checked':'')+'> '+p[1]+'</label>';
+  }).join('');
+  var govBoxes=govs.map(function(g){
+    var on=prev.govIds?(prev.govIds.indexOf(g.id)>=0):false;
+    return '<label class="dk-chk"><input type="checkbox" class="dk-gov" value="'+g.id+'"'+(on?' checked':'')+'> '+deckEsc(g.name)+'</label>';
+  }).join('');
+  var ph=prev.phase||'both';
+  var el=deckOverlayEl('deckBuildOverlay','lc-overlay');
+  el.innerHTML='<div class="lc-modal">'
+   +'<div class="lc-head"><div class="lc-title">🎞️ معد العرض التقديمي</div>'
+   +'<div class="lc-sub">اختر القالب والشرائح والنطاق والشكل — ثم اعرض داخل التطبيق أو اطبع PDF أو نزّل ملف PowerPoint. كل الأرقام تُبنى لحظياً من بيانات اللوحة بعد تعديلاتك.</div></div>'
+   +'<div class="lc-body">'
+   +'<label class="lc-lbl">قالب جاهز</label>'
+   +'<select id="dk-tpl" class="lc-inp lc-sel" onchange="deckApplyTpl()">'+tplOpts+'</select>'
+   +'<label class="lc-lbl">شرائح العرض <span style="font-weight:600;color:var(--muted);font-size:11px">(تُضبط تلقائياً بالقالب ويمكنك تعديلها)</span></label>'
+   +'<div class="dk-grid" id="dk-slides">'+slideBoxes+'</div>'
+   +'<label class="lc-lbl">المرحلة</label>'
+   +'<select id="dk-phase" class="lc-inp lc-sel">'
+   +'<option value="both"'+(ph==='both'?' selected':'')+'>المرحلتان معاً</option>'
+   +'<option value="1"'+(ph==='1'?' selected':'')+'>المرحلة الأولى</option>'
+   +'<option value="2"'+(ph==='2'?' selected':'')+'>المرحلة الثانية</option></select>'
+   +'<label class="lc-lbl">نطاق الإدارات <span style="font-weight:600;color:var(--muted);font-size:11px">(بلا اختيار = كل الإدارات)</span></label>'
+   +'<div class="dk-grid dk-grid-sm" id="dk-govs">'+govBoxes+'</div>'
+   +'<div class="dk-mini"><a href="#" onclick="deckPickAll(1);return false">تحديد الكل</a> · <a href="#" onclick="deckPickAll(0);return false">إلغاء التحديد</a></div>'
+   +'<label class="lc-lbl">عنوان العرض</label>'
+   +'<input id="dk-title" class="lc-inp" value="'+deckEsc(prev.title||'الموقف التنفيذي لمشروع تأهيل وتبطين الترع')+'">'
+   +'<label class="lc-lbl">العنوان الفرعي</label>'
+   +'<input id="dk-sub" class="lc-inp" value="'+deckEsc(prev.sub||'المبادرة الرئاسية «حياة كريمة» — المرحلتان الأولى والثانية')+'">'
+   +'<div class="lc-row"><div style="flex:1"><label class="lc-lbl">مُعدّ العرض / مقدّمه</label>'
+   +'<input id="dk-by" class="lc-inp" value="'+deckEsc(prev.by||'')+'" placeholder="الاسم"></div>'
+   +'<div style="flex:1"><label class="lc-lbl">الصفة</label>'
+   +'<input id="dk-role" class="lc-inp" value="'+deckEsc(prev.role||'')+'" placeholder="مثال: رئيس الإدارة المركزية"></div></div>'
+   +'<label class="lc-lbl">الجهة</label>'
+   +'<input id="dk-org" class="lc-inp" value="'+deckEsc(prev.org||'وزارة الموارد المائية والري — مصلحة الري')+'">'
+   +'<label class="lc-lbl">التاريخ المعروض</label>'
+   +'<input id="dk-date" class="lc-inp" value="'+deckEsc(prev.date||ARDATE())+'">'
+   +'<div class="lc-row"><div style="flex:1"><label class="lc-lbl">نسبة العرض</label>'
+   +'<select id="dk-ratio" class="lc-inp lc-sel"><option value="169"'+((prev.ratio||'169')==='169'?' selected':'')+'>16:9 عريض</option>'
+   +'<option value="43"'+(prev.ratio==='43'?' selected':'')+'>4:3 تقليدي</option></select></div>'
+   +'<div style="flex:1"><label class="lc-lbl">السمة اللونية</label>'
+   +'<select id="dk-theme" class="lc-inp lc-sel">'+thOpts+'</select></div></div>'
+   +'<label class="lc-lbl">حجم الخط</label>'
+   +'<select id="dk-font" class="lc-inp lc-sel">'
+   +'<option value="1"'+((prev.font||'1')==='1'?' selected':'')+'>عادي</option>'
+   +'<option value="1.12"'+(prev.font==='1.12'?' selected':'')+'>كبير (قاعة كبيرة)</option>'
+   +'<option value="0.92"'+(prev.font==='0.92'?' selected':'')+'>مضغوط (تفاصيل أكثر)</option></select>'
+   +'<label class="lc-lbl">التوصيات والإجراءات <span style="font-weight:600;color:var(--muted);font-size:11px">(سطر لكل بند — عدّلها كما تشاء)</span></label>'
+   +'<textarea id="dk-recos" class="lc-inp lc-area" rows="5">'+deckEsc(prev.recos||deckDefaultRecos())+'</textarea>'
+   +'<label class="lc-lbl">ملاحظات المتحدث (اختياري)</label>'
+   +'<textarea id="dk-notes" class="lc-inp lc-area" rows="3" placeholder="تظهر لك أثناء العرض وتُحفظ داخل ملف PowerPoint">'+deckEsc(prev.notes||'')+'</textarea>'
+   +'<div class="dk-opts">'
+   +'<label class="dk-chk"><input type="checkbox" id="dk-num"'+(prev.num===false?'':' checked')+'> ترقيم الشرائح</label>'
+   +'<label class="dk-chk"><input type="checkbox" id="dk-foot"'+(prev.foot===false?'':' checked')+'> تذييل بالجهة والتاريخ</label>'
+   +'<label class="dk-chk"><input type="checkbox" id="dk-src"'+(prev.src===false?'':' checked')+'> شريحة مصدر البيانات</label>'
+   +'<label class="dk-chk"><input type="checkbox" id="dk-split"'+(prev.split===false?'':' checked')+'> تقسيم الجداول الطويلة على شرائح</label>'
+   +'</div>'
+   +'<div class="ng-err" id="dk-err"></div>'
+   +'</div>'
+   +'<div class="lc-foot dk-foot">'
+   +'<button class="btn btn-primary" onclick="deckRun(\u0027show\u0027)">▶ ابدأ العرض</button>'
+   +'<button class="btn" onclick="deckRun(\u0027pptx\u0027)">⬇ تنزيل PowerPoint</button>'
+   +'<button class="btn" onclick="deckRun(\u0027print\u0027)">🖨 طباعة / PDF</button>'
+   +'<button class="btn" onclick="closeDeckBuilder()">إلغاء</button>'
+   +'</div></div>';
+  el.classList.add('on');
+}
+function deckApplyTpl(){
+  var t=document.getElementById('dk-tpl').value;
+  var set=(DECK_TPL[t]||DECK_TPL.exec).s;
+  Array.prototype.forEach.call(document.querySelectorAll('.dk-slide'),function(c){c.checked=set.indexOf(c.value)>=0;});
+}
+function deckPickAll(on){
+  Array.prototype.forEach.call(document.querySelectorAll('.dk-gov'),function(c){c.checked=!!on;});
+}
+function deckReadOpts(){
+  var v=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():''};
+  var ck=function(id){var e=document.getElementById(id);return e?!!e.checked:false};
+  var slides=[];
+  Array.prototype.forEach.call(document.querySelectorAll('.dk-slide'),function(c){if(c.checked)slides.push(c.value);});
+  var govIds=[];
+  Array.prototype.forEach.call(document.querySelectorAll('.dk-gov'),function(c){if(c.checked)govIds.push(c.value);});
+  return {tpl:v('dk-tpl'),slides:slides,phase:v('dk-phase'),govIds:govIds,
+    title:v('dk-title'),sub:v('dk-sub'),by:v('dk-by'),role:v('dk-role'),org:v('dk-org'),date:v('dk-date'),
+    ratio:v('dk-ratio'),theme:v('dk-theme'),font:v('dk-font'),recos:v('dk-recos'),notes:v('dk-notes'),
+    num:ck('dk-num'),foot:ck('dk-foot'),src:ck('dk-src'),split:ck('dk-split')};
+}
+function deckRun(mode){
+  var o=deckReadOpts();
+  if(!o.slides.length){var e=document.getElementById('dk-err');if(e){e.innerHTML='• اختر شريحة واحدة على الأقل';e.style.display='block';}return;}
+  DECK.opt=o;
+  DECK.slides=deckBuild(o);
+  closeDeckBuilder();
+  if(mode==='pptx'){deckPptx();return;}
+  DECK.i=0;
+  deckShow();
+  if(mode==='print')setTimeout(function(){deckPrint()},250);
+}
+
+/* ═══ 2) بناء الشرائح من البيانات الحيّة ═══ */
+function deckScope(o){
+  var all=visibleGovs();
+  var govs=(o.govIds&&o.govIds.length)?all.filter(function(g){return o.govIds.indexOf(g.id)>=0}):all;
+  return govs.length?govs:all;
+}
+function deckPhaseKeys(o){
+  if(o.phase==='1')return ['phase1'];
+  if(o.phase==='2')return ['phase2'];
+  return ['phase1','phase2'];
+}
+function deckPhaseLabel(o){
+  if(o.phase==='1')return 'المرحلة الأولى';
+  if(o.phase==='2')return 'المرحلة الثانية';
+  return 'المرحلتان الأولى والثانية';
+}
+function deckRows(o){
+  var keys=deckPhaseKeys(o);
+  return deckScope(o).map(function(g){
+    var s={id:g.id,name:g.name,region:g.region||'',canals:0,exec:0,dar:0,inv:0,del:0,dues:g.duesOutstanding||0};
+    keys.forEach(function(k){
+      var p=g[k];if(!p)return;
+      s.canals+=p.canals||0;s.exec+=p.executed||0;s.dar+=p.dar||0;s.inv+=p.invest||0;s.del+=p.delivered||0;
+    });
+    s.unc=Math.max(0,s.del-s.dar-s.inv);
+    s.recv=s.dar+s.inv+s.unc;
+    s.pctExec=s.canals?Math.round(s.exec/s.canals*100):0;
+    s.pctRecv=s.canals?Math.round(s.recv/s.canals*100):0;
+    s.rem=Math.max(0,s.canals-s.recv);
+    return s;
+  }).filter(function(r){return r.canals>0});
+}
+function deckTot(rows){
+  var t={canals:0,exec:0,dar:0,inv:0,unc:0,recv:0,rem:0,dues:0};
+  rows.forEach(function(r){t.canals+=r.canals;t.exec+=r.exec;t.dar+=r.dar;t.inv+=r.inv;t.unc+=r.unc;t.recv+=r.recv;t.rem+=r.rem;t.dues+=r.dues;});
+  t.pctExec=t.canals?Math.round(t.exec/t.canals*100):0;
+  t.pctRecv=t.canals?Math.round(t.recv/t.canals*100):0;
+  return t;
+}
+function deckChunk(arr,n){
+  var out=[],i=0;
+  for(i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));
+  return out.length?out:[[]];
+}
+function deckBuild(o){
+  var rows=deckRows(o), T=deckTot(rows), S=[], sel=o.slides;
+  var has=function(k){return sel.indexOf(k)>=0};
+  var scopeTxt=(o.govIds&&o.govIds.length&&o.govIds.length<visibleGovs().length)
+    ? ('نطاق العرض: '+rows.length+' إدارة مختارة') : ('نطاق العرض: كل الإدارات المركزية ('+rows.length+' إدارة)');
+  var perSlide=o.split?11:999;
+
+  if(has('cover'))S.push({t:'cover',title:o.title,sub:o.sub,by:o.by,role:o.role,org:o.org,date:o.date,
+    note:'شريحة الغلاف — ' + deckPhaseLabel(o)});
+  if(has('agenda')){
+    var ag=sel.filter(function(k){return k!=='cover'&&k!=='agenda'&&k!=='end'}).map(function(k){
+      var f=DECK_SLIDES.find(function(p){return p[0]===k});return f?f[1]:k;});
+    S.push({t:'bullets',title:'محتويات العرض',sub:scopeTxt,items:ag,numbered:true,note:'استعراض سريع لمحاور العرض'});
+  }
+  if(has('kpis'))S.push({t:'kpis',title:'المؤشّرات الرئيسية',sub:deckPhaseLabel(o)+' • '+scopeTxt,
+    cards:[{n:deckN(T.canals),l:'إجمالي الترع'},{n:deckN(T.exec),l:'منفّذة ومنتهية'},
+      {n:T.pctExec+'%',l:'نسبة التنفيذ'},{n:deckN(T.recv),l:'مُستلَمة'},
+      {n:T.pctRecv+'%',l:'نسبة الاستلام'},{n:T.dues.toFixed(1),l:'مستحقات معلّقة (م.ج)'}],
+    note:'الأرقام محسوبة لحظياً من كشوف الإدارات بعد التعديلات المعتمدة'});
+  if(has('gate'))S.push({t:'gate',title:'مسار بوابة الاستلام',sub:'من التنفيذ إلى القبول النهائي',
+    steps:[{n:deckN(T.canals),l:'إجمالي الترع'},{n:deckN(T.exec),l:'تم تنفيذها ونهوها'},
+      {n:deckN(T.dar),l:'استُلمت عبر دار الهندسة'},{n:deckN(T.inv),l:'استُلمت استثمارياً'},
+      {n:deckN(T.rem),l:'بانتظار الاستلام'}],
+    note:'المسار الإلزامي لكل ترعة: تنفيذ ← جاهزية ← معاينة ← تسليم لدار الهندسة ← قبول نهائي'});
+  if(has('phases')){
+    var lp=livePhases();
+    var pr=[];
+    if(o.phase!=='2')pr.push(['الأولى',lp.p1]);
+    if(o.phase!=='1')pr.push(['الثانية',lp.p2]);
+    S.push({t:'table',title:'موقف المرحلتين',sub:'الأرقام المعتمدة من كشوف الإدارات',
+      head:['المرحلة','إجمالي الترع','ما تم نهوه','نسبة النهو','المتبقي للتنفيذ','ما تم تسليمه','نسبة التسليم','المتبقي للتسليم'],
+      rows:pr.map(function(p){var x=p[1];return [p[0],deckN(x.total),deckN(x.done),x.donePct+'%',deckN(x.total-x.done),deckN(x.delivered),x.deliveredPct+'%',deckN(x.remainingDeliver)];}),
+      note:'المصدر الوحيد للأرقام: مجموع الكشوف التفصيلية للإدارات'});
+  }
+  if(has('receipts')){
+    var rr=rows.slice().sort(function(a,b){return (b.dar+b.inv)-(a.dar+a.inv)});
+    S.push({t:'split',title:'الاستلامات: دار الهندسة والمسار الاستثماري',sub:deckPhaseLabel(o),
+      cards:[{n:deckN(T.dar),l:'عبر دار الهندسة'},{n:deckN(T.inv),l:'بالمسار الاستثماري'},
+        {n:deckN(T.recv),l:'إجمالي المُستلَم'}],
+      bars:rr.slice(0,8).map(function(r){return {l:r.name,a:r.dar,b:r.inv,max:r.canals};}),
+      note:T.unc>0?('تنبيه: '+T.unc+' ترعة مُسلَّمة بالتقرير الرسمي دون تصنيف مسارها بعد'):'كل المُسلَّم مصنَّف على مساره'});
+  }
+  if(has('ranking')){
+    var rk=rows.slice().sort(function(a,b){return b.pctRecv-a.pctRecv});
+    S.push({t:'rank',title:'ترتيب الإدارات بنسبة الاستلام',sub:deckPhaseLabel(o),
+      top:rk.slice(0,5).map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
+      low:rk.slice(-5).reverse().map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
+      note:'النسبة = المُستلَم (دار الهندسة + استثماري) ÷ إجمالي ترع الإدارة'});
+  }
+  if(has('govtable')){
+    var gr=rows.slice().sort(function(a,b){return b.canals-a.canals});
+    deckChunk(gr,perSlide).forEach(function(ch,ix,arr){
+      S.push({t:'table',title:'جدول الإدارات التفصيلي'+(arr.length>1?(' ('+(ix+1)+'/'+arr.length+')'):''),
+        sub:deckPhaseLabel(o),
+        head:['الإدارة المركزية','الإجمالي','المنفّذ','دار الهندسة','استثماري','المُستلَم','% الاستلام','مستحقات (م.ج)'],
+        rows:ch.map(function(r){return [r.name,deckN(r.canals),deckN(r.exec),deckN(r.dar),deckN(r.inv),deckN(r.recv),r.pctRecv+'%',r.dues?r.dues.toFixed(1):'—'];}),
+        total:(ix===arr.length-1)?['الإجمالي',deckN(T.canals),deckN(T.exec),deckN(T.dar),deckN(T.inv),deckN(T.recv),T.pctRecv+'%',T.dues.toFixed(1)]:null,
+        note:'الأرقام تعكس آخر التعديلات المعتمدة بلوحة المتابعة'});
+    });
+  }
+  if(has('deferred')){
+    var D=(window.DEFERRED_CANALS||{byGov:[],total:0});
+    var ids=deckScope(o).map(function(g){return g.id});
+    var dl=(D.byGov||[]).filter(function(x){var gid=(typeof defGovId==='function')?defGovId(x.gov):null;return !gid||ids.indexOf(gid)>=0;});
+    var dTot=dl.reduce(function(a,x){return a+x.count},0);
+    var dBud=dl.reduce(function(a,x){return a+(x.remaining||0)},0);
+    var det=0;
+    dl.forEach(function(x){var gid=(typeof defGovId==='function')?defGovId(x.gov):null;if(gid&&typeof defRows==='function')det+=defRows(gid).length;});
+    deckChunk(dl,perSlide).forEach(function(ch,ix,arr){
+      S.push({t:'table',title:'الترع المؤجلة من المرحلة الأولى إلى الثانية'+(arr.length>1?(' ('+(ix+1)+'/'+arr.length+')'):''),
+        sub:'إجمالي '+dTot+' ترعة • المُدرج تفصيلياً بالأسماء '+det+' ترعة',
+        head:['الإدارة المركزية','عدد الترع المؤجلة','الميزانية المتبقية (م.ج)','المُدرج تفصيلياً'],
+        rows:ch.map(function(x){
+          var gid=(typeof defGovId==='function')?defGovId(x.gov):null;
+          var n=(gid&&typeof defRows==='function')?defRows(gid).length:0;
+          return [x.gov,deckN(x.count),x.remaining>0?x.remaining.toFixed(1):'—',deckN(n)];}),
+        total:(ix===arr.length-1)?['الإجمالي',deckN(dTot),dBud.toFixed(1),deckN(det)]:null,
+        note:'المُدرج تفصيلياً = الترع المعروفة بأسمائها داخل قاعدة اللوحة؛ الباقي قيد الاستكمال'});
+    });
+  }
+  if(has('dues')){
+    var dr=[];
+    deckScope(o).forEach(function(g){
+      (g.operations||[]).forEach(function(op){
+        if(Math.abs(op.outstanding||0)>0.0005)dr.push({gov:g.name,name:op.name,contractor:op.contractor||'—',out:op.outstanding});
+      });
+    });
+    dr.sort(function(a,b){return b.out-a.out});
+    var duesAll=dr.reduce(function(a,x){return a+x.out},0);
+    var top=dr.slice(0,perSlide===999?14:perSlide);
+    S.push({t:'table',title:'المستحقات المعلّقة لحين الاستلام',
+      sub:'إجمالي '+duesAll.toFixed(1)+' مليون جنيه على '+dr.length+' بند'+(top.length<dr.length?(' — أكبر '+top.length+' بند'):''),
+      head:['الإدارة','العملية','المقاول','المعلّق (م.ج)'],
+      rows:top.map(function(x){return [x.gov,x.name.length>62?(x.name.slice(0,60)+'…'):x.name,x.contractor,x.out.toFixed(2)];}),
+      total:['الإجمالي المعروض','','',top.reduce(function(a,x){return a+x.out},0).toFixed(2)],
+      note:'أغلب المعلّق: نسبة دار الهندسة المحجوزة والمستخلص الختامي وفروق الأسعار'});
+  }
+  if(has('reports')){
+    var reps=(typeof loadReports==='function')?loadReports():[];
+    if(SESSION&&SESSION.role==='gov')reps=reps.filter(function(r){return r.govId===SESSION.govId});
+    var ids2=deckScope(o).map(function(g){return g.id});
+    reps=reps.filter(function(r){return ids2.indexOf(r.govId)>=0});
+    var late=reps.filter(function(r){return (typeof reportTiming==='function')&&reportTiming(r).state==='overdue'});
+    var byOut={};
+    reps.forEach(function(r){var k=(r.outcome||'waiting');byOut[k]=(byOut[k]||0)+1;});
+    var outRows=Object.keys(byOut).map(function(k){
+      var lbl=(window.REPORT_OUTCOMES&&REPORT_OUTCOMES[k])?REPORT_OUTCOMES[k].label:k;
+      return [lbl,deckN(byOut[k])];});
+    S.push({t:'split',title:'بلاغات الاستلام ومواعيد المعاينة',sub:'متابعة الترع المُرسلة لمكتب دار الهندسة',
+      cards:[{n:deckN(reps.length),l:'إجمالي البلاغات'},{n:deckN(late.length),l:'متأخّرة عن الموعد'},
+        {n:deckN(reps.length-late.length),l:'داخل الموعد'}],
+      rowsHead:['موقف البلاغ','العدد'],rows2:outRows,
+      note:late.length?('يلزم التصعيد بشأن '+late.length+' بلاغ تجاوز موعد المعاينة المقرر'):'لا توجد بلاغات متأخرة عن موعدها'});
+  }
+  if(has('risks')){
+    var stop=deckScope(o).filter(function(g){var p=g.phase1||g.phase2;return darState(p)==='stop'}).length;
+    var bad=0,defr=0;
+    deckScope(o).forEach(function(g){(g.canals||[]).forEach(function(c){
+      if(['stopped','obstacles','cancelled'].indexOf(c.statusCode)>=0)bad++;
+      if(c.statusCode==='deferred')defr++;});});
+    var D2=(window.DEFERRED_CANALS||{total:0});
+    var items=[];
+    items.push('عدد '+deckN(T.rem)+' ترعة ما زالت بانتظار الاستلام من إجمالي '+deckN(T.canals)+' ترعة');
+    items.push('إدارات موقف الاستلام بها متوقف: '+deckN(stop)+' إدارة');
+    items.push('ترع متوقفة أو بها معوّقات تنفيذ بالكشوف التفصيلية: '+deckN(bad+defr)+' ترعة');
+    items.push('ترع مؤجلة من المرحلة الأولى إلى الثانية: '+deckN(D2.total||0)+' ترعة بميزانياتها المتبقية');
+    items.push('مستحقات معلّقة قدرها '+T.dues.toFixed(1)+' مليون جنيه محتجزة لحين إتمام الاستلام');
+    if(T.unc>0)items.push('عدد '+T.unc+' ترعة مُسلَّمة دون تصنيف مسارها (دار الهندسة أم استثماري)');
+    S.push({t:'bullets',title:'المعوقات والمخاطر',sub:deckPhaseLabel(o),items:items,tone:'warn',
+      note:'مستخلصة آلياً من بيانات اللوحة وقت إعداد العرض'});
+  }
+  if(has('recos')){
+    var rc=String(o.recos||'').split('\n').map(function(x){return x.trim()}).filter(Boolean);
+    if(rc.length)S.push({t:'bullets',title:'التوصيات والإجراءات المقترحة',sub:'للعرض على السادة القيادات',
+      items:rc,numbered:true,note:'بنود قابلة للتعديل من نموذج إعداد العرض'});
+  }
+  if(o.src)S.push({t:'bullets',title:'مصدر البيانات',sub:'شفافية المرجعية',
+    items:['لوحة استلامات دار الهندسة — مشروع تأهيل وتبطين الترع، مبادرة حياة كريمة',
+      'الكشوف التفصيلية للإدارات المركزية هي المرجع المعتمد لكل الأرقام',
+      'التعديلات المُدخلة من الإدارات لها الأولوية وتظهر فور اعتمادها',
+      'تاريخ إعداد العرض: '+(o.date||ARDATE())],
+    note:'يُذكر المصدر التزاماً بدقة العرض'});
+  if(has('end'))S.push({t:'end',title:'شكراً لحسن استماعكم',sub:o.org||'',by:o.by,role:o.role,
+    note:'نهاية العرض'});
+  S.forEach(function(s,i){s.i=i;s.n=S.length;if(o.notes&&i===0)s.note=o.notes;});
+  return S;
+}
+
+/* ═══ 3) عرض الشرائح داخل التطبيق ═══ */
+function deckTheme(){return DECK_THEMES[(DECK.opt&&DECK.opt.theme)||'official']||DECK_THEMES.official;}
+function deckSlideHtml(s){
+  var o=DECK.opt||{},T=deckTheme();
+  var foot=o.foot?('<div class="ds-foot"><span>'+deckEsc(o.org||'')+'</span><span>'+deckEsc(o.title||'')+'</span>'
+    +(o.num?('<span class="ds-num">'+(s.i+1)+' / '+s.n+'</span>'):'')+'</div>'):
+    (o.num?('<div class="ds-foot"><span></span><span></span><span class="ds-num">'+(s.i+1)+' / '+s.n+'</span></div>'):'');
+  var head=function(){return '<div class="ds-head"><div class="ds-t">'+deckEsc(s.title||'')+'</div>'
+    +(s.sub?('<div class="ds-s">'+deckEsc(s.sub)+'</div>'):'')+'</div>';};
+  var b='';
+  if(s.t==='cover'){
+    return '<section class="dslide ds-cover"><div class="dsc-in">'
+      +'<div class="dsc-badge">مبادرة حياة كريمة</div>'
+      +'<h1>'+deckEsc(s.title)+'</h1>'
+      +(s.sub?('<h2>'+deckEsc(s.sub)+'</h2>'):'')
+      +'<div class="dsc-rule"></div>'
+      +'<div class="dsc-meta"><div>'+deckEsc(s.org||'')+'</div>'
+      +(s.by?('<div class="dsc-by">'+deckEsc(s.role||'')+(s.role?' / ':'')+deckEsc(s.by)+'</div>'):'')
+      +'<div class="dsc-date">'+deckEsc(s.date||'')+'</div></div>'
+      +'</div></section>';
+  }
+  if(s.t==='end'){
+    return '<section class="dslide ds-cover ds-end"><div class="dsc-in">'
+      +'<h1>'+deckEsc(s.title)+'</h1>'
+      +(s.by?('<div class="dsc-by">'+deckEsc(s.role||'')+(s.role?' / ':'')+deckEsc(s.by)+'</div>'):'')
+      +'<div class="dsc-rule"></div><div class="dsc-meta"><div>'+deckEsc(s.sub||'')+'</div></div>'
+      +'</div></section>';
+  }
+  if(s.t==='kpis'){
+    b='<div class="ds-kpis">'+s.cards.map(function(c){
+      return '<div class="ds-kc"><div class="n">'+deckEsc(c.n)+'</div><div class="l">'+deckEsc(c.l)+'</div></div>';}).join('')+'</div>';
+  } else if(s.t==='gate'){
+    b='<div class="ds-gate">'+s.steps.map(function(c,i){
+      return (i?'<span class="ds-arrow">←</span>':'')+'<div class="ds-gs"><div class="n">'+deckEsc(c.n)+'</div><div class="l">'+deckEsc(c.l)+'</div></div>';}).join('')+'</div>';
+  } else if(s.t==='table'){
+    b='<table class="ds-tbl"><thead><tr>'+s.head.map(function(h){return '<th>'+deckEsc(h)+'</th>'}).join('')+'</tr></thead><tbody>'
+      +s.rows.map(function(r){return '<tr>'+r.map(function(c,i){return '<td'+(i===0?' class="nm"':'')+'>'+deckEsc(c)+'</td>'}).join('')+'</tr>'}).join('')
+      +(s.total?('<tr class="tot">'+s.total.map(function(c){return '<td>'+deckEsc(c)+'</td>'}).join('')+'</tr>'):'')
+      +'</tbody></table>';
+  } else if(s.t==='bullets'){
+    b='<ul class="ds-bul'+(s.tone==='warn'?' warn':'')+'">'+s.items.map(function(x,i){
+      return '<li>'+(s.numbered?('<b>'+(i+1)+'</b>'):'<b>•</b>')+'<span>'+deckEsc(x)+'</span></li>';}).join('')+'</ul>';
+  } else if(s.t==='rank'){
+    var col=function(title,arr,cls){
+      return '<div class="ds-rcol"><div class="ds-rh '+cls+'">'+title+'</div>'+arr.map(function(x){
+        return '<div class="ds-rr"><span class="l">'+deckEsc(x.l)+'</span>'
+          +'<span class="bar"><i style="width:'+Math.max(2,Math.min(100,x.v))+'%"></i></span>'
+          +'<span class="v">'+x.v+'%</span><span class="s">'+deckEsc(x.s)+'</span></div>';}).join('')+'</div>';};
+    b='<div class="ds-rank">'+col('الأعلى استلاماً',s.top,'up')+col('الأدنى استلاماً',s.low,'dn')+'</div>';
+  } else if(s.t==='split'){
+    b='<div class="ds-kpis three">'+s.cards.map(function(c){
+      return '<div class="ds-kc"><div class="n">'+deckEsc(c.n)+'</div><div class="l">'+deckEsc(c.l)+'</div></div>';}).join('')+'</div>';
+    if(s.bars&&s.bars.length){
+      b+='<div class="ds-bars"><div class="ds-lg"><span class="k1"></span> دار الهندسة <span class="k2"></span> استثماري</div>'
+        +s.bars.map(function(x){
+          var tot=Math.max(1,x.max||(x.a+x.b));
+          return '<div class="ds-br"><span class="l">'+deckEsc(x.l)+'</span><span class="t">'
+            +'<i class="s1" style="width:'+(x.a/tot*100)+'%"></i><i class="s2" style="width:'+(x.b/tot*100)+'%"></i></span>'
+            +'<span class="v">'+deckN(x.a)+' + '+deckN(x.b)+'</span></div>';}).join('')+'</div>';
+    }
+    if(s.rows2&&s.rows2.length){
+      b+='<table class="ds-tbl mini"><thead><tr>'+s.rowsHead.map(function(h){return '<th>'+deckEsc(h)+'</th>'}).join('')+'</tr></thead><tbody>'
+        +s.rows2.map(function(r){return '<tr>'+r.map(function(c,i){return '<td'+(i===0?' class="nm"':'')+'>'+deckEsc(c)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>';
+    }
+  }
+  return '<section class="dslide"><div class="ds-band"></div>'+head()+'<div class="ds-body">'+b+'</div>'+foot+'</section>';
+}
+function deckShow(){
+  var T=deckTheme(),o=DECK.opt||{};
+  var el=deckOverlayEl('deckOverlay','deck-overlay');
+  var ratio=(o.ratio==='43')?'4 / 3':'16 / 9';
+  el.setAttribute('style','--dk-bg:'+T.bg+';--dk-ink:'+T.ink+';--dk-head:'+T.head+';--dk-acc:'+T.accent
+    +';--dk-soft:'+T.soft+';--dk-line:'+T.line+';--dk-cvA:'+T.coverA+';--dk-cvB:'+T.coverB
+    +';--dk-cvInk:'+T.coverInk+';--dk-cvAcc:'+T.coverAcc+';--dk-ratio:'+ratio+';--dk-fs:'+(o.font||1));
+  el.innerHTML='<div class="deck-bar no-print">'
+    +'<button class="dkb" onclick="deckNav(-1)" title="السابق">‹</button>'
+    +'<span class="dk-count" id="deckCount"></span>'
+    +'<button class="dkb" onclick="deckNav(1)" title="التالي">›</button>'
+    +'<span class="dk-sp"></span>'
+    +'<button class="dkb wide" onclick="deckToggleNotes()">ملاحظات المتحدث</button>'
+    +'<button class="dkb wide" onclick="deckPptx()">⬇ PowerPoint</button>'
+    +'<button class="dkb wide" onclick="deckPrint()">🖨 طباعة</button>'
+    +'<button class="dkb wide" onclick="openDeckBuilder()">⚙ الخيارات</button>'
+    +'<button class="dkb wide" onclick="closeDeck()">إغلاق ✕</button></div>'
+    +'<div class="deck-stage" id="deckStage">'+DECK.slides.map(deckSlideHtml).join('')+'</div>'
+    +'<div class="deck-notes no-print" id="deckNotes"></div>';
+  el.classList.add('on');
+  DECK.i=Math.min(DECK.i,DECK.slides.length-1);
+  deckPaint();
+  deckFit();
+  if(!window._deckBound){
+    window._deckBound=true;
+    document.addEventListener('keydown',function(e){
+      var ov=document.getElementById('deckOverlay');
+      if(!ov||!ov.classList.contains('on'))return;
+      if(e.key==='ArrowLeft')deckNav(1);
+      else if(e.key==='ArrowRight')deckNav(-1);
+      else if(e.key==='Escape')closeDeck();
+      else if(e.key===' ')deckNav(1);
+    });
+    window.addEventListener('resize',function(){deckFit()});
+    var sx=0;
+    document.addEventListener('touchstart',function(e){sx=e.touches&&e.touches[0]?e.touches[0].clientX:0},{passive:true});
+    document.addEventListener('touchend',function(e){
+      var ov=document.getElementById('deckOverlay');
+      if(!ov||!ov.classList.contains('on'))return;
+      var ex=(e.changedTouches&&e.changedTouches[0])?e.changedTouches[0].clientX:0;
+      if(Math.abs(ex-sx)>60)deckNav(ex>sx?-1:1);
+    },{passive:true});
+  }
+}
+function deckPaint(){
+  var st=document.getElementById('deckStage');if(!st)return;
+  var sl=st.querySelectorAll('.dslide');
+  Array.prototype.forEach.call(sl,function(x,i){x.className=x.className.replace(/\s*on\b/,'')+(i===DECK.i?' on':'')});
+  var c=document.getElementById('deckCount');
+  if(c)c.textContent=(DECK.i+1)+' / '+DECK.slides.length;
+  var nt=document.getElementById('deckNotes');
+  if(nt){
+    var s=DECK.slides[DECK.i]||{};
+    nt.innerHTML='<b>ملاحظات المتحدث:</b> '+deckEsc(s.note||'—');
+    nt.style.display=DECK.notes?'block':'none';
+  }
+}
+function deckFit(){
+  var st=document.getElementById('deckStage');if(!st)return;
+  var sl=st.querySelector('.dslide');if(!sl)return;
+  var o=DECK.opt||{};
+  var rw=(o.ratio==='43')?4/3:16/9;
+  var pad=18;
+  var w=(+st.clientWidth||0)-pad*2, h=(+st.clientHeight||0)-pad*2;
+  if(!isFinite(w)||!isFinite(h)||w<=0||h<=0)return;   // مسرح غير مقيس بعد: لا تكتب مقاسات تالفة
+  var sw=Math.min(w,h*rw);
+  Array.prototype.forEach.call(st.querySelectorAll('.dslide'),function(x){
+    x.style.width=sw+'px';x.style.height=(sw/rw)+'px';
+    x.style.fontSize=(sw/58*(+o.font||1))+'px';
+  });
+}
+function deckNav(d){
+  if(!DECK.slides.length)return;
+  DECK.i=Math.max(0,Math.min(DECK.slides.length-1,DECK.i+d));
+  deckPaint();
+}
+function deckToggleNotes(){DECK.notes=!DECK.notes;deckPaint();}
+function closeDeck(){var e=document.getElementById('deckOverlay');if(e)e.classList.remove('on');}
+function deckPrint(){
+  var st=document.getElementById('deckStage');
+  if(st)Array.prototype.forEach.call(st.querySelectorAll('.dslide'),function(x){x.style.width='';x.style.height='';x.style.fontSize='';});
+  document.body.classList.add('deck-print');
+  window.print();
+  setTimeout(function(){document.body.classList.remove('deck-print');deckFit();},400);
+}
+
+/* ═══ 4) توليد ملف PowerPoint حقيقي (.pptx) بلا مكتبات ═══ */
+function pxHex(c){return String(c||'#000000').replace('#','').toUpperCase();}
+function pptPara(t,a){
+  a=a||{};
+  var run=t===''?'':('<a:r><a:rPr lang="ar-EG" sz="'+(a.sz||1800)+'"'+(a.b?' b="1"':'')+' dirty="0">'
+    +'<a:solidFill><a:srgbClr val="'+pxHex(a.color||'#111111')+'"/></a:solidFill>'
+    +'<a:latin typeface="Arial"/><a:cs typeface="Arial"/></a:rPr><a:t>'+xmlEsc(t)+'</a:t></a:r>');
+  return '<a:p><a:pPr algn="'+(a.align||'r')+'" rtl="1"'+(a.bullet?'':'')+'>'
+    +(a.bullet?'<a:buFont typeface="Arial"/><a:buChar char="•"/>':'<a:buNone/>')+'</a:pPr>'+run+'</a:p>';
+}
+function pptTextBox(id,x,y,w,h,paras,anchor){
+  return '<p:sp><p:nvSpPr><p:cNvPr id="'+id+'" name="tx'+id+'"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
+    +'<p:spPr><a:xfrm><a:off x="'+x+'" y="'+y+'"/><a:ext cx="'+w+'" cy="'+h+'"/></a:xfrm>'
+    +'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>'
+    +'<p:txBody><a:bodyPr wrap="square" rtlCol="1" anchor="'+(anchor||'t')+'"><a:normAutofit/></a:bodyPr><a:lstStyle/>'
+    +paras+'</p:txBody></p:sp>';
+}
+function pptRect(id,x,y,w,h,fill,line,round){
+  return '<p:sp><p:nvSpPr><p:cNvPr id="'+id+'" name="sh'+id+'"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+    +'<p:spPr><a:xfrm><a:off x="'+x+'" y="'+y+'"/><a:ext cx="'+w+'" cy="'+h+'"/></a:xfrm>'
+    +'<a:prstGeom prst="'+(round?'roundRect':'rect')+'"><a:avLst/></a:prstGeom>'
+    +(fill?('<a:solidFill><a:srgbClr val="'+pxHex(fill)+'"/></a:solidFill>'):'<a:noFill/>')
+    +(line?('<a:ln w="9525"><a:solidFill><a:srgbClr val="'+pxHex(line)+'"/></a:solidFill></a:ln>'):'<a:ln><a:noFill/></a:ln>')
+    +'</p:spPr><p:txBody><a:bodyPr rtlCol="1"/><a:lstStyle/><a:p><a:pPr rtl="1"/></a:p></p:txBody></p:sp>';
+}
+function pptCell(t,a){
+  a=a||{};
+  return '<a:tc><a:txBody><a:bodyPr rtlCol="1"/><a:lstStyle/>'
+    +pptPara(t,{sz:a.sz||1100,b:a.b,color:a.color||'#111111',align:a.align||'ctr'})
+    +'</a:txBody><a:tcPr marL="45720" marR="45720" marT="27432" marB="27432" anchor="ctr" rtl="1">'
+    +'<a:lnL w="6350"><a:solidFill><a:srgbClr val="BCD4C9"/></a:solidFill></a:lnL>'
+    +'<a:lnR w="6350"><a:solidFill><a:srgbClr val="BCD4C9"/></a:solidFill></a:lnR>'
+    +'<a:lnT w="6350"><a:solidFill><a:srgbClr val="BCD4C9"/></a:solidFill></a:lnT>'
+    +'<a:lnB w="6350"><a:solidFill><a:srgbClr val="BCD4C9"/></a:solidFill></a:lnB>'
+    +(a.fill?('<a:solidFill><a:srgbClr val="'+pxHex(a.fill)+'"/></a:solidFill>'):'')
+    +'</a:tcPr></a:tc>';
+}
+function pptTable(id,x,y,w,h,cols,rows,rowH){
+  var grid=cols.map(function(c){return '<a:gridCol w="'+c+'"/>'}).join('');
+  var body=rows.map(function(r){
+    return '<a:tr h="'+(rowH||270000)+'">'+r.cells.join('')+'</a:tr>';}).join('');
+  return '<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="'+id+'" name="tbl'+id+'"/>'
+    +'<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>'
+    +'<p:xfrm><a:off x="'+x+'" y="'+y+'"/><a:ext cx="'+w+'" cy="'+h+'"/></p:xfrm>'
+    +'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">'
+    +'<a:tbl><a:tblPr rtl="1" firstRow="1"/>'
+    +'<a:tblGrid>'+grid+'</a:tblGrid>'+body+'</a:tbl></a:graphicData></a:graphic></p:graphicFrame>';
+}
+function deckPptxSlide(s,W,H,T,o){
+  var sh='',id=10;
+  var M=Math.round(W*0.055);
+  var innerW=W-M*2;
+  if(s.t==='cover'||s.t==='end'){
+    sh+=pptRect(id++,0,0,W,H,T.coverB,null,false);
+    sh+=pptRect(id++,0,0,W,Math.round(H*0.16),T.coverA,null,false);
+    sh+=pptRect(id++,M,Math.round(H*0.44),Math.round(innerW*0.22),Math.round(H*0.012),T.coverAcc,null,false);
+    sh+=pptTextBox(id++,M,Math.round(H*0.20),innerW,Math.round(H*0.20),
+      pptPara(s.title||'',{sz:3600,b:1,color:T.coverAcc}),'b');
+    if(s.sub)sh+=pptTextBox(id++,M,Math.round(H*0.50),innerW,Math.round(H*0.12),
+      pptPara(s.sub,{sz:1800,color:T.coverInk}));
+    var meta='';
+    if(s.org)meta+=pptPara(s.org,{sz:1400,color:T.coverInk});
+    if(s.by)meta+=pptPara((s.role?(s.role+' / '):'')+s.by,{sz:1400,b:1,color:T.coverAcc});
+    if(s.date)meta+=pptPara(s.date,{sz:1200,color:T.coverInk});
+    if(meta)sh+=pptTextBox(id++,M,Math.round(H*0.66),innerW,Math.round(H*0.24),meta);
+    return sh;
+  }
+  sh+=pptRect(id++,0,0,W,Math.round(H*0.022),T.head,null,false);
+  sh+=pptTextBox(id++,M,Math.round(H*0.055),innerW,Math.round(H*0.10),
+    pptPara(s.title||'',{sz:2600,b:1,color:T.head}),'ctr');
+  if(s.sub)sh+=pptTextBox(id++,M,Math.round(H*0.155),innerW,Math.round(H*0.07),
+    pptPara(s.sub,{sz:1300,color:'#5A6F68'}),'ctr');
+  var bodyY=Math.round(H*0.245), bodyH=Math.round(H*0.63);
+  if(s.t==='kpis'||s.t==='split'){
+    var cards=s.cards||[],n=cards.length,perRow=(n>4?3:n),rows=Math.ceil(n/perRow);
+    var gap=Math.round(W*0.014);
+    var cw=Math.round((innerW-gap*(perRow-1))/perRow);
+    var chH=(s.t==='split')?Math.round(bodyH*0.34):Math.round((bodyH-gap*(rows-1))/rows);
+    cards.forEach(function(c,i){
+      var r=Math.floor(i/perRow), col=i%perRow;
+      var x=W-M-cw-(col*(cw+gap));
+      var y=bodyY+r*(chH+gap);
+      sh+=pptRect(id++,x,y,cw,chH,T.soft,T.line,true);
+      sh+=pptTextBox(id++,x,y+Math.round(chH*0.14),cw,Math.round(chH*0.46),
+        pptPara(String(c.n),{sz:3000,b:1,color:T.head,align:'ctr'}),'ctr');
+      sh+=pptTextBox(id++,x,y+Math.round(chH*0.60),cw,Math.round(chH*0.32),
+        pptPara(String(c.l),{sz:1200,color:'#5A6F68',align:'ctr'}),'ctr');
+    });
+    if(s.bars&&s.bars.length){
+      var by=bodyY+Math.round(bodyH*0.40), bh=Math.round(bodyH*0.58);
+      var rowH=Math.round(bh/Math.max(1,s.bars.length));
+      s.bars.forEach(function(x,i){
+        var y=by+i*rowH;
+        var lw=Math.round(innerW*0.22), tw=Math.round(innerW*0.52), vw=innerW-lw-tw;
+        sh+=pptTextBox(id++,W-M-lw,y,lw,rowH,pptPara(x.l,{sz:1000,color:T.ink}),'ctr');
+        var tot=Math.max(1,x.max||(x.a+x.b));
+        var trackX=W-M-lw-tw;
+        sh+=pptRect(id++,trackX,y+Math.round(rowH*0.28),tw,Math.round(rowH*0.42),T.soft,null,true);
+        var w1=Math.round(tw*(x.a/tot)), w2=Math.round(tw*(x.b/tot));
+        if(w1>0)sh+=pptRect(id++,trackX+tw-w1,y+Math.round(rowH*0.28),w1,Math.round(rowH*0.42),T.head,null,true);
+        if(w2>0)sh+=pptRect(id++,trackX+tw-w1-w2,y+Math.round(rowH*0.28),w2,Math.round(rowH*0.42),'#8A7AC4',null,true);
+        sh+=pptTextBox(id++,trackX-vw,y,vw,rowH,pptPara(deckN(x.a)+' + '+deckN(x.b),{sz:1000,b:1,color:T.head,align:'l'}),'ctr');
+      });
+    }
+    if(s.rows2&&s.rows2.length){
+      var tr=[{cells:s.rowsHead.map(function(h){return pptCell(h,{b:1,color:'#FFFFFF',fill:T.head,sz:1100})})}];
+      s.rows2.forEach(function(r){tr.push({cells:r.map(function(c,ci){return pptCell(String(c),{sz:1050,b:ci===0})})});});
+      var cw2=[Math.round(innerW*0.6),Math.round(innerW*0.4)];
+      sh+=pptTable(id++,M,bodyY+Math.round(bodyH*0.42),innerW,Math.round(bodyH*0.5),cw2,tr,260000);
+    }
+    return sh+deckPptxFoot(s,W,H,T,o,id);
+  }
+  if(s.t==='gate'){
+    var st=s.steps||[],gn=st.length,g2=Math.round(W*0.012);
+    var sw=Math.round((innerW-g2*(gn-1))/gn);
+    st.forEach(function(c,i){
+      var x=W-M-sw-(i*(sw+g2));
+      var y=bodyY+Math.round(bodyH*0.18), hh=Math.round(bodyH*0.5);
+      sh+=pptRect(id++,x,y,sw,hh,(i===2?T.head:T.soft),T.line,true);
+      sh+=pptTextBox(id++,x,y+Math.round(hh*0.16),sw,Math.round(hh*0.44),
+        pptPara(String(c.n),{sz:2400,b:1,color:(i===2?'#FFFFFF':T.head),align:'ctr'}),'ctr');
+      sh+=pptTextBox(id++,x,y+Math.round(hh*0.58),sw,Math.round(hh*0.34),
+        pptPara(String(c.l),{sz:1000,color:(i===2?'#E6CF8F':'#5A6F68'),align:'ctr'}),'ctr');
+    });
+    return sh+deckPptxFoot(s,W,H,T,o,id);
+  }
+  if(s.t==='table'){
+    var head=s.head||[],body=s.rows||[];
+    var trs=[{cells:head.map(function(h){return pptCell(h,{b:1,color:'#FFFFFF',fill:T.head,sz:1050})})}];
+    body.forEach(function(r,ri){
+      trs.push({cells:r.map(function(c,ci){
+        return pptCell(String(c),{sz:1000,b:ci===0,align:ci===0?'r':'ctr',fill:(ri%2?'#F4F9F6':null)});})});
+    });
+    if(s.total)trs.push({cells:s.total.map(function(c){return pptCell(String(c),{b:1,color:'#FFFFFF',fill:T.head,sz:1050})})});
+    var firstW=Math.round(innerW*(head.length>5?0.24:0.34));
+    var restW=Math.round((innerW-firstW)/Math.max(1,head.length-1));
+    var cw3=[firstW];
+    for(var q=1;q<head.length;q++)cw3.push(restW);
+    var rowH2=Math.max(180000,Math.min(300000,Math.round(bodyH/Math.max(1,trs.length))));
+    sh+=pptTable(id++,M,bodyY,innerW,rowH2*trs.length,cw3,trs,rowH2);
+    return sh+deckPptxFoot(s,W,H,T,o,id);
+  }
+  if(s.t==='bullets'){
+    var ps='';
+    (s.items||[]).forEach(function(x,i){
+      ps+=pptPara((s.numbered?((i+1)+'. '):'• ')+x,{sz:1600,color:T.ink});
+      ps+=pptPara('',{sz:600});
+    });
+    sh+=pptTextBox(id++,M,bodyY,innerW,bodyH,ps);
+    return sh+deckPptxFoot(s,W,H,T,o,id);
+  }
+  if(s.t==='rank'){
+    var half=Math.round((innerW-Math.round(W*0.02))/2);
+    var mk=function(title,arr,x0,accent){
+      var out=pptRect(id++,x0,bodyY,half,Math.round(bodyH*0.12),accent,null,true);
+      out+=pptTextBox(id++,x0,bodyY,half,Math.round(bodyH*0.12),pptPara(title,{sz:1300,b:1,color:'#FFFFFF',align:'ctr'}),'ctr');
+      (arr||[]).forEach(function(r,i){
+        var y=bodyY+Math.round(bodyH*0.16)+i*Math.round(bodyH*0.16);
+        out+=pptTextBox(id++,x0,y,half,Math.round(bodyH*0.14),
+          pptPara(r.l+' — '+r.v+'% ('+r.s+')',{sz:1200,color:T.ink}),'ctr');
+      });
+      return out;};
+    sh+=mk('الأعلى استلاماً',s.top,W-M-half,T.head);
+    sh+=mk('الأدنى استلاماً',s.low,M,'#A13B30');
+    return sh+deckPptxFoot(s,W,H,T,o,id);
+  }
+  return sh+deckPptxFoot(s,W,H,T,o,id);
+}
+function deckPptxFoot(s,W,H,T,o,id){
+  var out='';
+  var M=Math.round(W*0.055);
+  if(o.foot||o.num){
+    out+=pptRect(id+50,0,H-Math.round(H*0.012),W,Math.round(H*0.012),T.accent,null,false);
+    var left=(o.foot?(o.org||''):'');
+    var right=(o.num?((s.i+1)+' / '+s.n):'');
+    if(left)out+=pptTextBox(id+51,M,H-Math.round(H*0.075),Math.round(W*0.6),Math.round(H*0.055),
+      pptPara(left,{sz:900,color:'#7A8B85'}),'ctr');
+    if(right)out+=pptTextBox(id+52,M,H-Math.round(H*0.075),Math.round(W*0.2),Math.round(H*0.055),
+      pptPara(right,{sz:900,color:'#7A8B85',align:'l'}),'ctr');
+  }
+  return out;
+}
+function deckPptxFiles(){
+  var o=DECK.opt||{},T=deckTheme(),S=DECK.slides;
+  var W=(o.ratio==='43')?9144000:12192000, H=6858000;
+  var files=[];
+  var rels=[],ct=[],sldIds=[];
+  S.forEach(function(s,i){
+    var n=i+1;
+    var xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+      +'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+      +'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>'
+      +'<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+      +'<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>'
+      +'<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
+      +pptRect(5,0,0,W,H,T.bg,null,false)
+      +deckPptxSlide(s,W,H,T,o)
+      +'</p:spTree></p:cSld><p:clrMapOvr><a:overrideClrMapping bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" '
+      +'accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" '
+      +'accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:clrMapOvr></p:sld>';
+    files.push({name:'ppt/slides/slide'+n+'.xml',content:xml});
+    files.push({name:'ppt/slides/_rels/slide'+n+'.xml.rels',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+      +'</Relationships>'});
+    ct.push('<Override PartName="/ppt/slides/slide'+n+'.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>');
+    rels.push('<Relationship Id="rId'+(10+n)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide'+n+'.xml"/>');
+    sldIds.push('<p:sldId id="'+(255+n)+'" r:id="rId'+(10+n)+'"/>');
+  });
+  files.push({name:'[Content_Types].xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    +'<Default Extension="xml" ContentType="application/xml"/>'
+    +'<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+    +'<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>'
+    +'<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>'
+    +'<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>'
+    +ct.join('')
+    +'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+    +'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
+    +'</Types>'});
+  files.push({name:'_rels/.rels',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>'
+    +'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+    +'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
+    +'</Relationships>'});
+  files.push({name:'ppt/presentation.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+    +'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+    +'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" rtl="1" saveSubsetFonts="1">'
+    +'<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
+    +'<p:sldIdLst>'+sldIds.join('')+'</p:sldIdLst>'
+    +'<p:sldSz cx="'+W+'" cy="'+H+'"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>'});
+  files.push({name:'ppt/_rels/presentation.xml.rels',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>'
+    +rels.join('')
+    +'<Relationship Id="rId900" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>'
+    +'</Relationships>'});
+  var emptyTree='<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+    +'<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
+    +'</p:spTree></p:cSld>';
+  var clrMap='<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" '
+    +'accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>';
+  files.push({name:'ppt/slideMasters/slideMaster1.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+    +'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+    +'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+    +emptyTree+clrMap
+    +'<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>'
+    +'<p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>'});
+  files.push({name:'ppt/slideMasters/_rels/slideMaster1.xml.rels',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+    +'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>'
+    +'</Relationships>'});
+  files.push({name:'ppt/slideLayouts/slideLayout1.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+    +'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+    +'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">'
+    +emptyTree+'</p:sldLayout>'});
+  files.push({name:'ppt/slideLayouts/_rels/slideLayout1.xml.rels',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>'
+    +'</Relationships>'});
+  var dk1=pxHex(T.ink),lt1='FFFFFF',ac=pxHex(T.head),ac2=pxHex(T.accent);
+  files.push({name:'ppt/theme/theme1.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="HayatKarima">'
+    +'<a:themeElements><a:clrScheme name="HK">'
+    +'<a:dk1><a:srgbClr val="'+dk1+'"/></a:dk1><a:lt1><a:srgbClr val="'+lt1+'"/></a:lt1>'
+    +'<a:dk2><a:srgbClr val="'+ac+'"/></a:dk2><a:lt2><a:srgbClr val="EEF5F1"/></a:lt2>'
+    +'<a:accent1><a:srgbClr val="'+ac+'"/></a:accent1><a:accent2><a:srgbClr val="'+ac2+'"/></a:accent2>'
+    +'<a:accent3><a:srgbClr val="8A7AC4"/></a:accent3><a:accent4><a:srgbClr val="1F7A4D"/></a:accent4>'
+    +'<a:accent5><a:srgbClr val="A13B30"/></a:accent5><a:accent6><a:srgbClr val="5A6F68"/></a:accent6>'
+    +'<a:hlink><a:srgbClr val="1F5F8B"/></a:hlink><a:folHlink><a:srgbClr val="7A6428"/></a:folHlink></a:clrScheme>'
+    +'<a:fontScheme name="HK"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:majorFont>'
+    +'<a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:minorFont></a:fontScheme>'
+    +'<a:fmtScheme name="HK"><a:fillStyleLst>'
+    +'<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
+    +'<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
+    +'<a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>'
+    +'<a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>'
+    +'<a:ln w="15875"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>'
+    +'<a:ln w="25400"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>'
+    +'<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle>'
+    +'<a:effectStyle><a:effectLst/></a:effectStyle>'
+    +'<a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>'
+    +'<a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
+    +'<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
+    +'<a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst>'
+    +'</a:fmtScheme></a:themeElements></a:theme>'});
+  var now=new Date().toISOString().replace(/\.\d+Z$/,'Z');
+  files.push({name:'docProps/core.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+    +'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" '
+    +'xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+    +'<dc:title>'+xmlEsc(o.title||'عرض تقديمي')+'</dc:title>'
+    +'<dc:creator>'+xmlEsc(o.by||o.org||'لوحة استلامات دار الهندسة')+'</dc:creator>'
+    +'<cp:lastModifiedBy>'+xmlEsc(o.by||'')+'</cp:lastModifiedBy>'
+    +'<dcterms:created xsi:type="dcterms:W3CDTF">'+now+'</dcterms:created>'
+    +'<dcterms:modified xsi:type="dcterms:W3CDTF">'+now+'</dcterms:modified>'
+    +'</cp:coreProperties>'});
+  files.push({name:'docProps/app.xml',content:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
+    +'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+    +'<Company>'+xmlEsc(o.org||'')+'</Company><Slides>'+S.length+'</Slides>'
+    +'<Application>Hayat Karima Dashboard</Application></Properties>'});
+  return files;
+}
+function deckPptx(){
+  if(!DECK.slides.length){toast&&toast('لا توجد شرائح — افتح معد العرض أولاً',true);return;}
+  try{
+    var files=deckPptxFiles();
+    var bytes=zipStored(files);
+    var blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=((DECK.opt&&DECK.opt.title)||'عرض_تقديمي').replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.pptx';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+    toast&&toast('تم توليد ملف PowerPoint بعدد '+DECK.slides.length+' شريحة');
+  }catch(e){
+    toast&&toast('تعذّر توليد الملف: '+(e&&e.message?e.message:'خطأ غير معروف'),true);
+  }
+}
+
 function openDoc(id){document.getElementById('docPage').innerHTML=buildDoc(id);document.getElementById('docOverlay').classList.add('on');}
 function closeDoc(){document.getElementById('docOverlay').classList.remove('on');}
 function printDoc(){window.print();}
