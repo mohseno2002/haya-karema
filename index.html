@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- build 2026-07-28 · def-detail v1 · sw deh-v6 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -729,6 +730,23 @@ html[data-theme="dark"] .edit-phase{background:#0f3a45}
 html[data-theme="dark"] .rpt-card,html[data-theme="dark"] .rpt-sel,html[data-theme="dark"] .rpt-del{background:var(--card)}
 html[data-theme="dark"] .rpt-intro{background:#0f2f3d}
 
+/* ═══════════ كشف الترع المؤجلة التفصيلي ═══════════ */
+.def-clickable{cursor:pointer;transition:background .15s}
+.def-clickable:hover{background:var(--cyan-soft,#e6f4f1)}
+.def-clickable:active{background:#dceee8}
+.def-go{display:inline-block;font-size:10.5px;font-weight:800;color:var(--nile-700,#15463d);background:var(--cyan-soft,#e6f4f1);border:1px solid var(--line,#cdd9d4);border-radius:999px;padding:1px 9px;margin-inline-start:9px;white-space:nowrap;vertical-align:middle}
+.doc-actbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:#eef5f1;border:1.5px dashed #9cbfb2;border-radius:10px;padding:11px 13px;margin:16px 0}
+.doc-actbar .btn{font-size:12.5px;padding:8px 14px}
+.doc-actbar .ab-hint{font-size:11.5px;color:#2c5a4c;line-height:1.7;flex:1;min-width:180px}
+.doc-tbl td.def-basis{text-align:right;font-size:9px;color:#2c5a4c;padding-right:5px}
+.doc-tbl td.def-op{text-align:right;font-size:8.5px;color:#444;padding-right:5px}
+.doc-tbl tr.def-erow{cursor:pointer}
+.doc-tbl tr.def-erow:hover td{background:#eef7f2}
+.doc-tbl tr.def-edited td:first-child{box-shadow:inset 3px 0 0 #a8904f}
+.def-tagx{display:inline-block;font-size:8px;font-weight:800;color:#7a6428;background:#faf3df;border:1px solid #d9c58a;border-radius:5px;padding:0 4px;vertical-align:middle}
+.def-del{background:#fbe7e4;color:#a13b30;border-color:#e0b3ad}
+.def-del:hover{background:#f7d8d3}
+html[data-theme="dark"] .def-clickable:hover{background:#123c33}
 /* ═══════════ تقرير المفوّض النصف شهري ═══════════ */
 .cm-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
 .cm-tab{border:1.5px solid #15463d;background:#fff;color:#15463d;border-radius:10px;padding:7px 16px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s}
@@ -1351,7 +1369,7 @@ table.tbl td{background-clip:padding-box}
       <section class="view" id="v-deferred">
         <div class="kgrid" style="grid-template-columns:repeat(3,1fr)" id="defKpi"></div>
         <div class="wide-panel">
-          <div class="panel-h"><h3>الترع المؤجلة من المرحلة الأولى إلى الثانية</h3><span class="tag">115 ترعة</span></div>
+          <div class="panel-h"><h3>الترع المؤجلة من المرحلة الأولى إلى الثانية</h3><span class="tag" id="defTag">115 ترعة</span></div>
           <div style="overflow:auto"><table class="tbl" id="defTable"></table></div>
         </div>
         <div class="disclaimer" id="defNote"></div>
@@ -3439,15 +3457,338 @@ function renderDeferred(){
   const D={...D0,byGov,total:gname?byGov.reduce((s,x)=>s+x.count,0):D0.total};
   const budget=D.byGov.reduce((s,x)=>s+x.remaining,0);
   document.getElementById('defKpi').innerHTML=`
-    <div class="kpi edge"><div class="cap">إجمالي الترع المؤجلة</div><div class="val">${D.total}<small> ترعة</small></div><div class="foot"><span>من م1 إلى م2</span><span></span></div></div>
+    <div class="kpi edge"><div class="cap">إجمالي الترع المؤجلة</div><div class="val">${defTotalCount(D)}<small> ترعة</small></div><div class="foot"><span>من م1 إلى م2</span><span></span></div></div>
     <div class="kpi edge-wait"><div class="cap">إدارات متأثرة</div><div class="val">${D.byGov.length}</div><div class="foot"><span>إدارات مركزية</span><span></span></div></div>
     <div class="kpi edge-stop"><div class="cap">ميزانية متبقية مرصودة</div><div class="val">${budget.toFixed(0)}<small> م.ج</small></div><div class="foot"><span>تقديري</span><span>للمرحلة الثانية</span></div></div>`;
   document.getElementById('defTable').innerHTML=`
     <thead><tr><th>الإدارة المركزية</th><th style="text-align:end">عدد الترع المؤجلة</th><th style="text-align:end">الميزانية المتبقية (م.ج)</th></tr></thead>
-    <tbody>${D.byGov.map(x=>`<tr><td><b>${x.gov}</b></td><td class="num">${x.count}</td><td class="num">${x.remaining>0?x.remaining.toFixed(1):'—'}</td></tr>`).join('')}
-    <tr class="total-row"><td>الإجمالي</td><td class="num">${D.total}</td><td class="num">${budget.toFixed(1)}</td></tr></tbody>`;
-  document.getElementById('defNote').textContent=D.note+' القيم المتبقية تقديرية مجمّعة من ملف ميزانية الترع المؤجلة (115 ترعة).';
+    <tbody>${D.byGov.map(x=>`<tr class="${defRowCls(x.gov)}" onclick="${defRowClick(x.gov)}"><td><b>${x.gov}</b>${defRowChip(x.gov)}</td><td class="num">${defShownCount(x)}</td><td class="num">${x.remaining>0?x.remaining.toFixed(1):'—'}</td></tr>`).join('')}
+    <tr class="total-row"><td>الإجمالي</td><td class="num">${defTotalCount(D)}</td><td class="num">${budget.toFixed(1)}</td></tr></tbody>`;
+  document.getElementById('defNote').textContent=D.note+' القيم المتبقية تقديرية مجمّعة من ملف ميزانية الترع المؤجلة (115 ترعة). اضغطوا أي إدارة مركزية لفتح كشفها التفصيلي.';
+  try{var _dt=document.getElementById('defTag');if(_dt)_dt.textContent=defTotalCount(D)+' ترعة';}catch(_e){}
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   كشف الترع المؤجلة التفصيلي لكل إدارة مركزية
+   ───────────────────────────────────────────────────────────────────
+   المصدر: قاعدة ترع اللوحة نفسها — لا تُختلق أسماء ولا أرقام. تُدرَج
+   الترعة بأحد أربعة سندات صريحة (التكويد «مؤجلة/سحب» — نص موقف الشيت
+   بالتأجيل من المرحلة الأولى للثانية — سحب العمل وإعادة الطرح —
+   التكويد «متوقفة/بها معوّقات»)، ويُبيَّن سند إدراجها قرين كل ترعة.
+   الفارق بين المُدرَج والعدد الرسمي مُعلَن بصدر الكشف ويُستكمل يدوياً.
+   التخزين: ov[govId].deferred.rows — يُدفع مع أوفررايد الإدارة نفسه،
+   فلا يحتاج أي تعديل في كود Apps Script المنشور.
+   ═══════════════════════════════════════════════════════════════════ */
+function defNorm(v){return String(v==null?'':v).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();}
+function defEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function defGovId(name){var t=defNorm(name);var g=PROJECT.govs.find(function(x){return defNorm(x.name)===t});return g?g.id:null;}
+function defOfficial(name){
+  var t=defNorm(name);
+  var arr=((window.DEFERRED_CANALS||{}).byGov)||[];
+  var r=arr.find(function(x){return defNorm(x.gov)===t});
+  return r||{gov:name,count:0,remaining:0};
+}
+function defBasis(c){
+  if(!c)return '';
+  if(c.statusCode==='deferred')return 'مكوّدة «مؤجلة / سحب» بقاعدة اللوحة';
+  var n=String(c.note||'');
+  if(/تاجيل|تأجيل|ترحيل|رحلت|مؤجل/.test(n))return 'نص الشيت: مؤجلة من المرحلة الأولى إلى الثانية';
+  if(/سحب العمل|سحب عمل|اعادة الطرح|إعادة الطرح|اعاده الطرح|اعادة طرح|إعادة طرح/.test(n))return 'سحب العمل وإعادة طرح الأطوال المتبقية';
+  if(c.statusCode==='stopped')return 'متوقفة بقاعدة اللوحة';
+  if(c.statusCode==='obstacles')return 'بها معوّقات تنفيذ';
+  if(c.statusCode==='cancelled')return 'ملغاة — خارج مسار الاستلام';
+  return '';
+}
+function defStore(govId){var o=ov[govId];return (o&&o.deferred&&o.deferred.rows)?o.deferred.rows:{};}
+function defPick(a,b){return (a===undefined||a===null||a==='')?b:a;}
+function defMerge(c,o,custom){
+  o=o||{};
+  var real=Object.keys(o).filter(function(k){return k.charAt(0)!=='_'});
+  return {id:c.id,
+    name:defPick(o.name,c.name),
+    op:defPick(o.op,c.op),
+    contractor:defPick(o.contractor,c.contractor),
+    length:(o.length!=null?o.length:(c.length!=null?c.length:null)),
+    pct:(o.pct!=null?o.pct:(c.pct!=null?c.pct:null)),
+    remaining:(o.remaining!=null?o.remaining:null),
+    reason:defPick(o.reason,(custom?'مُضافة يدوياً بمعرفة الإدارة':defBasis(c))),
+    note:defPick(o.note,c.note),
+    phase:(o.phase!=null?o.phase:(c.phase!=null?c.phase:null)),
+    _custom:!!custom,
+    _edited:real.length>0};
+}
+function defRows(govId){
+  var g=PROJECT.govs.find(function(x){return x.id===govId});
+  var store=defStore(govId), out=[];
+  if(g&&g.canals&&g.canals.length){
+    g.canals.forEach(function(c){
+      if(!defBasis(c))return;
+      var o=store[c.id];
+      if(o&&o._removed)return;
+      out.push(defMerge(c,o,false));
+    });
+  }
+  Object.keys(store).forEach(function(k){
+    var o=store[k];
+    if(!o||o._removed||!o._custom)return;
+    out.push(defMerge({id:k,name:'',op:'',contractor:'',length:null,pct:null,phase:null,note:'',statusCode:'deferred'},o,true));
+  });
+  return out;
+}
+/* العدد المعروض: الرسمي هو الأصل، ولا يُخفَّض أبداً بنقص التفاصيل —
+   فإن زاد المُدرَج تفصيلياً عليه غلبت البيانات المُدخلة (عقيدة اللوحة). */
+function defShownCount(x){
+  var gid=defGovId(x.gov);
+  if(!gid)return x.count;
+  var n=defRows(gid).length;
+  return n>x.count?n:x.count;
+}
+function defTotalCount(D){
+  var t=0;
+  ((D&&D.byGov)||[]).forEach(function(x){t+=defShownCount(x)});
+  return t;
+}
+function defRowCls(name){return defGovId(name)?'def-clickable':'';}
+function defRowClick(name){
+  var gid=defGovId(name);
+  return gid?('openDeferredGov(\u0027'+gid+'\u0027)'):'';
+}
+function defRowChip(name){
+  var gid=defGovId(name);
+  if(!gid)return '';
+  var n=defRows(gid).length;
+  return '<span class="def-go">'+(n?('الكشف: '+n+' ترعة ←'):'فتح الكشف ←')+'</span>';
+}
+function defNum(v,d){
+  if(v===null||v===undefined||v==='')return '—';
+  var n=+v;
+  return isNaN(n)?String(v):n.toFixed(d==null?2:d);
+}
+
+/* ═══ بناء الكشف كمستند رسمي قابل للطباعة والتصدير ═══ */
+function buildDeferredDoc(govId){
+  var g=PROJECT.govs.find(function(x){return x.id===govId});
+  if(!g)return '<div class="doc-note-box">تعذّر تحديد الإدارة المركزية.</div>';
+  var off=defOfficial(g.name);
+  var rows=defRows(govId);
+  var editable=(typeof can==='function')&&can('edit',govId);
+  var anyBudget=rows.some(function(r){return r.remaining!=null});
+  var sumBudget=rows.reduce(function(s,r){return s+(r.remaining!=null?+r.remaining:0)},0);
+  var sumLen=rows.reduce(function(s,r){return s+(r.length!=null?+r.length:0)},0);
+  var cov=off.count?Math.round(rows.length/off.count*100):(rows.length?100:0);
+  var gap=off.count-rows.length;
+  var body='';
+  body+='<div class="doc-title-main">كشف الترع المؤجلة من المرحلة الأولى إلى المرحلة الثانية</div>';
+  body+='<div class="doc-subject">الإدارة المركزية للموارد المائية والري بـ'+defEsc(g.name)+(g.region?(' — '+defEsc(g.region)):'')+'</div>';
+  body+='<div class="doc-sub-main">مشروع تأهيل وتبطين الترع — المبادرة الرئاسية «حياة كريمة» • بتاريخ '+ARDATE()+'</div>';
+
+  body+='<table class="doc-tbl"><thead><tr>'
+      +'<th>العدد المؤجل (الكشف الرسمي)</th><th>المُدرج تفصيلياً</th><th>نسبة التغطية</th>'
+      +'<th>الميزانية المتبقية المرصودة (م.ج)</th><th>مجموع المُدخل تفصيلياً (م.ج)</th></tr></thead><tbody><tr>'
+      +'<td>'+off.count+'</td><td>'+rows.length+'</td><td>'+cov+'%</td>'
+      +'<td>'+(off.remaining>0?off.remaining.toFixed(1):'—')+'</td>'
+      +'<td>'+(anyBudget?sumBudget.toFixed(2):'—')+'</td></tr></tbody></table>';
+
+  var noteTxt='';
+  if(!rows.length)
+    noteTxt='لا توجد ترع مُدرجة بأسمائها لهذه الإدارة داخل قاعدة بيانات اللوحة حتى تاريخه، بينما يرصد الكشف الرسمي '+off.count+' ترعة مؤجلة بميزانية متبقية '+(off.remaining>0?(off.remaining.toFixed(1)+' مليون جنيه'):'غير مرصودة')+'. تُستكمل الأسماء من زر «إضافة ترعة للكشف» فتُحفظ وتُزامَن على كل الأجهزة.';
+  else if(gap>0)
+    noteTxt='يغطي هذا الكشف '+rows.length+' ترعة من إجمالي '+off.count+' ترعة مؤجلة بهذه الإدارة وفق ملف الميزانية المعتمد؛ والمتبقي '+gap+' ترعة غير مُدرج بأسمائه في قاعدة بيانات اللوحة حتى تاريخه — يُستكمل يدوياً دون المساس بالعدد الرسمي.';
+  else if(gap===0)
+    noteTxt='الكشف مطابق للعدد الرسمي: '+off.count+' ترعة مؤجلة، جميعها مُدرجة بأسمائها.';
+  else
+    noteTxt='المُدرج تفصيلياً ('+rows.length+' ترعة) يزيد على العدد الرسمي ('+off.count+' ترعة) بمقدار '+Math.abs(gap)+' ترعة — والأولوية للبيانات المُدخلة، فيظهر العدد التفصيلي بلوحة الترع المؤجلة.';
+  body+='<div class="doc-note-box">'+noteTxt+'</div>';
+
+  if(editable){
+    body+='<div class="doc-actbar no-print">'
+      +'<button class="btn btn-primary" onclick="openDefEditor(\u0027'+govId+'\u0027,null)">+ إضافة ترعة للكشف</button>'
+      +'<span class="ab-hint">اضغطوا أي صف بالجدول لتعديل بياناته أو حذفه من الكشف. كل تعديل يُحفظ ويُدفع للمزامنة فوراً، ويظهر لباقي الأجهزة بنفس الإدارة.</span>'
+      +'</div>';
+  }
+
+  if(rows.length){
+    var m=0;
+    var trs=rows.map(function(r){
+      m++;
+      var cl=[];
+      if(r._edited)cl.push('def-edited');
+      if(editable)cl.push('def-erow');
+      var attrs=(cl.length?(' class="'+cl.join(' ')+'"'):'')
+        +(editable?(' onclick="openDefEditor(\u0027'+govId+'\u0027,\u0027'+r.id+'\u0027)"'):'');
+      return '<tr'+attrs+'>'
+        +'<td>'+m+'</td>'
+        +'<td class="doc-td-name">'+defEsc(r.name||'—')+(r._custom?' <span class="def-tagx">مُضافة</span>':'')+'</td>'
+        +'<td class="def-op">'+defEsc(r.op||'—')+'</td>'
+        +'<td class="doc-td-contr">'+defEsc(r.contractor||'—')+'</td>'
+        +'<td>'+defNum(r.length,3)+'</td>'
+        +'<td>'+(r.pct==null?'—':(r.pct+'%'))+'</td>'
+        +'<td>'+(r.remaining==null?'—':(+r.remaining).toFixed(2))+'</td>'
+        +'<td class="def-basis">'+defEsc(r.reason||'—')+'</td>'
+        +'</tr>';
+    }).join('');
+    body+='<div class="doc-sec-h">البيان التفصيلي بالترع المؤجلة (عدد '+rows.length+' ترعة)</div>'
+      +'<table class="doc-tbl xs doc-canals"><thead><tr>'
+      +'<th style="width:26px">م</th><th>اسم الترعة</th><th style="width:150px">العملية</th><th style="width:110px">المقاول</th>'
+      +'<th style="width:48px">الطول (كم)</th><th style="width:44px">التنفيذ</th><th style="width:60px">المتبقي (م.ج)</th>'
+      +'<th style="width:140px">سند الإدراج / سبب التأجيل</th></tr></thead><tbody>'
+      +trs
+      +'<tr class="doc-total"><td colspan="4">الإجمالي</td><td>'+(sumLen?sumLen.toFixed(3):'—')+'</td><td>—</td><td>'+(anyBudget?sumBudget.toFixed(2):'—')+'</td><td>—</td></tr>'
+      +'</tbody></table>';
+  } else {
+    body+='<div class="doc-note-box">لم تُدرَج بعدُ أي ترعة بالاسم في هذا الكشف'+(editable?' — استخدموا زر «إضافة ترعة للكشف» أعلاه لبدء الإدخال.':'.')+'</div>';
+  }
+
+  body+='<div class="doc-note-box"><b>منهجية الإدراج:</b> أُدرجت كل ترعة استناداً إلى سند صريح بقاعدة بيانات اللوحة — التكويد «مؤجلة/سحب»، أو نص موقف الشيت بالتأجيل من المرحلة الأولى إلى الثانية، أو سحب العمل وإعادة طرح الأطوال المتبقية، أو التكويد «متوقفة / بها معوّقات تنفيذ» — وسند الإدراج مبيَّن قرين كل ترعة. الترع المُضافة يدوياً موسومة بعلامة «مُضافة»، وأي صف عُدِّل يدوياً يحمل شريطاً ذهبياً على يمينه. عمود الميزانية المتبقية يُملأ يدوياً من ملف الميزانية المعتمد، إذ يرصد الملف الأصلي إجمالاً على مستوى الإدارة لا على مستوى الترعة.</div>';
+
+  return letterhead('الإدارة المركزية للموارد المائية والري بـ'+g.name)
+    +'<div class="doc-body">'+body+'</div>'
+    +docFooter({l1:'الإدارة المركزية للموارد المائية والري بـ'+g.name,l2:'رئيس الإدارة المركزية',name:null});
+}
+function openDeferredGov(govId){
+  if(!govId)return;
+  if(typeof can==='function'&&!can('view')){authDeny();return;}
+  if(SESSION&&SESSION.role==='gov'&&govId!==SESSION.govId){authDeny();return;}
+  var page=document.getElementById('docPage');
+  var ovl=document.getElementById('docOverlay');
+  if(!page||!ovl)return;
+  window._defGov=govId;
+  page.innerHTML=buildDeferredDoc(govId);
+  ovl.classList.add('on');
+  try{var sc=ovl.querySelector('.doc-scroll');if(sc)sc.scrollTop=0;}catch(_e){}
+}
+
+/* ═══ محرر صف الكشف: إضافة / تعديل / حذف — يُخزَّن ويُزامَن فوراً ═══ */
+function defOverlayEl(){
+  var el=document.getElementById('defEditOverlay');
+  if(!el){el=document.createElement('div');el.id='defEditOverlay';el.className='lc-overlay';document.body.appendChild(el);}
+  return el;
+}
+function closeDefEditor(){var el=document.getElementById('defEditOverlay');if(el)el.classList.remove('on');}
+function openDefEditor(govId,rowId){
+  if(!can('edit',govId)){authDeny();return;}
+  var g=PROJECT.govs.find(function(x){return x.id===govId});
+  if(!g)return;
+  var r=rowId?defRows(govId).find(function(x){return x.id===rowId}):null;
+  var isNew=!r;
+  if(!r)r={id:(rowId||('DEF-'+Date.now().toString(36).toUpperCase())),name:'',op:'',contractor:'',length:null,pct:null,remaining:null,reason:'',note:'',_custom:true};
+  var v=function(x){return defEsc(x==null?'':x)};
+  var el=defOverlayEl();
+  el.innerHTML='<div class="lc-modal">'
+    +'<div class="lc-head"><div class="lc-title">'+(isNew?'إضافة ترعة للكشف':'تعديل بيانات ترعة مؤجلة')+'</div>'
+    +'<div class="lc-sub">'+defEsc(g.name)+' — كشف الترع المؤجلة من المرحلة الأولى إلى الثانية.'+(isNew?'':(' معرّف الترعة: '+defEsc(r.id)))+'</div></div>'
+    +'<div class="lc-body">'
+    +'<label class="lc-lbl">اسم الترعة <span class="lc-req">*</span></label>'
+    +'<input id="def-name" class="lc-inp" value="'+v(r.name)+'" placeholder="مثال: ترعة الشيخ مسعود">'
+    +'<label class="lc-lbl">العملية / التوصيف</label>'
+    +'<input id="def-op" class="lc-inp" value="'+v(r.op)+'" placeholder="مثال: تأهيل وتبطين ترعة …">'
+    +'<label class="lc-lbl">المقاول</label>'
+    +'<input id="def-contractor" class="lc-inp" value="'+v(r.contractor)+'" placeholder="اسم المقاول أو الجهة المنفّذة">'
+    +'<div class="lc-row"><div style="flex:1"><label class="lc-lbl">الطول (كم)</label>'
+    +'<input id="def-length" class="lc-inp" type="number" step="0.001" min="0" value="'+v(r.length)+'"></div>'
+    +'<div style="flex:1"><label class="lc-lbl">نسبة التنفيذ %</label>'
+    +'<input id="def-pct" class="lc-inp" type="number" min="0" max="100" value="'+v(r.pct)+'"></div></div>'
+    +'<label class="lc-lbl">الميزانية المتبقية (مليون جنيه)</label>'
+    +'<input id="def-remaining" class="lc-inp" type="number" step="0.001" min="0" value="'+v(r.remaining)+'" placeholder="اتركوه فارغاً إن لم يُرصد">'
+    +'<label class="lc-lbl">سند الإدراج / سبب التأجيل</label>'
+    +'<input id="def-reason" class="lc-inp" value="'+v(r.reason)+'" placeholder="مثال: سحب العمل وإعادة الطرح">'
+    +'<label class="lc-lbl">ملاحظات</label>'
+    +'<textarea id="def-note" class="lc-inp lc-area" rows="3" placeholder="أي بيان إضافي يُدرج بالكشف">'+v(r.note)+'</textarea>'
+    +'<div class="ng-err" id="def-err"></div>'
+    +'</div>'
+    +'<div class="lc-foot">'
+    +'<button class="btn btn-primary" onclick="saveDefRow(\u0027'+govId+'\u0027,\u0027'+r.id+'\u0027,'+(isNew?'true':'false')+')">حفظ</button>'
+    +'<button class="btn" onclick="closeDefEditor()">إلغاء</button>'
+    +(isNew?'':('<button class="btn def-del" onclick="delDefRow(\u0027'+govId+'\u0027,\u0027'+r.id+'\u0027)">حذف من الكشف</button>'))
+    +'</div></div>';
+  el.classList.add('on');
+}
+function defEnsureStore(govId){
+  ov[govId]=ov[govId]||{};
+  ov[govId].deferred=ov[govId].deferred||{};
+  ov[govId].deferred.rows=ov[govId].deferred.rows||{};
+  return ov[govId].deferred.rows;
+}
+/* تنظيف الصف الأجوف: مفاتيح المزامنة الوصفية ليست «تعديلاً» — نفس عقيدة resetOpsEdits */
+function defCommit(govId,govName){
+  var META=['lastUpdate','_ts','_dev','_sy','_audit'];
+  var o=ov[govId];
+  if(o&&o.deferred&&o.deferred.rows&&!Object.keys(o.deferred.rows).length)delete o.deferred;
+  o=ov[govId];
+  if(o){
+    var rest=Object.keys(o).filter(function(k){return META.indexOf(k)<0});
+    if(!rest.length){
+      delete ov[govId];saveOv(ov);
+      try{if(typeof pushOverrideDelete==='function')pushOverrideDelete(govId);}catch(e){}
+      return;
+    }
+  }
+  saveOv(ov);
+  try{if(typeof pushOverride==='function')pushOverride(govId,govName,ov[govId]);}catch(e){}
+}
+function saveDefRow(govId,rowId,isNew){
+  if(!can('edit',govId)){authDeny();return;}
+  var g=PROJECT.govs.find(function(x){return x.id===govId});
+  if(!g)return;
+  var gv=function(id){var e=document.getElementById(id);return e?String(e.value||'').replace(/[<>]/g,'').trim():''};
+  var err=document.getElementById('def-err');
+  var name=gv('def-name');
+  if(!name){if(err){err.innerHTML='• اسم الترعة مطلوب';err.style.display='block';}return;}
+  var numOf=function(t){if(t==='')return null;var n=+t;return isNaN(n)?null:n};
+  var base=null;
+  (g.canals||[]).forEach(function(c){if(c.id===rowId)base=c});
+  var rec={};
+  var put=function(k,val,baseVal){
+    if(val===null||val===undefined||val==='')return;
+    if(baseVal!=null&&baseVal!==''&&String(baseVal)===String(val))return;
+    rec[k]=val;
+  };
+  var pct=numOf(gv('def-pct'));
+  if(pct!=null)pct=Math.max(0,Math.min(100,pct));
+  put('name',name,base?base.name:null);
+  put('op',gv('def-op'),base?base.op:null);
+  put('contractor',gv('def-contractor'),base?base.contractor:null);
+  put('length',numOf(gv('def-length')),base?base.length:null);
+  put('pct',pct,base?base.pct:null);
+  put('remaining',numOf(gv('def-remaining')),null);
+  put('reason',gv('def-reason'),base?defBasis(base):null);
+  put('note',gv('def-note'),base?base.note:null);
+  if(!base)rec._custom=true;
+  var rows=defEnsureStore(govId);
+  var had=!!rows[rowId];
+  var real=Object.keys(rec).filter(function(k){return k.charAt(0)!=='_'});
+  if(!base&&!real.length){if(err){err.innerHTML='• أدخلوا بيانات الترعة قبل الحفظ';err.style.display='block';}return;}
+  if(base&&!real.length){if(had)delete rows[rowId];}   // عاد الصف لأصله: لا نُبقي أوفررايد أجوف
+  else rows[rowId]=rec;
+  delete ov[govId]._sy;
+  defCommit(govId,g.name);
+  try{logAudit({gov:g.name,phase:rowId+' — '+name,field:'كشف الترع المؤجلة',
+    before:(isNew===true||isNew==='true')?'—':'بيان سابق',after:(isNew===true||isNew==='true')?'إضافة ترعة للكشف':'تعديل بيانات'});}catch(e){}
+  closeDefEditor();
+  refreshAll();
+  openDeferredGov(govId);
+  toast&&toast((isNew===true||isNew==='true')?'أُضيفت الترعة للكشف وجارٍ مزامنتها':'حُفظ التعديل وجارٍ مزامنته');
+}
+function delDefRow(govId,rowId){
+  if(!can('edit',govId)){authDeny();return;}
+  var g=PROJECT.govs.find(function(x){return x.id===govId});
+  if(!g)return;
+  var r=defRows(govId).find(function(x){return x.id===rowId});
+  var nm=r?(r.name||rowId):rowId;
+  if(!confirm('حذف «'+nm+'» من كشف الترع المؤجلة لـ'+g.name+'؟'))return;
+  var rows=defEnsureStore(govId);
+  var isCustom=!!(rows[rowId]&&rows[rowId]._custom);
+  if(isCustom)delete rows[rowId];
+  else rows[rowId]={_removed:true};
+  delete ov[govId]._sy;
+  defCommit(govId,g.name);
+  try{logAudit({gov:g.name,phase:rowId+' — '+nm,field:'كشف الترع المؤجلة',before:'مُدرجة',after:'محذوفة من الكشف'});}catch(e){}
+  closeDefEditor();
+  refreshAll();
+  openDeferredGov(govId);
+  toast&&toast('حُذفت الترعة من الكشف');
+}
+
 
 // ═══ Dark Mode ═══
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('deh_theme',t)}
