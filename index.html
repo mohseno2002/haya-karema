@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-03e · full-integration-audit v1 (id-preview unified + tombstone-guard-by-real-id + negative-dues check) · sw deh-v12 -->
+<!-- build 2026-08-03f · notif-newest-first v1 + full-integration-audit v1 · sw deh-v13 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -3536,9 +3536,9 @@ function renderNotifBox(){
       <svg class="nb-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>`;
     return;
   }
-  // most recent 3 to preview
-  const rank={overdue:0,today:1,upcoming:2,nodue:3,postponed:4,noted:5,closed:6};
-  const preview=[...reps].sort((a,b)=>{const r=rank[a._t.state]-rank[b._t.state];return r||(b._t.days||0)-(a._t.days||0);}).slice(0,3);
+  // الأحدث أولاً: أحدث البلاغات إنشاءً تتصدّر المعاينة (بقرار رئيس الإدارة المركزية)،
+  // وعند تساوي وقت الإنشاء يُحافَظ على ترتيب التخزين (الأحدث في الصدارة أصلاً).
+  const preview=[...reps].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,3);
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'}):'—';
   box.innerHTML=`
     <div class="nb-head">
