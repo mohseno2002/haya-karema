@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-03b · def-detail v1 + receipts-split v1 + deck-builder v2 (per-phase slides + rank by receipt %) + nodue v1 · sw deh-v10 -->
+<!-- build 2026-08-03d · unified-receipt-doctrine v1 (recvOf/uncOf/remOf) + track-gap check + deck-builder v2 + nodue v1 · sw deh-v11 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -2146,10 +2146,20 @@ function exportCanalTable(){
   toast('تم تصدير جدول الترع بصيغة Excel');
 }
 
+/* ═══════════════ عقيدة الاستلام الموحّدة — التعريف الوحيد في التطبيق ═══════════════
+   المُستلَم = دار الهندسة + المسار الاستثماري (مقيَّداً بإجمالي ترع المرحلة).
+   أي ترعة وردت «مُسلَّمة» بالتقرير الرسمي دون تصنيف مسارها بالكشوف التفصيلية
+   تُعامَل «بانتظار الاستلام» لحين تصنيفها، وتُعرَض كتنبيه «غير مصنّف المسار»
+   ولا تُضاف إلى أي إجمالي — فى اللوحة والدرج والخطابات والعرض التقديمي معاً.
+   كل شاشة وكل تقرير يقرأ من هذه الدوال الثلاث فقط، فلا يتعدّد الرقم. */
+function recvOf(p){ if(!p)return 0; var c=p.canals||0, sum=(p.dar||0)+(p.invest||0); return c?Math.min(c,sum):sum; }
+function uncOf(p){ if(!p)return 0; return Math.max(0,(p.delivered||0)-(p.dar||0)-(p.invest||0)); }
+function remOf(p){ if(!p)return 0; return Math.max(0,(p.canals||0)-recvOf(p)); }
+function pctRecvOf(p){ if(!p||!p.canals)return 0; return Math.round(recvOf(p)/p.canals*100); }
 function darState(p){
   if(!p||!p.canals)return 'none';
   const dar=p.dar||0, r=dar/p.canals;
-  const rem=(p.remaining!=null)?p.remaining:(p.canals-(p.delivered||0));
+  const rem=remOf(p);
   if(rem===0 && r>=0.99)return 'done';
   if(r>=0.5)return 'part';
   return 'stop';
@@ -2431,14 +2441,15 @@ function renderGovs(){
   if(q)list=list.filter(g=>g.name.includes(q)||g.region.includes(q));
   document.getElementById('govGrid').innerHTML=list.map(g=>{
     const p=curPhase===1?g.phase1:g.phase2;
-    const canals=p.canals,exe=p.executed||0,dar=p.dar||0,inv=p.invest||0,del=p.delivered||0;
+    const canals=p.canals,exe=p.executed||0,dar=p.dar||0,inv=p.invest||0;
+    const recv=recvOf(p);                                    // المُستلَم بالعقيدة الموحّدة
+    const unc=uncOf(p);                                      // مُسلَّمة رسمياً دون تصنيف مسارها (تنبيه فقط)
+    const rem=remOf(p);
     const darW=canals?dar/canals*100:0, invW=canals?inv/canals*100:0;
-    const exeW=canals?Math.max(0,(exe-del))/canals*100:0, remW=Math.max(0,100-darW-invW-exeW);
-    const rem=canals-del;
-    const unc=Math.max(0,del-dar-inv);                       // مُسلَّمة رسمياً دون تصنيف مسارها
+    const exeW=canals?Math.max(0,(exe-recv))/canals*100:0, remW=Math.max(0,100-darW-invW-exeW);
     const _b1=g.phase1||{},_b2=g.phase2||{};
     const bothDar=(_b1.dar||0)+(_b2.dar||0), bothInv=(_b1.invest||0)+(_b2.invest||0);
-    const bothUnc=Math.max(0,((_b1.delivered||0)+(_b2.delivered||0))-bothDar-bothInv);
+    const bothRecv=recvOf(_b1)+recvOf(_b2), bothUnc=uncOf(_b1)+uncOf(_b2);
     const bothOn=!!(g.phase1&&g.phase2&&(_b1.canals||_b2.canals));
     return `<div class="gcard" onclick="openDrawer('${g.id}')">
       <div class="gcard-h"><div><div class="nm">${g.name}${g._edited?' <span style="font-size:11px;color:var(--nile-500)">✎</span>':''}${g._custom?' <span class="custom-tag">مُضافة</span>':''}</div><div class="rg">${g.region}</div></div>
@@ -2454,11 +2465,11 @@ function renderGovs(){
         <div class="gbar">
           ${dar>0?`<div class="seg s-dar" style="width:${darW}%" title="استُلم عبر دار الهندسة: ${dar}">${darW>9?dar:''}</div>`:''}
           ${inv>0?`<div class="seg s-inv" style="width:${invW}%" title="استثماري: ${inv}">${invW>9?inv:''}</div>`:''}
-          ${(exe-del)>0?`<div class="seg s-exe" style="width:${exeW}%" title="منفّذ بانتظار الاستلام: ${exe-del}">${exeW>9?(exe-del):''}</div>`:''}
+          ${(exe-recv)>0?`<div class="seg s-exe" style="width:${exeW}%" title="منفّذ بانتظار الاستلام: ${Math.max(0,exe-recv)}">${exeW>9?Math.max(0,exe-recv):''}</div>`:''}
           ${remW>0.5?`<div class="seg s-rem" style="width:${remW}%" title="جارٍ/لم يُنفّذ: ${canals-exe}">${remW>9?(canals-exe):''}</div>`:''}
         </div>
-        <div class="grcp">استلامات ${curPhase===1?'المرحلة الأولى':'المرحلة الثانية'}: <b>دار الهندسة ${dar}</b> + <b class="inv">استثماري ${inv}</b>${unc>0?' + غير مصنّف المسار '+unc:''} = <b>${dar+inv+unc}</b> ترعة</div>
-        ${bothOn?'<div class="grcp sum">المرحلتان معاً: <b>دار الهندسة '+bothDar+'</b> + <b class="inv">استثماري '+bothInv+'</b>'+(bothUnc>0?' + غير مصنّف '+bothUnc:'')+' = <b>'+(bothDar+bothInv+bothUnc)+'</b> ترعة</div>':''}
+        <div class="grcp">استلامات ${curPhase===1?'المرحلة الأولى':'المرحلة الثانية'}: <b>دار الهندسة ${dar}</b> + <b class="inv">استثماري ${inv}</b> = <b>${recv}</b> ترعة${unc>0?' • '+unc+' مُسلَّمة رسمياً دون تصنيف مسارها (بانتظار التصنيف)':''}</div>
+        ${bothOn?'<div class="grcp sum">المرحلتان معاً: <b>دار الهندسة '+bothDar+'</b> + <b class="inv">استثماري '+bothInv+'</b>'+' = <b>'+bothRecv+'</b> ترعة'+(bothUnc>0?' • '+bothUnc+' دون تصنيف مسارها':'')+'</div>':''}
       </div>
       <div class="gcard-f"><span>${(g.canals&&g.canals.length)?'📋 '+g.canals.length+' ترعة مفصّلة':'أرقام رسمية — لا بيان تفصيلي بعد'}</span>
         <span class="dues ${g.duesOutstanding>10?'hot':''}">${g.duesOutstanding>0?g.duesOutstanding.toFixed(1)+' م.ج':'—'}</span></div>
@@ -2468,14 +2479,14 @@ function renderGovs(){
   try{
     var _sb=document.getElementById('govSumBar');
     if(_sb){
-      var S={dar:0,inv:0,del:0,can:0};
+      var S={dar:0,inv:0,can:0,recv:0,unc:0};
       list.forEach(function(x){var p=curPhase===1?x.phase1:x.phase2;if(!p)return;
-        S.dar+=p.dar||0;S.inv+=p.invest||0;S.del+=p.delivered||0;S.can+=p.canals||0;});
-      var _unc=Math.max(0,S.del-S.dar-S.inv), _tot=S.dar+S.inv+_unc;
+        S.dar+=p.dar||0;S.inv+=p.invest||0;S.can+=p.canals||0;S.recv+=recvOf(p);S.unc+=uncOf(p);});
+      var _unc=S.unc, _tot=S.recv;
       _sb.innerHTML='<span class="gs-t">مجموع '+list.length+' إدارة معروضة — '+(curPhase===1?'المرحلة الأولى':'المرحلة الثانية')+'</span>'
         +'<span class="gs-c">دار الهندسة <b>'+S.dar+'</b></span>'
         +'<span class="gs-c inv">استثماري <b>'+S.inv+'</b></span>'
-        +(_unc>0?('<span class="gs-c">غير مصنّف المسار <b>'+_unc+'</b></span>'):'')
+        +(_unc>0?('<span class="gs-c">دون تصنيف المسار (بانتظار الاستلام) <b>'+_unc+'</b></span>'):'')
         +'<span class="gs-c tot">إجمالي المُستلَم <b>'+_tot+'</b> من '+S.can+' ترعة</span>';
     }
   }catch(_e){}
@@ -2507,32 +2518,33 @@ function openDrawer(id){
       <div class="c"><div class="n" style="color:var(--silt-deep)">${p1.executed}</div><div class="l">منفّذة</div></div>
       <div class="c"><div class="n" style="color:var(--nile-600)">${p1.dar}</div><div class="l">دار الهندسة</div></div>
       <div class="c"><div class="n" style="color:var(--invest)">${p1.invest}</div><div class="l">استثماري</div></div>
-      <div class="c"><div class="n" style="color:var(--stop)">${p1.remaining!=null?p1.remaining:((p1.canals||0)-(p1.delivered||0))}</div><div class="l">متبقّي</div></div>
+      <div class="c"><div class="n" style="color:var(--stop)">${remOf(p1)}</div><div class="l">متبقّي</div></div>
     </div>
-    <div class="dnote">المُسلّم كلياً <b>${p1.delivered}</b> ترعة (دار الهندسة ${p1.dar} + استثماري ${p1.invest}) • المتبقّي للتسليم <b>${p1.remaining}</b> • نسبة التسليم ${p1.delivPct!=null?p1.delivPct+'%':'—'}${p1.note?'<br>'+p1.note:''}</div></div>`;
+    <div class="dnote">المُستلَم <b>${recvOf(p1)}</b> ترعة (دار الهندسة ${p1.dar} + استثماري ${p1.invest}) • المتبقّي للاستلام <b>${remOf(p1)}</b> • نسبة الاستلام ${pctRecvOf(p1)}%${uncOf(p1)>0?' • '+uncOf(p1)+' مُسلَّمة رسمياً دون تصنيف مسارها':''}${p1.note?'<br>'+p1.note:''}</div></div>`;
   if(p2)html+=`<div class="sec"><div class="sec-t">المرحلة الثانية</div>
     <div class="dstat">
       <div class="c"><div class="n">${p2.canals}</div><div class="l">إجمالي الترع</div></div>
       <div class="c"><div class="n" style="color:var(--silt-deep)">${p2.executed}</div><div class="l">منفّذة</div></div>
       <div class="c"><div class="n" style="color:var(--nile-600)">${p2.dar}</div><div class="l">دار الهندسة</div></div>
       <div class="c"><div class="n" style="color:var(--invest)">${p2.invest||0}</div><div class="l">استثماري</div></div>
-      <div class="c"><div class="n" style="color:var(--stop)">${p2.canals-p2.delivered}</div><div class="l">بانتظار</div></div>
+      <div class="c"><div class="n" style="color:var(--stop)">${remOf(p2)}</div><div class="l">بانتظار</div></div>
     </div>
-    <div class="dnote">المُستلَم كلياً <b>${p2.delivered||0}</b> ترعة (دار الهندسة ${p2.dar||0} + استثماري ${p2.invest||0}) • جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${p2.delivPct!=null?p2.delivPct+'%':'—'}${p2.note?'<br>'+p2.note:''}</div></div>`;
+    <div class="dnote">المُستلَم <b>${recvOf(p2)}</b> ترعة (دار الهندسة ${p2.dar||0} + استثماري ${p2.invest||0}) • جاهزة للاستلام <b>${p2.ready||0}</b> • نسبة الاستلام ${pctRecvOf(p2)}%${uncOf(p2)>0?' • '+uncOf(p2)+' مُسلَّمة رسمياً دون تصنيف مسارها':''}${p2.note?'<br>'+p2.note:''}</div></div>`;
   // ═══ مجموع استلامات الإدارة بالمسارين (المرحلتان معاً) ═══
   var rcDar=((p1&&p1.dar)||0)+((p2&&p2.dar)||0);
   var rcInv=((p1&&p1.invest)||0)+((p2&&p2.invest)||0);
-  var rcDel=((p1&&p1.delivered)||0)+((p2&&p2.delivered)||0);
-  var rcUnc=Math.max(0,rcDel-rcDar-rcInv);
+  var rcTot=recvOf(p1)+recvOf(p2);
+  var rcUnc=uncOf(p1)+uncOf(p2);
   if(p1&&p2)html+='<div class="sec"><div class="sec-t">مجموع الاستلامات — المرحلتان معاً</div>'
     +'<div class="dstat" style="grid-template-columns:repeat(3,1fr)">'
     +'<div class="c"><div class="n" style="color:var(--nile-600)">'+rcDar+'</div><div class="l">دار الهندسة</div></div>'
     +'<div class="c"><div class="n" style="color:var(--invest)">'+rcInv+'</div><div class="l">استثماري</div></div>'
-    +'<div class="c"><div class="n">'+(rcDar+rcInv+rcUnc)+'</div><div class="l">إجمالي المُستلَم</div></div>'
+    +'<div class="c"><div class="n">'+rcTot+'</div><div class="l">إجمالي المُستلَم</div></div>'
     +'</div>'
     +'<div class="dnote">استُلم من هذه الإدارة <b>'+rcDar+'</b> ترعة عبر دار الهندسة و<b>'+rcInv+'</b> ترعة بالمسار الاستثماري'
-    +(rcUnc>0?(' و<b>'+rcUnc+'</b> ترعة مُسلَّمة بالتقرير الرسمي دون تصنيف مسارها بعد'):'')
-    +' — بإجمالي <b>'+(rcDar+rcInv+rcUnc)+'</b> ترعة من المرحلتين.</div></div>';
+    +' — بإجمالي <b>'+rcTot+'</b> ترعة من المرحلتين'
+    +(rcUnc>0?(' • وعدد <b>'+rcUnc+'</b> ترعة وردت «مُسلَّمة» بالتقرير الرسمي دون تصنيف مسارها فتُعامَل بانتظار الاستلام لحين تصنيفها'):'')
+    +'.</div></div>';
   html+=`<div class="sec"><div class="sec-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>العمليات وبنود المستحقات (${ops.length})${g._opsEdited?' <span class="tag" style="font-size:10.5px">مُعدَّلة</span>':''}</span>${can('edit',g.id)?`<span style="display:flex;gap:12px;font-size:12px;font-weight:700"><a href="#" onclick="openOpEditor('${g.id}',null);return false" style="color:var(--nile-600,#15463d);text-decoration:none">+ إضافة بند</a>${g._opsEdited?`<a href="#" onclick="resetOpsEdits('${g.id}');return false" style="color:#b23b2e;text-decoration:none">استرجاع الرسمي</a>`:''}</span>`:''}</div>${ops.length?ops.map((o,i)=>opCard(o,g.id,i)).join(''):'<div style="color:#777;font-size:12.5px;padding:6px 2px">لا بنود مسجّلة بعد لهذه الإدارة — استخدم «+ إضافة بند».</div>'}</div>`;
   const canals=g.canals||[];
   window._curCanals=canals;window._curGov=id;
@@ -4656,7 +4668,7 @@ function buildMultiReport(ids){
   const sumRows=gs.map((g,i)=>{
     const p1=g.phase1,p2=g.phase2;
     return `<tr><td>${i+1}</td><td style="text-align:right;font-weight:700">${g.name}</td>
-      <td>${p1?p1.canals:'—'}</td><td>${p1?p1.executed:'—'}</td><td>${p1?p1.dar:'—'}</td><td>${p1?Math.max(0,(p1.canals||0)-(p1.delivered||0)):'—'}</td>
+      <td>${p1?p1.canals:'—'}</td><td>${p1?p1.executed:'—'}</td><td>${p1?p1.dar:'—'}</td><td>${p1?remOf(p1):'—'}</td>
       <td>${p2?p2.canals:'—'}</td><td>${p2?p2.executed:'—'}</td><td>${p2?p2.dar:'—'}</td>
       <td>${(g.duesOutstanding||0)?(+g.duesOutstanding).toFixed(2):'—'}</td></tr>`;
   }).join('');
@@ -4720,7 +4732,7 @@ function commishRows(ph){
   allGovs().forEach(function(g){
     const p=g[pk];if(!p)return;
     const canals=p.canals||0, fin=p.executed||0, dar=p.dar||0, inv=p.invest||0;
-    const del=(p.delivered!=null?+p.delivered:dar+inv);
+    const del=(canals?Math.min(canals,dar+inv):(dar+inv));   // العقيدة الموحّدة: المُستلَم = دار الهندسة + استثماري
     if(!canals&&!fin&&!del)return;
     const manual=cleanNote(p.note);
     const auto=(canals>0&&fin>=canals&&del>=canals)?('تم نهو وتسليم المرحلة '+phName+' كاملة'):'';
@@ -5015,8 +5027,8 @@ function deckRows(o){
       var p=g[k];if(!p)return;
       s.canals+=p.canals||0;s.exec+=p.executed||0;s.dar+=p.dar||0;s.inv+=p.invest||0;s.del+=p.delivered||0;
     });
-    s.unc=Math.max(0,s.del-s.dar-s.inv);
-    s.recv=s.dar+s.inv+s.unc;
+    s.unc=Math.max(0,s.del-s.dar-s.inv);           // تنبيه فقط — لا يدخل أي إجمالي
+    s.recv=s.canals?Math.min(s.canals,s.dar+s.inv):(s.dar+s.inv);
     s.pctExec=s.canals?Math.round(s.exec/s.canals*100):0;
     s.pctRecv=s.canals?Math.round(s.recv/s.canals*100):0;
     s.rem=Math.max(0,s.canals-s.recv);
@@ -5721,7 +5733,7 @@ function buildGovDoc(govId){
   const len=v=>(v===null||v===undefined||v==='')?'—':(typeof v==='number'?v.toFixed(2):v);
   const pctT=v=>(v===null||v===undefined||v==='')?'—':v+'%';
   const phaseTbl=(ph,label)=>ph?`
-    <tr><td>${label}</td><td>${ph.canals||0}</td><td>${ph.executed||0}</td><td>${ph.dar||0}</td><td>${ph.invest||0}</td><td>${ph.delivered||0}</td><td>${(ph.canals||0)-(ph.delivered||0)}</td></tr>`:'';
+    <tr><td>${label}</td><td>${ph.canals||0}</td><td>${ph.executed||0}</td><td>${ph.dar||0}</td><td>${ph.invest||0}</td><td>${recvOf(ph)}</td><td>${remOf(ph)}</td></tr>`:'';
   let body=`
     <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
     <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
@@ -6837,8 +6849,15 @@ function asstDataChecks(){
         issues.push({sev:'contradiction',ref:g.id+'-'+lb,gov:g.name,msg:`${lb}: المُسلَّم (${p.delivered}) أكبر من المنفَّذ (${p.executed}) — يلزم مراجعة بيان المصدر`});
       if(p.delivered!=null&&p.canals!=null&&p.delivered>p.canals)
         issues.push({sev:'contradiction',ref:g.id+'-'+lb,gov:g.name,msg:`${lb}: المُسلَّم (${p.delivered}) أكبر من إجمالي الترع (${p.canals})`});
-      if(p.dar!=null&&p.invest!=null&&p.delivered!=null&&(p.dar+p.invest)!==p.delivered)
-        issues.push({sev:'review',ref:g.id+'-'+lb,gov:g.name,msg:`${lb}: دار الهندسة (${p.dar}) + استثماري (${p.invest}) = ${p.dar+p.invest} ≠ المُسلَّم (${p.delivered})`});
+      // فارق التصنيف: يُحسَب بمعاملة الحقول الغائبة كصفر، وإلا سقط الفحص صامتاً
+      // عن الإدارات التي لا يحمل بيانُها حقل «استثماري» أصلاً (وهي الحالة الأشيع).
+      if(p.delivered!=null&&((p.dar||0)+(p.invest||0))!==p.delivered){
+        const _cls=(p.dar||0)+(p.invest||0), _gap=p.delivered-_cls;
+        issues.push({sev:'review',ref:g.id+'-'+lb,gov:g.name,
+          msg:`${lb}: دار الهندسة (${p.dar||0}) + استثماري (${p.invest||0}) = ${_cls} ≠ المُسلَّم بالتقرير الرسمي (${p.delivered})`
+            +(_gap>0?(' — عدد '+_gap+' ترعة دون تصنيف مسارها فتُعامَل بانتظار الاستلام لحين تصنيفها')
+                    :(' — المصنَّف يزيد '+(-_gap)+' عن المُسلَّم بالتقرير'))});
+      }
     });
   });
   return issues;
