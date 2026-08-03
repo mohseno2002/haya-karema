@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-07-28 · def-detail v1 + receipts-split v1 + deck-builder v1 · sw deh-v8 -->
+<!-- build 2026-08-03 · def-detail v1 + receipts-split v1 + deck-builder v1 + nodue v1 · sw deh-v9 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -232,6 +232,8 @@ html[data-theme="dark"] .tbl tbody tr:hover{background:rgba(57,197,224,.10)}
 .nb-flag.done{background:#e6f6ee;color:var(--done-soft)}
 .nb-flag.post{background:#efeaf9;color:#4b3d86}
 .nb-flag.noted{background:#fdeede;color:#9a4a12}
+.nb-flag.nodue{background:#eceff1;color:#4a5a63}
+.nb-dot.nodue{background:#8fa3ad}
 .nb-dot.noted{background:#d98324}
 .nb-more{font-size:12px;color:var(--nile-600);font-weight:700;text-align:center;padding-top:4px}
 .nb-empty{display:flex;align-items:center;gap:14px}
@@ -547,6 +549,13 @@ table.tbl .num{font-family:'IBM Plex Mono';direction:ltr;text-align:end}
 .rpt-flag.post{background:#efeaf9;color:#4b3d86}
 .rpt-flag.done{background:#e6f6ee;color:var(--done-soft)}
 .rpt-flag.noted{background:#fdeede;color:#9a4a12}
+.rpt-flag.nodue{background:#eceff1;color:#4a5a63}
+.rpt-setdue{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;padding:9px 11px;border:1px dashed #c3d0d6;border-radius:10px;background:#f7fafb}
+.rpt-setdue span{font-size:11.5px;font-weight:700;color:#4a5a63}
+.rpt-setdue input{padding:5px 8px;border:1px solid #cfdae0;border-radius:8px;font-family:inherit;font-size:12px;background:#fff}
+.rp-nodue{display:flex!important;align-items:center;gap:7px;margin-top:8px;font-size:12px;font-weight:600;color:#4a5a63;cursor:pointer}
+.rp-nodue input{width:16px;height:16px;accent-color:var(--nile-700);cursor:pointer}
+#rp-due.is-off{opacity:.45;background:#eef1f2}
 .rpt-dates{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:10px}
 .rpt-dates b{color:var(--ink);font-weight:700}
 .rpt-outcome{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -1511,6 +1520,7 @@ table.tbl td{background-clip:padding-box}
             <option value="overdue">المتأخّرة فقط</option>
             <option value="today">موعدها اليوم</option>
             <option value="upcoming">قادمة</option>
+            <option value="nodue">بلا موعد محدَّد</option>
             <option value="open">مفتوحة (غير مُغلقة)</option>
             <option value="closed">مُغلقة</option>
           </select>
@@ -2570,7 +2580,8 @@ function openDrawer(id){
       <div class="field"><label>تاريخ إرسال البيانات لدار الهندسة</label>
         <input id="rp-sent" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
       <div class="field"><label>تاريخ الاستلام المقرر</label>
-        <input id="rp-due" type="date"></div>
+        <input id="rp-due" type="date">
+        <label class="rp-nodue"><input type="checkbox" id="rp-nodue" onchange="toggleNoDue(this)"> لم يتم تحديد موعد بعد (لم تحدّده دار الهندسة)</label></div>
       <div class="field"><label>ملاحظات (اختياري)</label>
         <input id="rp-note" placeholder="أي ملاحظات"></div>
       <div class="save-row">
@@ -3374,6 +3385,25 @@ function deleteCustomCanal(govId,cid){
 }
 
 // ═══ منطق بلاغات الاستلام في الدرج ═══
+// تعطيل حقل التاريخ عند اختيار «لم يتم تحديد موعد»
+function toggleNoDue(cb){
+  var d=document.getElementById('rp-due');if(!d)return;
+  if(cb&&cb.checked){d.value='';d.disabled=true;d.classList.add('is-off');}
+  else{d.disabled=false;d.classList.remove('is-off');}
+}
+// تسجيل موعد الاستلام لاحقاً — فور تحديده من دار الهندسة
+function setReportDue(id,val,govId){
+  var a=loadReports();var r=a.find(function(x){return x.id===id});if(!r)return;
+  if(!can('edit',r.govId)){authDeny();return;}
+  if(!val){toast('اختر تاريخاً صحيحاً',true);return;}
+  var prev=r.dueDate||'لم يُحدَّد';
+  r.dueDate=val;saveReports(a);
+  logAudit({gov:r.govName,phase:'—',field:'موعد الاستلام ('+r.canalName+')',before:prev,after:val});
+  try{pushReport(r);}catch(e){}
+  if(govId&&govId!=='null')openDrawer(govId);
+  else if(typeof renderReports==='function')renderReports();
+  refreshAll();toast('تم تسجيل موعد الاستلام');
+}
 function fillCanalMeta(govId){
   const sel=document.getElementById('rp-canal');const meta=document.getElementById('rp-meta');
   if(!sel||!meta)return;
@@ -3383,8 +3413,10 @@ function fillCanalMeta(govId){
 function submitReport(govId){
   if(!can('report',govId)){authDeny();return;}
   const g=gov(govId);
-  const due=document.getElementById('rp-due').value;
-  if(!due){toast('حدّد تاريخ الاستلام المقرر',true);return;}
+  const _nd=document.getElementById('rp-nodue');
+  const noDue=!!(_nd&&_nd.checked);
+  const due=noDue?'':(document.getElementById('rp-due').value);
+  if(!noDue&&!due){toast('حدّد تاريخ الاستلام المقرر أو اختر «لم يتم تحديد موعد»',true);return;}
   let canalId='',canalName='';
   const sel=document.getElementById('rp-canal');
   if(sel){canalId=sel.value;const c=(g.canals||[]).find(x=>x.id===canalId);canalName=c?c.name:sel.value;}
@@ -3407,7 +3439,15 @@ function reportCard(r,inDrawer){
   else if(t.state==='postponed')timing=`<span class="rpt-flag post">مؤجّل</span>`;
   else if(t.state==='closed')timing=`<span class="rpt-flag done">مُغلق</span>`;
   else if(t.state==='noted')timing=`<span class="rpt-flag noted">بها ملاحظات — للمتابعة</span>`;
+  else if(t.state==='nodue')timing='<span class="rpt-flag nodue">لم يُحدَّد موعد بعد</span>';
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  // فور تحديد دار الهندسة للموعد يُسجَّل من هنا مباشرةً
+  let setDue='';
+  if(!r.dueDate&&canEdit&&r.outcome!=='accepted'){
+    setDue='<div class="rpt-setdue"><span>سجّل الموعد فور تحديده من دار الهندسة:</span>'
+      +'<input type="date" onchange="setReportDue(\u0027'+r.id+'\u0027,this.value,'
+      +(inDrawer?('\u0027'+r.govId+'\u0027'):'null')+')"></div>';
+  }
   return `<div class="rpt-card tone-${oc.tone}">
     <div class="rpt-head">
       <div><div class="rpt-name">${r.canalName}${!inDrawer?` <span class="rpt-gov">${r.govName}</span>`:''}</div>
@@ -3416,8 +3456,9 @@ function reportCard(r,inDrawer){
     </div>
     <div class="rpt-dates">
       <span>أُرسل لدار الهندسة: <b>${fmt(r.sentDate)}</b></span>
-      <span>الاستلام المقرر: <b>${fmt(r.dueDate)}</b></span>
+      <span>الاستلام المقرر: <b>${r.dueDate?fmt(r.dueDate):'لم يُحدَّد بعد'}</b></span>
     </div>
+    ${setDue}
     <div class="rpt-outcome">
       <span class="rpt-oc oc-${oc.tone}">${oc.label}</span>
       ${r.outcomeNote?`<span class="rpt-ocnote">${r.outcomeNote}</span>`:''}
@@ -3484,7 +3525,7 @@ function renderNotifBox(){
     return;
   }
   // most recent 3 to preview
-  const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
+  const rank={overdue:0,today:1,upcoming:2,nodue:3,postponed:4,noted:5,closed:6};
   const preview=[...reps].sort((a,b)=>{const r=rank[a._t.state]-rank[b._t.state];return r||(b._t.days||0)-(a._t.days||0);}).slice(0,3);
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'}):'—';
   box.innerHTML=`
@@ -3512,12 +3553,13 @@ function renderNotifBox(){
           :st==='upcoming'?`<span class="nb-flag up">بعد ${r._t.days} يوم</span>`
           :st==='closed'?`<span class="nb-flag done">مُغلق</span>`
           :st==='noted'?`<span class="nb-flag noted">بها ملاحظات</span>`
+          :st==='nodue'?'<span class="nb-flag nodue">بلا موعد</span>'
           :`<span class="nb-flag post">مؤجّل</span>`;
         return `<div class="nb-item">
           <span class="nb-dot ${st}"></span>
           <span class="nb-canal">${r.canalName}</span>
           <span class="nb-gov">${r.govName}</span>
-          <span class="nb-due">موعد ${fmt(r.dueDate)}</span>
+          <span class="nb-due">${r.dueDate?('موعد '+fmt(r.dueDate)):'بانتظار الموعد'}</span>
           ${flag}</div>`;
       }).join('')}
       ${total>3?`<div class="nb-more">و${total-3} بلاغ آخر — اضغط لعرض الكل</div>`:''}
@@ -4213,7 +4255,7 @@ const REPORT_OUTCOMES={
   postponed:{label:'أُجّل الموعد',tone:'inv'}
 };
 function addReport(rep){const a=loadReports();rep.id='RPT-'+Date.now().toString(36).toUpperCase();rep.createdAt=new Date().toISOString();rep.outcome='waiting';a.unshift(rep);saveReports(a);
-  logAudit({gov:rep.govName,phase:'—',field:'بلاغ استلام جديد',before:'—',after:rep.canalName+' — موعد '+rep.dueDate});pushReport(rep);return rep;}
+  logAudit({gov:rep.govName,phase:'—',field:'بلاغ استلام جديد',before:'—',after:rep.canalName+(rep.dueDate?(' — موعد '+rep.dueDate):' — لم يُحدَّد موعد بعد')});pushReport(rep);return rep;}
 function updateReportOutcome(id,outcome,note){const _r=loadReports().find(x=>x.id===id);if(_r&&!can('edit',_r.govId)){authDeny();return false;}return _updateReportOutcome0(id,outcome,note);}
 function _updateReportOutcome0(id,outcome,note){const a=loadReports();const r=a.find(x=>x.id===id);if(!r)return false;
   const prev=(REPORT_OUTCOMES[r.outcome]||{label:'—'}).label;r.outcome=outcome;r.outcomeNote=note||'';r.outcomeAt=new Date().toISOString();saveReports(a);
@@ -4237,11 +4279,11 @@ function reportTiming(rep){
   const today=new Date();today.setHours(0,0,0,0);
   const due=new Date(rep&&rep.dueDate?rep.dueDate:NaN);
   if(isNaN(due.getTime())){
-    // تاريخ استحقاق مفقود أو تالف (بيانات سحابية قديمة): حالة آمنة بلا «NaN يوم»
+    // لم يُحدَّد موعد بعد (أو بيانات سحابية قديمة بلا تاريخ): حالة مستقلة لا تُحتسب تأخيراً
     if(rep&&rep.outcome==='accepted')return {state:'closed',days:0};
     if(rep&&rep.outcome==='notes')return {state:'noted',days:0};
     if(rep&&rep.outcome==='postponed')return {state:'postponed',days:0};
-    return {state:'upcoming',days:0};
+    return {state:'nodue',days:0};
   }
   due.setHours(0,0,0,0);
   const days=Math.round((today-due)/86400000);
@@ -4549,11 +4591,12 @@ function renderReports(){
   if(f==='overdue')reps=reps.filter(r=>r._t.state==='overdue');
   else if(f==='today')reps=reps.filter(r=>r._t.state==='today');
   else if(f==='upcoming')reps=reps.filter(r=>r._t.state==='upcoming');
+  else if(f==='nodue')reps=reps.filter(r=>r._t.state==='nodue');
   else if(f==='open')reps=reps.filter(r=>r.outcome!=='accepted');
   else if(f==='closed')reps=reps.filter(r=>r.outcome==='accepted');
   if(q)reps=reps.filter(r=>r.govName.includes(q)||r.canalName.includes(q)||(r.meta||'').includes(q));
   // sort: overdue first (by most overdue), then today, then upcoming, closed last
-  const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
+  const rank={overdue:0,today:1,upcoming:2,nodue:3,postponed:4,noted:5,closed:6};
   reps.sort((a,b)=>{const ra=rank[a._t.state],rb=rank[b._t.state];if(ra!==rb)return ra-rb;return (b._t.days||0)-(a._t.days||0);});
   const list=document.getElementById('reportList');
   list.innerHTML=reps.length?reps.map(r=>reportCard(r,false)).join('')
@@ -5706,7 +5749,7 @@ function buildGovDoc(govId){
   if(govReports.length){
     body+=`<div class="doc-sec-h">بلاغات الاستلام المُرسلة لدار الهندسة</div>
       <table class="doc-tbl sm"><thead><tr><th>م</th><th>الترعة</th><th>أُرسل</th><th>الاستلام المقرر</th><th>النتيجة</th></tr></thead>
-      <tbody>${govReports.map((r,i)=>`<tr><td>${i+1}</td><td>${r.canalName}</td><td>${fmt(r.sentDate)}</td><td>${fmt(r.dueDate)}</td><td>${(REPORT_OUTCOMES[r.outcome]||{label:'—'}).label}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${govReports.map((r,i)=>`<tr><td>${i+1}</td><td>${r.canalName}</td><td>${fmt(r.sentDate)}</td><td>${r.dueDate?fmt(r.dueDate):'لم يُحدَّد'}</td><td>${(REPORT_OUTCOMES[r.outcome]||{label:'—'}).label}</td></tr>`).join('')}</tbody></table>`;
   }
   body+=`<p>برجاء التفضل بالإحاطة والتوجيه باللازم.</p>
       <div class="doc-regard">وتفضلوا بقبول فائق الاحترام...</div>
@@ -5903,13 +5946,13 @@ function buildDoc(id){
     const rank={overdue:0,today:1,upcoming:2,postponed:3,noted:4,closed:5};
     reps.sort((a,b)=>{const r=rank[a._t.state]-rank[b._t.state];return r||(b._t.days||0)-(a._t.days||0);});
     const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
-    const stTxt=t=>t.state==='overdue'?`متأخّر ${t.days} يوم`:t.state==='today'?'الموعد اليوم':t.state==='upcoming'?`بعد ${t.days} يوم`:t.state==='postponed'?'مؤجّل':'مُغلق';
+    const stTxt=t=>t.state==='overdue'?`متأخّر ${t.days} يوم`:t.state==='today'?'الموعد اليوم':t.state==='upcoming'?`بعد ${t.days} يوم`:t.state==='nodue'?'لم يُحدَّد موعد':t.state==='postponed'?'مؤجّل':'مُغلق';
     return letterhead()+`
       <div class="doc-title-main">تقرير بلاغات الاستلام</div>
       <div class="doc-sub-main">موقف الترع المُرسلة لمكتب دار الهندسة — بتاريخ ${ARDATE()}</div>
       <div class="doc-body">${reps.length?`
         <table class="doc-tbl sm"><thead><tr><th>م</th><th>الإدارة</th><th>الترعة</th><th>أُرسل لدار الهندسة</th><th>الاستلام المقرر</th><th>الموقف الزمني</th><th>النتيجة</th></tr></thead>
-        <tbody>${reps.map((r,i)=>`<tr><td>${i+1}</td><td>${r.govName}</td><td>${r.canalName}</td><td>${fmt(r.sentDate)}</td><td>${fmt(r.dueDate)}</td><td>${stTxt(r._t)}</td><td>${(REPORT_OUTCOMES[r.outcome]||{label:'—'}).label}</td></tr>`).join('')}</tbody></table>`
+        <tbody>${reps.map((r,i)=>`<tr><td>${i+1}</td><td>${r.govName}</td><td>${r.canalName}</td><td>${fmt(r.sentDate)}</td><td>${r.dueDate?fmt(r.dueDate):'لم يُحدَّد'}</td><td>${stTxt(r._t)}</td><td>${(REPORT_OUTCOMES[r.outcome]||{label:'—'}).label}</td></tr>`).join('')}</tbody></table>`
         :'<p style="text-align:center;padding:30px">لا توجد بلاغات استلام مسجّلة.</p>'}
       </div>`+docFooter();
   }
