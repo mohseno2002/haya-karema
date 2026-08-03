@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-03 · def-detail v1 + receipts-split v1 + deck-builder v1 + nodue v1 · sw deh-v9 -->
+<!-- build 2026-08-03b · def-detail v1 + receipts-split v1 + deck-builder v2 (per-phase slides + rank by receipt %) + nodue v1 · sw deh-v10 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -5049,16 +5049,7 @@ function deckBuild(o){
       var f=DECK_SLIDES.find(function(p){return p[0]===k});return f?f[1]:k;});
     S.push({t:'bullets',title:'محتويات العرض',sub:scopeTxt,items:ag,numbered:true,note:'استعراض سريع لمحاور العرض'});
   }
-  if(has('kpis'))S.push({t:'kpis',title:'المؤشّرات الرئيسية',sub:deckPhaseLabel(o)+' • '+scopeTxt,
-    cards:[{n:deckN(T.canals),l:'إجمالي الترع'},{n:deckN(T.exec),l:'منفّذة ومنتهية'},
-      {n:T.pctExec+'%',l:'نسبة التنفيذ'},{n:deckN(T.recv),l:'مُستلَمة'},
-      {n:T.pctRecv+'%',l:'نسبة الاستلام'},{n:T.dues.toFixed(1),l:'مستحقات معلّقة (م.ج)'}],
-    note:'الأرقام محسوبة لحظياً من كشوف الإدارات بعد التعديلات المعتمدة'});
-  if(has('gate'))S.push({t:'gate',title:'مسار بوابة الاستلام',sub:'من التنفيذ إلى القبول النهائي',
-    steps:[{n:deckN(T.canals),l:'إجمالي الترع'},{n:deckN(T.exec),l:'تم تنفيذها ونهوها'},
-      {n:deckN(T.dar),l:'استُلمت عبر دار الهندسة'},{n:deckN(T.inv),l:'استُلمت استثمارياً'},
-      {n:deckN(T.rem),l:'بانتظار الاستلام'}],
-    note:'المسار الإلزامي لكل ترعة: تنفيذ ← جاهزية ← معاينة ← تسليم لدار الهندسة ← قبول نهائي'});
+  // ── موقف المرحلتين: شريحة مقارنة واحدة تسبق التفصيل ──
   if(has('phases')){
     var lp=livePhases();
     var pr=[];
@@ -5069,32 +5060,68 @@ function deckBuild(o){
       rows:pr.map(function(p){var x=p[1];return [p[0],deckN(x.total),deckN(x.done),x.donePct+'%',deckN(x.total-x.done),deckN(x.delivered),x.deliveredPct+'%',deckN(x.remainingDeliver)];}),
       note:'المصدر الوحيد للأرقام: مجموع الكشوف التفصيلية للإدارات'});
   }
-  if(has('receipts')){
-    var rr=rows.slice().sort(function(a,b){return (b.dar+b.inv)-(a.dar+a.inv)});
-    S.push({t:'split',title:'الاستلامات: دار الهندسة والمسار الاستثماري',sub:deckPhaseLabel(o),
-      cards:[{n:deckN(T.dar),l:'عبر دار الهندسة'},{n:deckN(T.inv),l:'بالمسار الاستثماري'},
-        {n:deckN(T.recv),l:'إجمالي المُستلَم'}],
-      bars:rr.slice(0,8).map(function(r){return {l:r.name,a:r.dar,b:r.inv,max:r.canals};}),
-      note:T.unc>0?('تنبيه: '+T.unc+' ترعة مُسلَّمة بالتقرير الرسمي دون تصنيف مسارها بعد'):'كل المُسلَّم مصنَّف على مساره'});
-  }
-  if(has('ranking')){
-    var rk=rows.slice().sort(function(a,b){return b.pctRecv-a.pctRecv});
-    S.push({t:'rank',title:'ترتيب الإدارات بنسبة الاستلام',sub:deckPhaseLabel(o),
-      top:rk.slice(0,5).map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
-      low:rk.slice(-5).reverse().map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
-      note:'النسبة = المُستلَم (دار الهندسة + استثماري) ÷ إجمالي ترع الإدارة'});
-  }
-  if(has('govtable')){
-    var gr=rows.slice().sort(function(a,b){return b.canals-a.canals});
-    deckChunk(gr,perSlide).forEach(function(ch,ix,arr){
-      S.push({t:'table',title:'جدول الإدارات التفصيلي'+(arr.length>1?(' ('+(ix+1)+'/'+arr.length+')'):''),
-        sub:deckPhaseLabel(o),
-        head:['الإدارة المركزية','الإجمالي','المنفّذ','دار الهندسة','استثماري','المُستلَم','% الاستلام','مستحقات (م.ج)'],
-        rows:ch.map(function(r){return [r.name,deckN(r.canals),deckN(r.exec),deckN(r.dar),deckN(r.inv),deckN(r.recv),r.pctRecv+'%',r.dues?r.dues.toFixed(1):'—'];}),
-        total:(ix===arr.length-1)?['الإجمالي',deckN(T.canals),deckN(T.exec),deckN(T.dar),deckN(T.inv),deckN(T.recv),T.pctRecv+'%',T.dues.toFixed(1)]:null,
-        note:'الأرقام تعكس آخر التعديلات المعتمدة بلوحة المتابعة'});
-    });
-  }
+
+  // ═══ الشرائح المرتبطة بالمرحلة ═══
+  // عند اختيار «المرحلتان معاً» تُبنى لكل مرحلة شرائحها المستقلة بأرقامها وحدها — بلا تجميع.
+  var phList=(o.phase==='1'||o.phase==='2')?[o.phase]:['1','2'];
+  var multi=phList.length>1;
+  phList.forEach(function(ph){
+    var po={},pk;
+    for(pk in o){if(Object.prototype.hasOwnProperty.call(o,pk))po[pk]=o[pk];}
+    po.phase=ph;
+    var pRows=deckRows(po), P=deckTot(pRows);
+    if(!pRows.length)return;                       // مرحلة بلا ترع داخل النطاق المختار: تُتخطّى
+    var pLbl=deckPhaseLabel(po);
+    var pt=function(t){return multi?(t+' — '+pLbl):t;};
+
+    if(has('kpis'))S.push({t:'kpis',title:pt('المؤشّرات الرئيسية'),sub:pLbl+' • '+scopeTxt,
+      cards:[{n:deckN(P.canals),l:'إجمالي الترع'},{n:deckN(P.exec),l:'منفّذة ومنتهية'},
+        {n:P.pctExec+'%',l:'نسبة التنفيذ'},{n:deckN(P.recv),l:'مُستلَمة'},
+        {n:P.pctRecv+'%',l:'نسبة الاستلام'},
+        multi?{n:deckN(P.rem),l:'بانتظار الاستلام'}:{n:P.dues.toFixed(1),l:'مستحقات معلّقة (م.ج)'}],
+      note:multi?'أرقام هذه المرحلة وحدها — المستحقات غير موزّعة على المراحل وتُعرض في شريحتها المستقلة'
+                :'الأرقام محسوبة لحظياً من كشوف الإدارات بعد التعديلات المعتمدة'});
+
+    if(has('gate'))S.push({t:'gate',title:pt('مسار بوابة الاستلام'),sub:pLbl+' — من التنفيذ إلى القبول النهائي',
+      steps:[{n:deckN(P.canals),l:'إجمالي الترع'},{n:deckN(P.exec),l:'تم تنفيذها ونهوها'},
+        {n:deckN(P.dar),l:'استُلمت عبر دار الهندسة'},{n:deckN(P.inv),l:'استُلمت استثمارياً'},
+        {n:deckN(P.rem),l:'بانتظار الاستلام'}],
+      note:'المسار الإلزامي لكل ترعة: تنفيذ ← جاهزية ← معاينة ← تسليم لدار الهندسة ← قبول نهائي'});
+
+    if(has('receipts')){
+      var rr=pRows.slice().sort(function(a,b){return (b.dar+b.inv)-(a.dar+a.inv)});
+      S.push({t:'split',title:pt('الاستلامات: دار الهندسة والمسار الاستثماري'),sub:pLbl,
+        cards:[{n:deckN(P.dar),l:'عبر دار الهندسة'},{n:deckN(P.inv),l:'بالمسار الاستثماري'},
+          {n:deckN(P.recv),l:'إجمالي المُستلَم'}],
+        bars:rr.slice(0,8).map(function(r){return {l:r.name,a:r.dar,b:r.inv,max:r.canals};}),
+        note:P.unc>0?('تنبيه: '+P.unc+' ترعة مُسلَّمة بالتقرير الرسمي دون تصنيف مسارها بعد'):'كل المُسلَّم مصنَّف على مساره'});
+    }
+
+    if(has('ranking')){
+      var rk=pRows.slice().sort(function(a,b){return (b.pctRecv-a.pctRecv)||(b.canals-a.canals)});
+      S.push({t:'rank',title:pt('ترتيب الإدارات بنسبة الاستلام'),sub:pLbl,
+        top:rk.slice(0,5).map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
+        low:rk.slice(-5).reverse().map(function(r){return {l:r.name,v:r.pctRecv,s:deckN(r.recv)+' من '+deckN(r.canals)};}),
+        note:'النسبة = المُستلَم (دار الهندسة + استثماري) ÷ إجمالي ترع الإدارة'});
+    }
+
+    if(has('govtable')){
+      // الترتيب: تنازلياً بنسبة الاستلام، وعند التساوي الأكبر حجماً أولاً
+      var gr=pRows.slice().sort(function(a,b){return (b.pctRecv-a.pctRecv)||(b.canals-a.canals)});
+      var lastCol=multi?'المتبقي للاستلام':'مستحقات (م.ج)';
+      deckChunk(gr,perSlide).forEach(function(ch,ix,arr){
+        S.push({t:'table',title:pt('جدول الإدارات التفصيلي')+(arr.length>1?(' ('+(ix+1)+'/'+arr.length+')'):''),
+          sub:pLbl+' — مرتّب تنازلياً بنسبة الاستلام',
+          head:['الإدارة المركزية','الإجمالي','المنفّذ','دار الهندسة','استثماري','المُستلَم','% الاستلام',lastCol],
+          rows:ch.map(function(r){return [r.name,deckN(r.canals),deckN(r.exec),deckN(r.dar),deckN(r.inv),deckN(r.recv),r.pctRecv+'%',
+            multi?deckN(r.rem):(r.dues?r.dues.toFixed(1):'—')];}),
+          total:(ix===arr.length-1)?['الإجمالي',deckN(P.canals),deckN(P.exec),deckN(P.dar),deckN(P.inv),deckN(P.recv),P.pctRecv+'%',
+            multi?deckN(P.rem):P.dues.toFixed(1)]:null,
+          note:multi?'أرقام هذه المرحلة وحدها — الترتيب حسب نسبة الاستلام، والمستحقات في شريحتها المستقلة'
+                    :'الأرقام تعكس آخر التعديلات المعتمدة بلوحة المتابعة — الترتيب حسب نسبة الاستلام'});
+      });
+    }
+  });
   if(has('deferred')){
     var D=(window.DEFERRED_CANALS||{byGov:[],total:0});
     var ids=deckScope(o).map(function(g){return g.id});
