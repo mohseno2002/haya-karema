@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-03f · notif-newest-first v1 + full-integration-audit v1 · sw deh-v13 -->
+<!-- build 2026-08-12a · gov-report-per-phase v1 · sw deh-v14 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -684,6 +684,9 @@ html[data-theme="dark"] .sm-url-row input,html[data-theme="dark"] .sm-note{backg
 .gov-export{background:linear-gradient(120deg,var(--nile-800),var(--nile-600));border:1.5px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:18px;text-align:center}
 .btn-export{background:#fff;color:var(--nile-800);font-weight:800;border:none;width:100%;justify-content:center;padding:12px}
 .btn-export:hover{background:#eef7f2}
+.gov-export-ph{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.btn-ph{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);font-size:12px;font-weight:700;padding:8px 13px;border-radius:9px}
+.btn-ph:hover{background:rgba(255,255,255,.28)}
 .gov-export-hint{display:block;color:rgba(255,255,255,.9);font-size:11.5px;margin-top:9px;line-height:1.6}
 .edit-phase{margin-bottom:14px;padding:12px;background:var(--cyan-soft);border-radius:10px;border:1px solid var(--line)}
 .ephase-t{font-size:13.5px;font-weight:800;color:var(--nile-700);margin-bottom:10px}
@@ -2507,7 +2510,11 @@ function openDrawer(id){
   html+=`<div class="gov-export"><button class="btn btn-export" onclick="openGovDoc('${id}')">
     <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>
     تصدير تقرير الإدارة الرسمي</button>
-    <span class="gov-export-hint">تقرير رسمي بترويسة المشروع، يعكس أحدث الأرقام المعتمدة لهذه الإدارة تلقائياً.</span></div>`;
+    <div class="gov-export-ph">
+      <button class="btn btn-ph" onclick="openGovDoc('${id}','1')">تقرير المرحلة الأولى</button>
+      <button class="btn btn-ph" onclick="openGovDoc('${id}','2')">تقرير المرحلة الثانية</button>
+    </div>
+    <span class="gov-export-hint">تقرير رسمي بترويسة المشروع، يعكس أحدث الأرقام المعتمدة لهذه الإدارة تلقائياً. ويمكن تصدير كل مرحلة على حدة من الزرّين أعلاه، أو التبديل بين المراحل من داخل التقرير.</span></div>`;
   if(g._custom)html+=`<div class="custom-gov-banner">إدارة مُضافة يدوياً — مدمجة بالكامل في مؤشّرات المشروع.
     <button class="btn btn-del-gov" onclick="deleteCustomGov('${id}')">
       <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
@@ -4454,6 +4461,7 @@ function downloadXlsx(filename,sheets){
 }
 function docTitleGuess(){
   const s=document.querySelector('#docPage .doc-subject');if(s)return s.textContent.replace(/^الموضوع:\s*/,'').slice(0,60);
+  const t=document.querySelector('#docPage .doc-title-main');if(t)return t.textContent.slice(0,70);
   const to=document.querySelector('#docPage .doc-to');if(to)return to.textContent.slice(0,50);
   const h=document.querySelector('#docPage .lh-title');return h?h.textContent.slice(0,50):'تقرير';
 }
@@ -5706,15 +5714,39 @@ function deckPptx(){
 function openDoc(id){document.getElementById('docPage').innerHTML=buildDoc(id);document.getElementById('docOverlay').classList.add('on');}
 function closeDoc(){document.getElementById('docOverlay').classList.remove('on');}
 function printDoc(){window.print();}
-// تقرير إدارة مركزية واحدة — يعكس أحدث أرقامها المعدّلة
-function openGovDoc(govId){
-  document.getElementById('docPage').innerHTML=buildGovDoc(govId);
+// تقرير إدارة مركزية واحدة — يعكس أحدث أرقامها المعدّلة، ويُصدَّر لكل مرحلة على حدة
+function govPhOf(c){ var v=c?c.phase:null; if(v===1||v==='1')return 1; if(v===2||v==='2')return 2; return 0; }
+function govPhNorm(ph){ if(ph===1||ph==='1')return '1'; if(ph===2||ph==='2')return '2'; if(ph==='na')return 'na'; return 'all'; }
+function govPhLabel(ph){ return ph==='1'?'المرحلة الأولى':(ph==='2'?'المرحلة الثانية':(ph==='na'?'ترع غير محدّدة المرحلة':'المرحلتان معاً')); }
+function govPhKeep(ph,k){ return ph==='all'?true:(ph==='1'?k===1:(ph==='2'?k===2:k===0)); }
+function govDocPhBar(govId,ph,nAll,n1,n2,n0){
+  function b(k,txt,n){
+    var cls=(ph===k)?'btn btn-primary':'btn';
+    return '<button class=\u0022'+cls+'\u0022 onclick=\u0022openGovDoc(\u0027'+govId+'\u0027,\u0027'+k+'\u0027)\u0022>'+txt+' ('+n+')</button>';
+  }
+  return '<div class=\u0022doc-actbar no-print\u0022>'
+    +b('all','المرحلتان معاً',nAll)+b('1','المرحلة الأولى',n1)
+    +b('2','المرحلة الثانية',n2)+b('na','بلا تحديد مرحلة',n0)
+    +'<span class=\u0022ab-hint\u0022>اختاروا المرحلة ثم اطبعوا أو صدّروا Excel — يُصدَّر المعروض فقط. هذا الشريط لا يظهر في الطباعة ولا في ملف الإكسل.</span></div>';
+}
+function openGovDoc(govId,ph){
+  document.getElementById('docPage').innerHTML=buildGovDoc(govId,govPhNorm(ph));
   document.getElementById('docOverlay').classList.add('on');
 }
-function buildGovDoc(govId){
+function buildGovDoc(govId,ph){
+  ph=govPhNorm(ph);
   const g=gov(govId);
   const p1=g.phase1,p2=g.phase2,ops=g.operations||[];
-  const canals=(g.canals||[]).filter(Boolean);
+  const allCanals=(g.canals||[]).filter(Boolean);
+  const nP1=allCanals.filter(function(c){return govPhOf(c)===1;}).length;
+  const nP2=allCanals.filter(function(c){return govPhOf(c)===2;}).length;
+  const nP0=allCanals.length-nP1-nP2;
+  const phLbl=govPhLabel(ph);
+  const phSuffix=ph==='all'?'':' — '+phLbl;
+  const phBar=govDocPhBar(govId,ph,allCanals.length,nP1,nP2,nP0);
+  const phCover=allCanals.length?('<div class=\u0022doc-note-box\u0022>الكشف التفصيلي بهذه الإدارة: '+allCanals.length+' ترعة — المرحلة الأولى '+nP1+' · المرحلة الثانية '+nP2+' · بلا تحديد مرحلة '+nP0+'.'+(nP0?' والترع بلا تحديد لا تظهر ضمن تقرير أي مرحلة، وتُعرض منفردة من زر «بلا تحديد مرحلة» لاستكمال تصنيفها بالمصدر.':'')+'</div>'):'';
+  const phOfId={};allCanals.forEach(function(c){phOfId[c.id]=govPhOf(c);});
+  const canals=allCanals.filter(function(c){return govPhKeep(ph,govPhOf(c));});
   const duesRows=ops.filter(o=>Math.abs(o.outstanding)>0.0005).sort((a,b)=>b.outstanding-a.outstanding);
   // اتساق مع شاشة المستحقات: إن عُدّل إجمالي مستحقات الإدارة يدوياً يُضاف صف تسوية بالفرق
   if(ov[govId]&&ov[govId].duesOutstanding!=null){
@@ -5727,7 +5759,12 @@ function buildGovDoc(govId){
   const duesPaidTot=duesRows.reduce((s,o)=>s+(o.paid!=null?+o.paid:0),0);
   const duesGrossTot=duesRows.reduce((s,o)=>s+(o.paid!=null?+o.paid:0)+o.outstanding,0);
   const duesAnyPaid=duesRows.some(o=>o.paid!=null);
-  const govReports=loadReports().filter(r=>r.govId===govId);
+  const govReports=loadReports().filter(r=>r.govId===govId).filter(function(r){
+    if(ph==='all')return true;
+    var k=phOfId[r.canalId];
+    if(k===undefined)return ph==='na';
+    return govPhKeep(ph,k);
+  });
   const fmt=d=>d?new Date(d).toLocaleDateString('ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
   const num=v=>(v===null||v===undefined||v==='')?'—':v;
   const len=v=>(v===null||v===undefined||v==='')?'—':(typeof v==='number'?v.toFixed(2):v);
@@ -5735,15 +5772,17 @@ function buildGovDoc(govId){
   const phaseTbl=(ph,label)=>ph?`
     <tr><td>${label}</td><td>${ph.canals||0}</td><td>${ph.executed||0}</td><td>${ph.dar||0}</td><td>${ph.invest||0}</td><td>${recvOf(ph)}</td><td>${remOf(ph)}</td></tr>`:'';
   let body=`
-    <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}</div>
+    <div class="doc-title-main">الموقف التنفيذي المفصّل — الإدارة المركزية للموارد المائية والري بـ${g.name}${phSuffix}</div>
     <div class="doc-sub-main">${g.region} • مشروع تبطين الترع — مبادرة حياة كريمة • بتاريخ ${ARDATE()}</div>
     <div class="doc-body">
+      ${phBar}
       <div class="doc-to">السيدة المهندسة / مفوض مشروع حياة كريمة</div>
       <div class="doc-greet">تحية طيبة وبعد ،،،</div>
       <p>فيما يلي الموقف التنفيذي التفصيلي لاستلامات الإدارة المركزية للموارد المائية والري بـ${g.name} من مشروع تبطين الترع، موضّحاً ما تم تنفيذه واستلامه عبر مكتب دار الهندسة والمتبقّي:</p>
       <table class="doc-tbl"><thead><tr>
         <th>المرحلة</th><th>إجمالي الترع</th><th>المنفّذ</th><th>دار الهندسة</th><th>استثماري</th><th>المُسلّم</th><th>المتبقّي</th></tr></thead>
-        <tbody>${phaseTbl(p1,'الأولى')}${phaseTbl(p2,'الثانية')}</tbody></table>`;
+        <tbody>${ph==='2'?'':phaseTbl(p1,'الأولى')}${ph==='1'?'':phaseTbl(p2,'الثانية')}</tbody></table>
+      ${phCover}`;
 
   // ═══ الجدول التفصيلي بكل ترعة — مصنّف حسب العملية ═══
   if(canals.length){
@@ -5771,15 +5810,20 @@ function buildGovDoc(govId){
       }).join('');
       return opHead+items;
     }).join('');
-    body+=`<div class="doc-sec-h">الموقف التفصيلي للترع (عدد ${canals.length} ترعة) — مصنّفة حسب العملية</div>
+    body+=`<div class="doc-sec-h">الموقف التفصيلي للترع (عدد ${canals.length} ترعة)${ph==='all'?'':' — '+phLbl} — مصنّفة حسب العملية</div>
       <table class="doc-tbl xs doc-canals"><thead><tr>
         <th style="width:32px">م</th><th>اسم الترعة</th><th>المقاول</th><th style="width:92px">القطاع المنفذ</th><th style="width:52px">الطول (كم)</th><th style="width:56px">التنفيذ</th><th style="width:150px">موقف الترعة</th></tr></thead>
       <tbody>${rowsHtml}</tbody></table>`;
+  } else if(allCanals.length){
+    body+='<div class="doc-note-box">لا توجد ترع مُدرجة تفصيلياً تحت '+phLbl+' بهذه الإدارة — الكشف التفصيلي يضم '+allCanals.length+' ترعة (الأولى '+nP1+' · الثانية '+nP2+' · بلا تحديد '+nP0+'). استخدموا الشريط أعلى التقرير للانتقال لمرحلة أخرى.</div>';
   } else {
     body+=`<div class="doc-note-box">التفاصيل الفردية للترع بهذه الإدارة قيد الإدخال — التقرير يعرض الملخص المعتمد بالمرحلتين أعلاه، وسيُحدَّث تلقائياً فور إتاحة بيانات الترع التفصيلية.</div>`;
   }
 
-  if(duesRows.length){
+  if(duesRows.length&&ph!=='all'){
+    body+='<div class="doc-note-box">المستحقات المعلّقة غير مبوّبة حسب المرحلة بالمصدر — تُعرض كاملةً في تقرير «المرحلتان معاً».</div>';
+  }
+  if(duesRows.length&&ph==='all'){
     body+=`<div class="doc-sec-h">المستحقات المعلّقة لحين استلام دار الهندسة</div>
       <table class="doc-tbl sm"><thead><tr><th>م</th><th>العملية</th><th>المقاول</th><th>البيان</th><th>ما تم صرفه</th><th>المعلّق</th><th>الإجمالي</th></tr></thead>
       <tbody>${duesRows.map((o,i)=>{const hp=o.paid!=null;const gr=(hp?+o.paid:0)+o.outstanding;return `<tr><td>${i+1}</td><td>${o.name}</td><td>${o.contractor}</td><td>${o.detail||'—'}</td><td>${hp?(+o.paid).toFixed(2):'—'}</td><td>${o.outstanding.toFixed(2)}</td><td>${gr.toFixed(2)}</td></tr>`}).join('')}
