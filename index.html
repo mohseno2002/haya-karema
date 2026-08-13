@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-12a · gov-report-per-phase v1 · sw deh-v14 -->
+<!-- build 2026-08-13a · sync-merge-fieldlevel v1 + ov-backup/diag v1 · sw deh-v15 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1607,6 +1607,9 @@ table.tbl td{background-clip:padding-box}
       <button class="btn btn-primary" onclick="saveSyncUrl()">حفظ وتفعيل</button>
     </div>
     <div class="sm-note">تُحفظ التقارير في جدولك الخاص. لا تشارك الرابط إلا مع فريق المشروع. لإيقاف التزامن، امسح الرابط واحفظ.</div>
+    <div class="sm-url-row" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="closeSyncSetup();openSyncDiag()">تشخيص المزامنة واستعادة نسخة</button>
+    </div>
   </div>
 </div>
 
@@ -1919,10 +1922,11 @@ function materializeCustomEntities(){
       const added=(ov[g.id]&&Array.isArray(ov[g.id].addedCanals))?ov[g.id].addedCanals:[];
       if(!g.canals&&!added.length)return;
       if(!g.canals)g.canals=[];
-      const ids=new Set(added.map(c=>c.id));
+      const rem=(ov[g.id]&&ov[g.id].canals)||{};
+      const ids=new Set(added.filter(c=>!(rem[c.id]&&rem[c.id]._removed)).map(c=>c.id));
       g.canals=g.canals.filter(c=>!c._custom||ids.has(c.id));
       const have=new Set(g.canals.map(c=>c.id));
-      added.forEach(c=>{ if(!have.has(c.id)){ g.canals.push({...c}); have.add(c.id);} });
+      added.forEach(c=>{ if(ids.has(c.id)&&!have.has(c.id)){ g.canals.push({...c}); have.add(c.id);} });
     });
   }catch(e){console.warn('materialize',e);}
 }
@@ -3292,7 +3296,9 @@ function saveNewCanal(){
   }
   // التخزين في طبقة الأوفررايد المتزامنة (تصل جميع الأجهزة) + الدمج الفوري
   const oC=ov[govId]||(ov[govId]={});
-  oC.addedCanals=[...(oC.addedCanals||[]),canal];
+  canal._t=Date.now();                                   // طابع الترعة نفسها — عليه يقوم الدمج الحقلي
+  if(oC.canals&&oC.canals[canal.id]&&oC.canals[canal.id]._removed)delete oC.canals[canal.id];
+  oC.addedCanals=[...(oC.addedCanals||[]).filter(x=>x&&x.id!==canal.id),canal];
   oC.lastUpdate=new Date().toISOString().slice(0,10);
   saveOv(ov);
   try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
@@ -3369,7 +3375,9 @@ function deleteCustomCanal(govId,cid){
   if(!confirm(`حذف الترعة المُضافة «${c.name}»؟ لا يمكن التراجع.`))return;
   const oD=ov[govId]||(ov[govId]={});
   oD.addedCanals=(oD.addedCanals||[]).filter(x=>x.id!==cid);
-  if(oD.canals)delete oD.canals[cid];               // إزالة أي تعديل موقفٍ يتيمٍ للترعة المحذوفة
+  // شاهدة حذف صريحة: بدونها يُعيد الدمج الاتحادي الترعة من أي جهاز ما زال يحملها
+  oD.canals=oD.canals||{};
+  oD.canals[cid]={_removed:true,_custom:true,name:(c&&c.name)||cid};
   oD.lastUpdate=new Date().toISOString().slice(0,10);saveOv(ov);
   const i=g.canals.findIndex(x=>x.id===cid);if(i>=0)g.canals.splice(i,1);
   // ── عكس أثر الترعة عن إجماليات المرحلة إن كانت قد عُكست عند إضافتها ──
@@ -4084,6 +4092,70 @@ async function pushDelete(id,isRetry){
   try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'delete',id})});}catch(e){console.warn('pushDelete',e);}
 }
+/* ═══ شبكة أمان طبقة التعديلات: لقطة قبل كل دمج سحابي ═══
+   الدمج السابق كان يستبدل صفَّ الإدارة كاملاً بالوارد، فتضيع الترع المُضافة
+   ومواقف الترع التي لم يكن الجهاز الدافع يعرفها. اللقطة تسمح بالاسترجاع فوراً،
+   والدمج الحقلي أدناه يمنع الفقد من الأساس. */
+const OVBK='darElHandasa_ovBackups_v1';
+function loadOvBackups(){try{return JSON.parse(localStorage.getItem(OVBK)||'[]')}catch(e){return[]}}
+function snapshotOv(reason){
+  try{
+    const list=loadOvBackups();
+    const snap={t:Date.now(),reason:reason||'—',govs:Object.keys(ov).length,data:JSON.stringify(ov)};
+    if(list.length&&list[0].data===snap.data)return;   // لا تكرار للقطة متطابقة
+    list.unshift(snap);
+    while(list.length>8)list.pop();
+    localStorage.setItem(OVBK,JSON.stringify(list));
+  }catch(e){console.warn('snapshotOv',e);}
+}
+/* دمج خرائط مواقف الترع مفتاحاً بمفتاح: لا يُفقد مفتاح موجود عند طرف واحد،
+   وشاهدة الحذف تغلب دائماً (الحذف نيّة صريحة لا يلغيها دمج). */
+function mergeCanalMaps(a,ats,b,bts){
+  const out={};
+  Object.keys(a||{}).forEach(k=>{out[k]=a[k];});
+  Object.keys(b||{}).forEach(k=>{
+    const p=out[k],e=b[k];
+    if(!p){out[k]=e;return;}
+    if(p&&p._removed)return;
+    if(e&&e._removed){out[k]=e;return;}
+    out[k]=(bts>=ats)?e:p;
+  });
+  return out;
+}
+/* دمج صفّ إدارة: الحقول القياسية للأحدث طابعاً، والترع اتحاداً بالمعرّف */
+function mergeOvEntry(loc,inc){
+  if(!loc||typeof loc!=='object')return inc;
+  if(!inc||typeof inc!=='object')return loc;
+  const lts=loc._ts||0,cts=inc._ts||0;
+  const out=(cts>=lts)?{...loc,...inc}:{...inc,...loc};
+  out.canals=mergeCanalMaps(loc.canals,lts,inc.canals,cts);
+  if(!Object.keys(out.canals).length)delete out.canals;
+  const map={};
+  (loc.addedCanals||[]).forEach(c=>{if(c&&c.id)map[c.id]=c;});
+  (inc.addedCanals||[]).forEach(c=>{if(c&&c.id){const p=map[c.id];
+    if(!p||(c._t||0)>=(p._t||0))map[c.id]=c;}});
+  const rem=out.canals||{};
+  const added=Object.keys(map).filter(k=>!(rem[k]&&rem[k]._removed)).map(k=>map[k]);
+  if(added.length)out.addedCanals=added; else delete out.addedCanals;
+  out._ts=Math.max(lts,cts)||out._ts;
+  return out;
+}
+/* هل يحمل الصفُّ محتوى لا يجوز مسحه بمجرد غيابه عن ردٍّ سحابي؟ */
+function ovHasPayload(o){
+  if(!o||typeof o!=='object')return false;
+  if(Array.isArray(o.addedCanals)&&o.addedCanals.length)return true;
+  if(o.canals&&Object.keys(o.canals).length)return true;
+  return false;
+}
+/* هل احتفظ الدمج بمحتوى محلي غائب عن الوارد؟ (⇒ يلزم إعادة دفعه لتتقارب السحابة) */
+function ovRicherThan(m,inc){
+  try{
+    const ma=(m&&m.addedCanals)||[],ia=(inc&&inc.addedCanals)||[];
+    if(ma.length>ia.length)return true;
+    const mk=Object.keys((m&&m.canals)||{}),ik=Object.keys((inc&&inc.canals)||{});
+    return mk.length>ik.length;
+  }catch(e){return false;}
+}
 // دفع تعديل إدارة مركزية للسحابة
 async function pushOverride(govId,govName,data,isRetry){
   const url=getSyncUrl();if(!url)return;
@@ -4112,21 +4184,27 @@ async function pushOverrideDelete(govId,isRetry){
 // ═══ دمج آمن: «المحلي غير المؤكَّد لا يُمَس» + «الأحدث طابعاً يغلب» ═══
 function applyCloudOverrides(list){
   if(!Array.isArray(list))return 0;
-  const merged={...ov};const cloudIds=new Set();
+  snapshotOv('قبل دمج سحابي');
+  const merged={...ov};const cloudIds=new Set();const heal=new Set();
   list.forEach(o=>{try{
     const id=o.govId;if(!id)return;cloudIds.add(id);
     const inc=(typeof o.data==='string')?JSON.parse(o.data):o.data;
     if(!inc||typeof inc!=='object')return;
     const lts=(ov[id]&&ov[id]._ts)||0, cts=inc._ts||0;
     if(OVDEL[id])return;                                   // حذف محلي بانتظار تأكيده — لا إحياء
-    if(DIRTY.has(id)){                                     // تعديل محلي غير مؤكَّد: لا مساس به
+    // ═══ دمج حقلي: الوارد لا يستبدل الصف، بل يُدمج فيه ═══
+    // الاستبدال الكامل كان يمسح الترع المُضافة ومواقف الترع التي لا يعرفها الجهاز الدافع.
+    const mrg=mergeOvEntry(ov[id],inc);
+    if(ovRicherThan(mrg,inc))heal.add(id);                 // عندنا ما ليس بالسحابة ⇒ يُعاد دفعه
+    if(DIRTY.has(id)){                                     // تعديل محلي غير مؤكَّد: يُدمج ولا يُمحى
+      merged[id]=mrg;
       if(lts>0&&cts>=lts){                                 // صدى وصولنا (أو أحدث) ⇒ تأكيد
-        if(cts>lts)merged[id]=inc;
-        if(merged[id]&&typeof merged[id]==='object')merged[id]._sy=1; // ختم «مؤكَّد سحابياً»
-        DIRTY.delete(id);
+        if(merged[id]&&typeof merged[id]==='object')merged[id]._sy=1;
+        if(!heal.has(id))DIRTY.delete(id);
       }
       return;}
-    if(cts>=lts){if(inc&&typeof inc==='object')inc._sy=1;merged[id]=inc;} // الأحدث يغلب — القديم بلا طابع لا يهزم مختوماً
+    merged[id]=mrg;
+    if(merged[id]&&typeof merged[id]==='object')merged[id]._sy=1;
   }catch(e){}});
   // ═══ انتشار حذف التعديلات بين الأجهزة (نظير شاهدة _sy في البلاغات) ═══
   // ما سبق تأكيده سحابياً (_sy) ثم غاب صفُّه من السحابة ⇒ حُذف من جهاز آخر
@@ -4134,9 +4212,14 @@ function applyCloudOverrides(list){
   // الرسمية على كل الأجهزة، فتعمل اللوحة كوحدة واحدة حذفاً كما تعمل تعديلاً.
   // لا يُمَسّ: المحلي غير المؤكَّد (DIRTY)، ولا حذف محلي بانتظار تأكيده (OVDEL)،
   // ولا ما لم يُؤكَّد وصوله قط (بلا _sy) — فلا يُفقَد أي تعديل لم يصل السحابة بعد.
+  // استثناء حاسم: صفٌّ يحمل ترعاً مُضافة أو مواقف ترع لا يُمحى بمجرد غيابه عن ردٍّ
+  // سحابي (ردّ ناقص أو صفحة ناقصة كانت تمسح عدة إدارات دفعةً واحدة) — يُعاد دفعه بدلاً من محوه.
   Object.keys(merged).forEach(id=>{
-    if(!cloudIds.has(id)&&merged[id]&&merged[id]._sy&&!DIRTY.has(id)&&!OVDEL[id])delete merged[id];
+    if(cloudIds.has(id)||!merged[id]||!merged[id]._sy||DIRTY.has(id)||OVDEL[id])return;
+    if(ovHasPayload(merged[id])){heal.add(id);return;}
+    delete merged[id];
   });
+  heal.forEach(id=>{if(merged[id])DIRTY.add(id);});
   ov=merged;saveOv(ov);
   Object.keys(OVDEL).forEach(id=>{if(!cloudIds.has(id))delete OVDEL[id];}); // غاب الصف ⇒ تأكد الحذف
   saveDirty();
@@ -4199,6 +4282,76 @@ async function pullReports(silent){
   syncing=false;
 }
 async function syncNow(){await pullReports(false);}
+/* ═══ تشخيص المزامنة — لقطة الشاشة تكفي للتشخيص عن بُعد ═══ */
+function syncDiagRows(){
+  const rows=[];
+  (PROJECT.govs||[]).forEach(g=>{
+    const o=ov[g.id];if(!o)return;
+    const cm=o.canals||{};
+    const keys=Object.keys(cm);
+    const removed=keys.filter(k=>cm[k]&&cm[k]._removed).length;
+    rows.push({name:g.name,id:g.id,
+      base:((g.canals||[]).filter(c=>!c._custom)).length,
+      edited:keys.length-removed,removed:removed,
+      added:((o.addedCanals||[]).length),
+      ts:o._ts?new Date(o._ts).toLocaleString('ar-EG-u-nu-latn'):'—',
+      dev:o._dev||'—',
+      state:(DIRTY.has(g.id)?'بانتظار الدفع':(o._sy?'مؤكَّد سحابياً':'محلي'))});
+  });
+  return rows;
+}
+function openSyncDiag(){
+  const rows=syncDiagRows();
+  let h='<div class="doc-title-main">تشخيص طبقة التعديلات والمزامنة</div>'
+    +'<div class="doc-sub-main">لوحة استلامات دار الهندسة • '+new Date().toLocaleString('ar-EG-u-nu-latn')+'</div>'
+    +'<div class="doc-body">';
+  h+='<div class="doc-note-box">معرّف هذا الجهاز: <b>'+(typeof DEVICE_ID!=='undefined'?DEVICE_ID:'—')+'</b>'
+    +' — عدد الإدارات ذات تعديلات: <b>'+rows.length+'</b>'
+    +' — بانتظار الدفع: <b>'+DIRTY.size+'</b>.</div>';
+  if(rows.length){
+    h+='<div class="doc-sec-h">لكل إدارة: ماذا يحمل صفُّ التعديلات فعلياً</div>'
+      +'<table class="doc-tbl sm"><thead><tr><th>الإدارة</th><th>ترع الأساس</th><th>مواقف معدَّلة</th>'
+      +'<th>محذوفة</th><th>مُضافة</th><th>آخر تعديل</th><th>الجهاز</th><th>الحالة</th></tr></thead><tbody>';
+    rows.forEach(r=>{h+='<tr><td>'+r.name+'</td><td>'+r.base+'</td><td>'+r.edited+'</td><td>'+r.removed
+      +'</td><td>'+r.added+'</td><td>'+r.ts+'</td><td>'+r.dev+'</td><td>'+r.state+'</td></tr>';});
+    h+='</tbody></table>';
+  } else {
+    h+='<div class="doc-note-box">لا توجد أي تعديلات محلية على هذا الجهاز — كل المعروض أرقام رسمية من الملف.</div>';
+  }
+  const bks=loadOvBackups();
+  h+='<div class="doc-sec-h">النسخ المحفوظة تلقائياً قبل كل دمج سحابي</div>';
+  if(bks.length){
+    h+='<table class="doc-tbl sm"><thead><tr><th>الوقت</th><th>السبب</th><th>عدد الإدارات</th><th class="no-print">استعادة</th></tr></thead><tbody>';
+    bks.forEach(b=>{h+='<tr><td>'+new Date(b.t).toLocaleString('ar-EG-u-nu-latn')+'</td><td>'+(b.reason||'—')
+      +'</td><td>'+(b.govs||0)+'</td><td class="no-print"><button class="btn btn-primary" onclick="restoreOvBackup('
+      +b.t+')">استعادة</button></td></tr>';});
+    h+='</tbody></table>'
+      +'<div class="doc-note-box">الاستعادة تُرجِع طبقة التعديلات لهذه اللقطة على هذا الجهاز، ثم تُدفع لباقي الأجهزة. تُحفَظ لقطة للحالة الراهنة قبلها، فالتراجع ممكن.</div>';
+  } else {
+    h+='<div class="doc-note-box">لا توجد نسخ محفوظة بعد — تُلتقط تلقائياً مع أول دمج سحابي بعد هذا التحديث.</div>';
+  }
+  h+='</div>';
+  document.getElementById('docPage').innerHTML=h;
+  document.getElementById('docOverlay').classList.add('on');
+}
+function restoreOvBackup(t){
+  if(!can('edit')){authDeny();return;}
+  const b=loadOvBackups().find(x=>x.t===t);
+  if(!b){toast('النسخة غير موجودة',true);return;}
+  if(!confirm('استعادة طبقة التعديلات إلى لقطة '+new Date(b.t).toLocaleString('ar-EG-u-nu-latn')+'\u061F سيتم حفظ لقطة للحالة الحالية قبلها.'))return;
+  snapshotOv('قبل استعادة يدوية');
+  let data;try{data=JSON.parse(b.data);}catch(e){toast('تعذّر قراءة النسخة',true);return;}
+  // دمج لا استبدال: الاستعادة تُعيد المفقود ولا تمحو ما استُجدّ بعد اللقطة
+  Object.keys(data).forEach(id=>{ov[id]=mergeOvEntry(ov[id],data[id]);DIRTY.add(id);});
+  saveOv(ov);saveDirty();
+  if(typeof materializeCustomEntities==='function')materializeCustomEntities();
+  DIRTY.forEach(id=>{const g=PROJECT.govs.find(x=>x.id===id);
+    try{pushOverride(id,(g&&g.name)||id,ov[id],true);}catch(e){}});
+  logAudit({gov:'—',phase:'—',field:'استعادة نسخة من طبقة التعديلات',
+    before:new Date(b.t).toLocaleString('ar-EG-u-nu-latn'),after:Object.keys(data).length+' إدارة'});
+  refreshAll();updateSyncStatus();openSyncDiag();
+  toast('تمت الاستعادة ودُفعت لباقي الأجهزة');
+}
 
 // إعداد التزامن (نافذة)
 function openSyncSetup(){
