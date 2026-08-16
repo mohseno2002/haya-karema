@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-16c · ov-cell-limit split v1 + audit-trim + silent-push-alert · sw deh-v18 -->
+<!-- build 2026-08-16d · build-stamp + version-gate + alien-row prune + shrink notice · sw deh-v19 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1378,6 +1378,10 @@ table.tbl td{background-clip:padding-box}
 
 
 .ov-alert{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#fdecea;border:2px solid #c0392b;color:#7b241c;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.7;box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.ov-alert.info{background:#eaf3fd;border-color:#1d6fa5;color:#14486b}
+.ov-alert.info .ov-alert-b{background:#1d6fa5}
+#shrinkBar{bottom:78px}
+#buildBar{bottom:148px}
 .ov-alert-b{margin-inline-start:6px;background:#c0392b;color:#fff;border:0;border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}
 @media print{.ov-alert{display:none!important}}
 </style>
@@ -1801,6 +1805,8 @@ function roleOfCode(code){
 }
 function can(action,govId){
   if(!SESSION)return false;
+  // نسخة أقدم من المسموح: قراءة فقط — فلا يُنشئ المستخدم تعديلاً يتعذّر دفعه
+  if(typeof isReadOnly==='function'&&isReadOnly())return action==='view';
   if(SESSION.role==='admin')return true;
   if(SESSION.role==='viewer')return action==='view';
   if(SESSION.role==='gov'){
@@ -4134,6 +4140,7 @@ function updateSyncStatus(state){
 // دفع بلاغ واحد للسحابة
 async function pushReport(rep,isRetry){
   const url=getSyncUrl();if(!url)return;
+  if(isReadOnly()){console.warn('pushReport محجوب — نسخة متأخرة');return;}
   try{if(!isRetry&&rep&&rep.id){RDIRTY.add(rep.id);saveRSync();updateSyncStatus();}}catch(e){}
   try{
     await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -4201,6 +4208,21 @@ function ovHasPayload(o){
   if(o.canals&&Object.keys(o.canals).length)return true;
   return false;
 }
+/* صفوف لا تخصّ أى إدارة معروفة (بقايا اختبار أو صفّ تكملة خزّنه بيلد قديم):
+   تُحذف محلياً، ويُبعث أمر مسح واحد للسحابة كى لا يعيدها جهاز آخر. */
+function pruneAlienOv(){
+  try{
+    const known={};(PROJECT.govs||[]).forEach(g=>{known[g.id]=1;});
+    let hit=0;
+    Object.keys(ov).forEach(id=>{
+      if(known[id])return;
+      hit++;delete ov[id];DIRTY.delete(id);
+      if(!/~p[0-9]+$/.test(id)){try{pushOverrideDelete(id,true);}catch(e){}}
+    });
+    if(hit){saveOv(ov);saveDirty();}
+    return hit;
+  }catch(e){return 0;}
+}
 /* هل احتفظ الدمج بمحتوى محلي غائب عن الوارد؟ (⇒ يلزم إعادة دفعه لتتقارب السحابة) */
 function ovRicherThan(m,inc){
   try{
@@ -4209,6 +4231,46 @@ function ovRicherThan(m,inc){
     const mk=Object.keys((m&&m.canals)||{}),ik=Object.keys((inc&&inc.canals)||{});
     return mk.length>ik.length;
   }catch(e){return false;}
+}
+/* ═══ بصمة البيلد وحارس النسخة المتأخرة ═══
+   الأجهزة التى تظل على بيلد قديم هى الطريق الوحيد الباقى لتكرار عطل 13/08
+   (البيلد القديم يستبدل صفّ الإدارة كاملاً بدل دمجه). ثلاث طبقات:
+   (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
+   (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
+   (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
+const BUILD_ID='2026-08-16d';
+let MIN_BUILD='';
+let READ_ONLY=false;
+function isReadOnly(){return READ_ONLY===true;}
+function buildOlder(a,b){return String(a||'')<String(b||'');}
+function renderBuildBar(kind,text,withReload){
+  try{
+    let el=document.getElementById('buildBar');
+    if(!kind){if(el)el.style.display='none';return;}
+    if(!el){el=document.createElement('div');el.id='buildBar';document.body.appendChild(el);}
+    el.className=(kind==='stop')?'ov-alert':'ov-alert info';
+    el.style.display='block';
+    el.innerHTML='<b>'+text+'</b>'
+      +(withReload?' <button class="ov-alert-b" onclick="location.reload()">حدّث الآن</button>':'')
+      +' <button class="ov-alert-b" onclick="ovAlertHide2()">إخفاء</button>';
+  }catch(e){}
+}
+function ovAlertHide2(){const el=document.getElementById('buildBar');if(el)el.style.display='none';}
+async function checkAppVersion(){
+  try{
+    const res=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!res.ok)return;
+    const v=await res.json();
+    MIN_BUILD=v.minBuild||'';
+    const wasRO=READ_ONLY;
+    READ_ONLY=!!(MIN_BUILD&&buildOlder(BUILD_ID,MIN_BUILD));
+    if(READ_ONLY){
+      renderBuildBar('stop','هذه النسخة ('+BUILD_ID+') أقدم من المسموح ('+MIN_BUILD+') — التطبيق يعمل قراءةً فقط حتى التحديث.',true);
+    } else if(v.build&&buildOlder(BUILD_ID,v.build)){
+      renderBuildBar('info','صدرت نسخة أحدث ('+v.build+') — التحديث يمنع تعارض البيانات بين الأجهزة.',true);
+    } else if(wasRO){renderBuildBar('',' ',false);}
+    if(typeof refreshAll==='function'&&wasRO!==READ_ONLY)refreshAll();
+  }catch(e){console.warn('checkAppVersion',e);}
 }
 /* ═══ حدّ خلية جوجل شيت — سببُ فقدٍ صامت مُثبت بالاختبار (١٦/٨/٢٠٢٦) ═══
    خليةُ الشيت لا تقبل أكثر من 50000 حرف. الدفعةُ الأكبر يرفضها السكربت،
@@ -4293,6 +4355,24 @@ function foldOvParts(list){
   }catch(e){return list;}
 }
 function ovAlertHide(){const el=document.getElementById('ovAlert');if(el)el.style.display='none';}
+const SHRINK={};
+/* إعلان الشفاء: نقصٌ اكتُشف فى السحابة وأُعيد دفعه — لا يُبتلع بصمت */
+function renderShrinkNote(){
+  try{
+    const ids=Object.keys(SHRINK);
+    let el=document.getElementById('shrinkBar');
+    if(!ids.length){if(el)el.style.display='none';return;}
+    if(!el){el=document.createElement('div');el.id='shrinkBar';el.className='ov-alert info';document.body.appendChild(el);}
+    const parts=ids.map(id=>{const g=(PROJECT.govs||[]).find(x=>x.id===id);
+      return ((g&&g.name)||id)+' ('+SHRINK[id].n+' ترعة · بيلد الكاتب '+SHRINK[id].bv+')';});
+    el.style.display='block';
+    el.innerHTML='<b>نقصٌ فى السحابة أُعيد دفعه تلقائياً:</b> '+parts.join('، ')
+      +' — راجع تحديث أجهزة هذه الإدارات.'
+      +' <button class="ov-alert-b" onclick="openSyncDiag()">تشخيص</button>'
+      +' <button class="ov-alert-b" onclick="shrinkHide()">إخفاء</button>';
+  }catch(e){}
+}
+function shrinkHide(){Object.keys(SHRINK).forEach(k=>{delete SHRINK[k];});const el=document.getElementById('shrinkBar');if(el)el.style.display='none';}
 /* شريط أحمر: دفعةٌ لم تصل بعد ثلاث دورات سحب — الفشل الصامت يصير مرئياً */
 function renderOvAlert(){
   try{
@@ -4314,10 +4394,11 @@ function renderOvAlert(){
 // دفع تعديل إدارة مركزية للسحابة
 async function pushOverride(govId,govName,data,isRetry){
   const url=getSyncUrl();if(!url)return;
+  if(isReadOnly()){console.warn('pushOverride محجوب — نسخة متأخرة');return;}
   // ختم الدفعة الأصلية بطابع زمني وتسجيلها بالصندوق الصادر حتى يتأكد وصولها
   // (إعادة المحاولة لا تُعيد الختم كي لا يتجدد الطابع فلا يتحقق التأكيد أبداً)
   try{if(!isRetry){
-    if(ov[govId]&&typeof ov[govId]==='object'){ov[govId]._ts=Date.now();ov[govId]._dev=DEVICE_ID;saveOv(ov);data=ov[govId];}
+    if(ov[govId]&&typeof ov[govId]==='object'){ov[govId]._ts=Date.now();ov[govId]._dev=DEVICE_ID;ov[govId]._bv=BUILD_ID;saveOv(ov);data=ov[govId];}
     DIRTY.add(govId);delete OVDEL[govId];saveDirty();updateSyncStatus();
   }}catch(e){}
   try{
@@ -4340,6 +4421,7 @@ async function pushOverride(govId,govName,data,isRetry){
 }
 async function pushOverrideDelete(govId,isRetry){
   const url=getSyncUrl();if(!url)return;
+  if(isReadOnly()){console.warn('pushOverrideDelete محجوب — نسخة متأخرة');return;}
   try{if(!isRetry&&govId){OVDEL[govId]=Date.now();DIRTY.delete(govId);saveDirty();updateSyncStatus();}}catch(e){}
   try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({action:'overrideDelete',govId})});}catch(e){console.warn('pushOverrideDelete',e);}
@@ -4349,6 +4431,7 @@ function applyCloudOverrides(list){
   if(!Array.isArray(list))return 0;
   const rawCount=list.length;
   list=foldOvParts(list);                                  // صفوف التكملة تعود لإدارتها أولاً
+  pruneAlienOv();                                          // صفوف لا تخصّ إدارة معروفة لا تُبعث من جديد
   snapshotOv('قبل دمج سحابي');
   const merged={...ov};const cloudIds=new Set();const heal=new Set();
   list.forEach(o=>{try{
@@ -4360,7 +4443,14 @@ function applyCloudOverrides(list){
     // ═══ دمج حقلي: الوارد لا يستبدل الصف، بل يُدمج فيه ═══
     // الاستبدال الكامل كان يمسح الترع المُضافة ومواقف الترع التي لا يعرفها الجهاز الدافع.
     const mrg=mergeOvEntry(ov[id],inc);
-    if(ovRicherThan(mrg,inc))heal.add(id);                 // عندنا ما ليس بالسحابة ⇒ يُعاد دفعه
+    if(ovRicherThan(mrg,inc)){
+      heal.add(id);                                        // عندنا ما ليس بالسحابة ⇒ يُعاد دفعه
+      // انكماش الصفّ: جهاز على بيلد قديم استبدل الصف بدل دمجه — يُعلَن لا يُبتلع
+      try{
+        const lost=(((mrg&&mrg.addedCanals)||[]).length)-(((inc&&inc.addedCanals)||[]).length);
+        if(lost>0)SHRINK[id]={n:lost,bv:(inc&&inc._bv)||'قديم',dev:(inc&&inc._dev)||'—'};
+      }catch(e){}
+    }
     if(DIRTY.has(id)){                                     // تعديل محلي غير مؤكَّد: يُدمج ولا يُمحى
       merged[id]=mrg;
       if(lts>0&&cts>=lts){                                 // صدى وصولنا (أو أحدث) ⇒ تأكيد
@@ -4391,6 +4481,7 @@ function applyCloudOverrides(list){
   // إعادة دفع غير المؤكَّد — حلقة شفاء ذاتي تتقارب حتى بعد فشل صامت
   DIRTY.forEach(id=>{const g=PROJECT.govs.find(x=>x.id===id);try{pushOverride(id,(g&&g.name)||id,ov[id],true);}catch(e){}});
   Object.keys(OVDEL).forEach(id=>{try{pushOverrideDelete(id,true);}catch(e){}});
+  try{renderShrinkNote();}catch(e){}
   // ═══ عدّاد الدورات غير المؤكَّدة: ما لم يصل بعد ثلاث دورات يُعلَن بشريط أحمر ═══
   try{
     DIRTY.forEach(id=>{OVTRY[id]=(OVTRY[id]||0)+1;});
@@ -4467,6 +4558,7 @@ function syncDiagRows(){
       added:((o.addedCanals||[]).length),
       ts:o._ts?new Date(o._ts).toLocaleString('ar-EG-u-nu-latn'):'—',
       dev:o._dev||'—',
+      bv:o._bv||'قديم',
       chars:ovRowChars(g.id,g.name),
       np:((ovSplitPayload(o,g.name).parts)||[]).length,
       state:(DIRTY.has(g.id)?('بانتظار الدفع'+(OVTRY[g.id]?' ('+OVTRY[g.id]+' دورات)':'')):(o._sy?'مؤكَّد سحابياً':'محلي'))});
@@ -4484,10 +4576,11 @@ function openSyncDiag(){
   if(rows.length){
     h+='<div class="doc-sec-h">لكل إدارة: ماذا يحمل صفُّ التعديلات فعلياً</div>'
       +'<table class="doc-tbl sm"><thead><tr><th>الإدارة</th><th>ترع الأساس</th><th>مواقف معدَّلة</th>'
-      +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>الحالة</th></tr></thead><tbody>';
+      +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>بيلد الكاتب</th><th>الحالة</th></tr></thead><tbody>';
     rows.forEach(r=>{h+='<tr><td>'+r.name+'</td><td>'+r.base+'</td><td>'+r.edited+'</td><td>'+r.removed
       +'</td><td>'+r.added+'</td><td>'+r.chars.toLocaleString('en-US')+'</td><td>'+r.np+'</td><td>'+r.ts
-      +'</td><td>'+r.dev+'</td><td>'+r.state+'</td></tr>';});
+      +'</td><td>'+r.dev+'</td><td'+((r.bv==='قديم'||buildOlder(r.bv,BUILD_ID))?' style="color:#c0392b;font-weight:800"':'')
+      +'>'+r.bv+'</td><td>'+r.state+'</td></tr>';});
     h+='</tbody></table><div class="doc-note-box">حدّ خلية جوجل شيت 50,000 حرف — والحدّ الآمن للصفّ الواحد '
       +OV_ROW_SAFE.toLocaleString('en-US')+' حرف. ما زاد يُدفع تلقائياً فى صفوف تكملة (عمود «أجزاء») '
       +'ويُجمَّع عند السحب، فلا تُفقد ترعة بسبب الحجم.</div>';
@@ -7565,6 +7658,10 @@ try{refreshAll();}catch(e){console.warn('boot render',e);}
 if(getSyncUrl()){setTimeout(()=>pullReports(true),400);}
 // تحديث دوري كل دقيقة عند تفعيل التزامن
 setInterval(()=>{if(getSyncUrl()&&!syncing)pullReports(true);},60000);
+// فحص النسخة: عند الإقلاع ثم كل عشر دقائق — يمنع بقاء جهاز على بيلد قديم بلا علم صاحبه
+setTimeout(()=>{try{checkAppVersion();}catch(e){}},1500);
+setInterval(()=>{try{checkAppVersion();}catch(e){}},600000);
+try{pruneAlienOv();}catch(e){}
 </script>
 <script>
 initAuth();
