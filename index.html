@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-16d · build-stamp + version-gate + alien-row prune + shrink notice · sw deh-v19 -->
+<!-- build 2026-08-16f · reset-gov-totals to official + totals diff column · sw deh-v21 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -3282,8 +3282,12 @@ function openAddCanal(govId){
           ${hasP1?'<option value="1">المرحلة الأولى</option>':''}
           ${hasP2?'<option value="2">المرحلة الثانية</option>':''}
         </select></div>
-      <label class="ng-check" style="margin-top:6px"><input type="checkbox" id="nc-count" checked>
-        عكسها على إجماليات المرحلة (تُضاف +1 لإجمالي الترع، و+1 للمنفّذ إن كانت نسبتها 100%، و+1 للمُستلَم إن كان موقفها «مقبولة/اكتفاء»)</label>
+      <label class="ng-check" style="margin-top:6px"><input type="checkbox" id="nc-count" onchange="ncCountNote()">
+        <b>ترعة إضافية غير واردة بتقرير المفوّض</b> — فعّل هذا الخيار فقط إن كانت زيادةً حقيقية على العدد المعتمد،
+        فيُضاف +1 لإجمالي الترع (و+1 للمنفّذ عند 100%، و+1 للمُستلَم عند «مقبولة/اكتفاء»).
+        <span style="display:block;opacity:.85;margin-top:3px">الأصل أن الإضافة <b>استكمال بيان ناقص</b>: الترعة تظهر في جدول الترع والتقارير
+        <b>دون أي تغيير في العدد الرسمي للإدارة</b>.</span></label>
+      <div class="ng-derived" id="nc-countnote"></div>
       <div class="ng-derived" id="nc-derived"></div>
       <div class="ng-err" id="nc-err"></div>
       <div class="save-row">
@@ -3297,8 +3301,21 @@ function openAddCanal(govId){
   document.getElementById('addCanalBody').innerHTML=body;
   document.getElementById('addCanalTitle').textContent='إضافة ترعة جديدة — '+g.name;
   document.getElementById('addCanalModal').classList.add('on');
+  try{ncCountNote();}catch(e){}
 }
 function closeAddCanal(){document.getElementById('addCanalModal').classList.remove('on')}
+/* سطر صريح قبل الحفظ: هل يتغيّر العدد المعتمد للإدارة أم لا */
+function ncCountNote(){
+  try{
+    const el=document.getElementById('nc-countnote');if(!el)return;
+    const g=gov(window._addCanalGov);if(!g)return;
+    const tot=(((g.phase1||{}).canals)||0)+(((g.phase2||{}).canals)||0);
+    const on=!!(document.getElementById('nc-count')||{}).checked;
+    el.innerHTML=on
+      ? 'إجمالي ترع الإدارة: <b>'+tot+'</b> ← بعد الحفظ <b style="color:#c0392b">'+(tot+1)+'</b> (زيادة على العدد المعتمد)'
+      : 'إجمالي ترع الإدارة: <b>'+tot+'</b> ← بعد الحفظ <b>'+tot+'</b> (بلا تغيير — استكمال بيان)';
+  }catch(e){}
+}
 function ncClampPct(){const el=document.getElementById('nc-pct');if(!el)return;let v=+el.value;if(v>100)el.value=100;if(v<0)el.value=0;}
 function saveNewCanal(){
   const govId=window._addCanalGov;
@@ -4238,7 +4255,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-16d';
+const BUILD_ID='2026-08-16f';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
@@ -4544,6 +4561,48 @@ async function pullReports(silent){
   syncing=false;
 }
 async function syncNow(){await pullReports(false);}
+/* ═══ فروق إجماليات الإدارة عن الأرقام الرسمية المضمّنة فى الملف ═══
+   الأرقام الرسمية هى المحفوظة فى PROJECT.govs (كشوف الإدارات التفصيلية بتقرير المفوّض
+   كما بُنى منها الملف)، وأى قيمة فى ov[gov].phaseX تعلوها هى تعديل أُدخل من داخل التطبيق. */
+const TOTAL_FIELD_AR={canals:'إجمالى الترع',executed:'المنفّذة',delivered:'المستلَمة',dar:'دار الهندسة',invest:'استثمارى',remaining:'المتبقّى'};
+function govTotalsDiff(govId){
+  const out=[];
+  try{
+    const g=PROJECT.govs.find(x=>x.id===govId);const o=ov[govId];
+    if(!g||!o)return out;
+    ['phase1','phase2'].forEach(k=>{
+      if(!o[k]||!g[k])return;
+      Object.keys(TOTAL_FIELD_AR).forEach(f=>{
+        const off=(g[k][f]!=null)?g[k][f]:0;
+        const cur=(o[k][f]!=null)?o[k][f]:off;
+        if(cur!==off)out.push({key:k,field:f,off:off,cur:cur});
+      });
+    });
+  }catch(e){}
+  return out;
+}
+/* إرجاع إجماليات إدارة للأرقام الرسمية — تفاصيل الترع لا تُمَسّ */
+function resetGovTotals(govId){
+  if(!can('edit',govId)){authDeny();return;}
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
+  const d=govTotalsDiff(govId);
+  if(!d.length){toast('إجماليات '+g.name+' مطابقة للأرقام الرسمية بالفعل');return;}
+  const lines=d.map(x=>'• م'+(x.key==='phase2'?'2':'1')+' — '+(TOTAL_FIELD_AR[x.field]||x.field)+': '+x.cur+' ← '+x.off).join('\n');
+  if(!confirm('إرجاع إجماليات «'+g.name+'» إلى الأرقام الرسمية:\n\n'+lines
+    +'\n\nتفاصيل الترع وجدول الترع لا تتأثر — يُلغى فقط تعديل الأعداد.\nمتابعة؟'))return;
+  const o=ov[govId]||{};
+  delete o.phase1;delete o.phase2;
+  // ذاكرة الأثر تُمحى أيضاً، وإلا خصم حذفُ ترعة مضافة رقماً لم يُضَف أصلاً
+  (o.addedCanals||[]).forEach(c=>{if(c)c._counted=null;});
+  o.lastUpdate=new Date().toISOString().slice(0,10);
+  ov[govId]=o;saveOv(ov);
+  try{pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  logAudit({gov:g.name,phase:'—',field:'إرجاع الإجماليات للأرقام الرسمية',
+    before:d.map(x=>x.cur).join('/'),after:d.map(x=>x.off).join('/')});
+  if(typeof refreshAll==='function')refreshAll();
+  toast('أُرجعت إجماليات '+g.name+' للأرقام الرسمية');
+  try{openSyncDiag();}catch(e){}
+}
 /* ═══ تشخيص المزامنة — لقطة الشاشة تكفي للتشخيص عن بُعد ═══ */
 function syncDiagRows(){
   const rows=[];
@@ -4559,6 +4618,7 @@ function syncDiagRows(){
       ts:o._ts?new Date(o._ts).toLocaleString('ar-EG-u-nu-latn'):'—',
       dev:o._dev||'—',
       bv:o._bv||'قديم',
+      diff:govTotalsDiff(g.id).length,
       chars:ovRowChars(g.id,g.name),
       np:((ovSplitPayload(o,g.name).parts)||[]).length,
       state:(DIRTY.has(g.id)?('بانتظار الدفع'+(OVTRY[g.id]?' ('+OVTRY[g.id]+' دورات)':'')):(o._sy?'مؤكَّد سحابياً':'محلي'))});
@@ -4576,11 +4636,14 @@ function openSyncDiag(){
   if(rows.length){
     h+='<div class="doc-sec-h">لكل إدارة: ماذا يحمل صفُّ التعديلات فعلياً</div>'
       +'<table class="doc-tbl sm"><thead><tr><th>الإدارة</th><th>ترع الأساس</th><th>مواقف معدَّلة</th>'
-      +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>بيلد الكاتب</th><th>الحالة</th></tr></thead><tbody>';
+      +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>بيلد الكاتب</th><th>الحالة</th><th class="no-print">الإجماليات</th></tr></thead><tbody>';
     rows.forEach(r=>{h+='<tr><td>'+r.name+'</td><td>'+r.base+'</td><td>'+r.edited+'</td><td>'+r.removed
       +'</td><td>'+r.added+'</td><td>'+r.chars.toLocaleString('en-US')+'</td><td>'+r.np+'</td><td>'+r.ts
       +'</td><td>'+r.dev+'</td><td'+((r.bv==='قديم'||buildOlder(r.bv,BUILD_ID))?' style="color:#c0392b;font-weight:800"':'')
-      +'>'+r.bv+'</td><td>'+r.state+'</td></tr>';});
+      +'>'+r.bv+'</td><td>'+r.state+'</td>'
+      +'<td class="no-print">'+(r.diff
+        ? '<span style="color:#c0392b;font-weight:800">فرق '+r.diff+'</span> <button class="ov-alert-b" onclick="resetGovTotals(&quot;'+r.id+'&quot;)">إرجاع للرسمى</button>'
+        : 'مطابقة')+'</td></tr>';});
     h+='</tbody></table><div class="doc-note-box">حدّ خلية جوجل شيت 50,000 حرف — والحدّ الآمن للصفّ الواحد '
       +OV_ROW_SAFE.toLocaleString('en-US')+' حرف. ما زاد يُدفع تلقائياً فى صفوف تكملة (عمود «أجزاء») '
       +'ويُجمَّع عند السحب، فلا تُفقد ترعة بسبب الحجم.</div>';
