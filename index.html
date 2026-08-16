@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-16a · xlsx-sheetview-fix v1 · sw deh-v16 -->
+<!-- build 2026-08-16b · canal-phase-edit v1 + xlsx-sheetview-fix v1 · sw deh-v17 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1978,7 +1978,7 @@ function canalDarDelta(baseCanals,ovCanals){
   let delta=0;
   baseCanals.forEach(c=>{
     const co=ovCanals[c.id];
-    if(!co||co._removed||co._b)return;               // لا تعديل — أو شاهدة حذف — أو تعديل «مُثبَّت» أثرُه مخصوم في الأرقام المطلقة
+    if(!co||co._removed||co._b||co.statusCode==null)return; // لا تعديل — أو تعديل مرحلة فقط — أو شاهدة حذف — أو تعديل «مُثبَّت» أثرُه مخصوم في الأرقام المطلقة
     const wasDar=DAR_CODES.includes(c.statusCode);   // الأصل
     const nowDar=DAR_CODES.includes(co.statusCode);  // بعد التعديل
     if(nowDar&&!wasDar)delta++;
@@ -2005,7 +2005,7 @@ function gov(id){
     // شاهدة حذف ترعة رسمية: تُستبعد نهائياً من القائمة (وكل ما يُبنى عليها) وتنتشر لكل الأجهزة
     m.canals=g.canals.filter(c=>!(o.canals[c.id]&&o.canals[c.id]._removed)).map(c=>{
       const co=o.canals[c.id];
-      return co?{...c,statusCode:co.statusCode,status:co.status,stage:(co.stage!=null?co.stage:c.stage),_edited:true}:c;
+      return co?{...c,statusCode:(co.statusCode!=null?co.statusCode:c.statusCode),status:(co.status!=null?co.status:c.status),stage:(co.stage!=null?co.stage:c.stage),phase:(co.phase!=null?(co.phase===0?null:co.phase):(c.phase!=null?c.phase:null)),_edited:true}:c;
     });
     // ── عكس تعديل مواقف الترع على إجماليات الإدارة (dar/delivered/متبقّي) ──
     // لا نُعيد احتساب الأرقام الرسمية بالكامل (فالترع الفردية لا تُغطّى كلها)، بل
@@ -2735,6 +2735,19 @@ function openCanalCard(cid){
       <select id="ccdStatusSel" class="ccd-sel">${opts}</select>
       <button class="ccd-save" onclick="saveCanalStatus('${c.govId||''}','${c.id}')">حفظ</button>
     </span></div>`);
+  // صف المرحلة القابل للتعديل — يتزامن كتعديلات المواقف وينعكس على تقارير المراحل والجداول والتصدير
+  const gidPh=c.govId||((allGovs().find(g=>(g.canals||[]).some(x=>x.id===c.id))||{}).id)||'';
+  const gvPh=gidPh?gov(gidPh):null;
+  const phCur=(c.phase===1||c.phase===2)?c.phase:0;
+  const phList=[[0,'\u0628\u0644\u0627 \u062a\u062d\u062f\u064a\u062f \u0645\u0631\u062d\u0644\u0629']]
+    .concat((!gvPh||gvPh.phase1)?[[1,'\u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0627\u0644\u0623\u0648\u0644\u0649']]:[])
+    .concat((!gvPh||gvPh.phase2)?[[2,'\u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0627\u0644\u062b\u0627\u0646\u064a\u0629']]:[]);
+  const phOptsHtml=phList.map(p=>'<option value="'+p[0]+'"'+(p[0]===phCur?' selected':'')+'>'+p[1]+'</option>').join('');
+  rows.push('<div class="ccd-row ccd-row-edit"><span class="ccd-l">\u0627\u0644\u0645\u0631\u062d\u0644\u0629</span>'
+    +'<span class="ccd-v ccd-edit-wrap">'
+    +'<select id="ccdPhaseSel" class="ccd-sel">'+phOptsHtml+'</select>'
+    +'<button class="ccd-save" onclick="saveCanalPhase(\u0027'+gidPh+'\u0027,\u0027'+c.id+'\u0027)">\u062d\u0641\u0638</button>'
+    +'</span></div>');
   if(c.stage!=null&&c.stage>=0)R('خطوة المسار',(c.stage>0?c.stage:'—')+' من '+GATE_STAGES.length);
   const pipe=step>=0?gatePipeline(step):`<div class="cr-special" style="margin:0">${c.statusCode==='investment'?'مسار استثماري مباشر — لا تمرّ على دار الهندسة':'خارج مسار الاستلام (مؤجلة/متوقفة/ملغاة)'}</div>`;
   const bar=c.pct!=null?`<div class="ccd-bar"><i style="width:${Math.min(100,c.pct)}%"></i></div>`:'';
@@ -2785,11 +2798,11 @@ function applyCanalStatusOv(govId,cid,newCode,label,stage){
     if(cur.canals)cur.delivPct=Math.round(cur.delivered/cur.canals*100);
     o[key]=cur;
     o.canals=o.canals||{};
-    o.canals[cid]={statusCode:newCode,status:label,stage,_b:1};
+    o.canals[cid]={...((o.canals[cid]&&!o.canals[cid]._removed)?o.canals[cid]:{}),statusCode:newCode,status:label,stage,_b:1};
     freezeCanalDelta(o);                                          // القديمة دخلت اللقطة — تُختم فلا تُحسب مرتين
   }else{
     o.canals=o.canals||{};
-    o.canals[cid]={statusCode:newCode,status:label,stage,_b:1};   // لا أثر رقمي (مثل جارٍ→متوقفة)
+    o.canals[cid]={...((o.canals[cid]&&!o.canals[cid]._removed)?o.canals[cid]:{}),statusCode:newCode,status:label,stage,_b:1};   // لا أثر رقمي (مثل جارٍ→متوقفة)
   }
   o.lastUpdate=new Date().toISOString().slice(0,10);
   ov[govId]=o;saveOv(ov);
@@ -2830,6 +2843,44 @@ function saveCanalStatus(govId,cid){
   toast&&toast('تم تحديث موقف الترعة وانعكس في كل الأماكن');
 }
 function closeCanalCard(){document.getElementById('canalCard').classList.remove('on');}
+// ═══ حفظ تعديل مرحلة الترعة من داخل الكارت ═══
+// يُخزَّن فى طبقة الأوفررايد المتزامنة (o.canals[cid].phase) فيصل كل الأجهزة عبر الدمج الحقلى القائم،
+// وينعكس عبر gov() على: تقرير الإدارة بالمرحلة، الجدول المصنّف وفلاتره، بوابة دار الهندسة،
+// تصدير Excel، العروض التقديمية، والمساعد — بلا أى مساس بأعداد الاستلام الرسمية (المرحلة ليست موقفاً).
+// التخزين: 1 / 2 / 0 (بلا تحديد) — الصفر بديل null لأن Firebase يُسقط مفاتيح null عند التزامن.
+function canalPhaseLbl(v){return v===1?'المرحلة الأولى':v===2?'المرحلة الثانية':'بلا تحديد مرحلة';}
+function saveCanalPhase(govId,cid){
+  if(!govId){govId=((window._canalIndex||{})[cid]||{}).govId||window._curGov||'';}
+  if(!govId){const owner=allGovs().find(g=>(g.canals||[]).some(c=>c.id===cid));if(owner)govId=owner.id;}
+  if(!govId){toast&&toast('تعذّر تحديد الإدارة — أعِد فتح الترعة');return;}
+  if(!can('edit',govId)){authDeny();return;}
+  const sel=document.getElementById('ccdPhaseSel');if(!sel)return;
+  const newPhase=+sel.value;
+  if(newPhase!==0&&newPhase!==1&&newPhase!==2){toast&&toast('قيمة مرحلة غير صالحة');return;}
+  const g=PROJECT.govs.find(x=>x.id===govId);if(!g)return;
+  const baseC=(g.canals||[]).find(x=>x.id===cid);if(!baseC)return;
+  const merged=(gov(govId).canals||[]).find(x=>x.id===cid)||baseC;
+  const oldEff=(merged.phase===1||merged.phase===2)?merged.phase:null;
+  const newEff=newPhase===0?null:newPhase;
+  if(newEff===oldEff){toast&&toast('لا تغيير في المرحلة');return;}
+  const gv=gov(govId);
+  if(newEff===1&&!gv.phase1){toast&&toast('هذه الإدارة بلا مرحلة أولى معتمدة');return;}
+  if(newEff===2&&!gv.phase2){toast&&toast('هذه الإدارة بلا مرحلة ثانية معتمدة');return;}
+  const o=ov[govId]||(ov[govId]={});
+  o.canals=o.canals||{};
+  const prev=(o.canals[cid]&&!o.canals[cid]._removed)?o.canals[cid]:null;
+  o.canals[cid]=prev?{...prev,phase:newPhase}:{phase:newPhase,_b:1}; // بلا أثر رقمى — لا يدخل حساب دلتا الاستلام
+  o.lastUpdate=new Date().toISOString().slice(0,10);
+  ov[govId]=o;saveOv(ov);
+  logAudit({gov:g.name,phase:cid+' — '+(baseC.name||''),field:'مرحلة الترعة',before:canalPhaseLbl(oldEff),after:canalPhaseLbl(newEff)});
+  try{if(typeof pushOverride==='function')pushOverride(govId,g.name,ov[govId]);}catch(e){}
+  refreshAll();
+  try{const dr=document.getElementById('drawer');
+    if(dr&&dr.classList.contains('on')&&window._curGov===govId)openDrawer(govId);}catch(_){}
+  openCanalCardFlat(govId,cid);
+  toast&&toast('تم تحديث مرحلة الترعة وانعكس في التقارير والجداول والتصدير');
+}
+
 function gatePipeline(step){
   return `<div class="gate-pipe">${GATE_STAGES.map((s,i)=>{
     const state=i<step?'past':(i===step?'now':'future');
