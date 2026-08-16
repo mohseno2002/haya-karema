@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-16b · canal-phase-edit v1 + xlsx-sheetview-fix v1 · sw deh-v17 -->
+<!-- build 2026-08-16c · ov-cell-limit split v1 + audit-trim + silent-push-alert · sw deh-v18 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1377,6 +1377,9 @@ table.tbl td{background-clip:padding-box}
 @media print{.ux-command,.ux-fab,.ux-toast-note{display:none!important}}
 
 
+.ov-alert{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#fdecea;border:2px solid #c0392b;color:#7b241c;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.7;box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.ov-alert-b{margin-inline-start:6px;background:#c0392b;color:#fff;border:0;border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}
+@media print{.ov-alert{display:none!important}}
 </style>
 </head>
 <body>
@@ -4207,6 +4210,107 @@ function ovRicherThan(m,inc){
     return mk.length>ik.length;
   }catch(e){return false;}
 }
+/* ═══ حدّ خلية جوجل شيت — سببُ فقدٍ صامت مُثبت بالاختبار (١٦/٨/٢٠٢٦) ═══
+   خليةُ الشيت لا تقبل أكثر من 50000 حرف. الدفعةُ الأكبر يرفضها السكربت،
+   والتطبيق يدفع بـmode:no-cors فلا يرى الرفض ولا يبلّغ أحداً — فتبقى
+   التعديلات على جهازٍ واحد ويراها الباقون ناقصة (المنيا: 24 ترعة).
+   العلاج ثلاث طبقات بلا أى تعديل على سكربت جوجل:
+   (١) تقليم ذيل سجل التدقيق المرفق بكل دفعة،
+   (٢) تقسيم فائض الترع المُضافة على صفوف تكملة «gov~pN» تُجمَّع عند السحب،
+   (٣) عدّاد محاولات: ما لم يُؤكَّد بعد ثلاث دورات سحب يظهر شريطاً أحمر. */
+const OV_CELL_MAX=50000;
+const OV_ROW_SAFE=42000;
+const OV_AUDIT_TAIL=8;
+const OV_AUDIT_STR=140;
+const OVTRY={};
+function ovChars(o){try{return JSON.stringify(o).length;}catch(e){return 0;}}
+function ovAuditTail(govName){
+  try{
+    return loadAudit().filter(x=>x.gov===govName).slice(0,OV_AUDIT_TAIL).map(e=>{
+      const c={};
+      Object.keys(e||{}).forEach(k=>{const v=e[k];
+        c[k]=(typeof v==='string'&&v.length>OV_AUDIT_STR)?(v.slice(0,OV_AUDIT_STR)+'…'):v;});
+      return c;});
+  }catch(e){return [];}
+}
+/* يبنى الدفعة السلكية ويُخرج فائض الترع المُضافة فى أجزاء لا يتجاوز أىٌّ منها الحدّ الآمن */
+function ovSplitPayload(data,govName){
+  const base={};
+  Object.keys(data||{}).forEach(k=>{base[k]=data[k];});
+  const au=ovAuditTail(govName);
+  if(au.length)base._audit=au; else delete base._audit;
+  const all=Array.isArray(base.addedCanals)?base.addedCanals.slice():[];
+  delete base.addedCanals;
+  base._np=0;
+  const room=OV_ROW_SAFE-ovChars(base)-40;
+  const main=[];const rest=[];let used=0;
+  all.forEach(c=>{const n=ovChars(c)+1;
+    if(!rest.length&&used+n<=room){main.push(c);used+=n;} else rest.push(c);});
+  const parts=[];let cur=[],curLen=0;
+  rest.forEach(c=>{const n=ovChars(c)+1;
+    if(cur.length&&curLen+n>OV_ROW_SAFE-300){parts.push(cur);cur=[];curLen=0;}
+    cur.push(c);curLen+=n;});
+  if(cur.length)parts.push(cur);
+  base.addedCanals=main;
+  base._np=parts.length;
+  return {main:base,parts:parts};
+}
+/* دفع صفٍّ واحد — يبتلع فشله وحده كى لا يُسقط بقية الأجزاء معه */
+async function ovPostRow(url,govId,govName,payload){
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'override',govId:govId,govName:govName,data:JSON.stringify(payload)})});
+    return true;
+  }catch(e){console.warn('ovPostRow',govId,e);return false;}
+}
+/* حجم صفّ الإدارة الفعلى على السلك (بعد التقليم وقبل التقسيم) — يظهر فى لوحة التشخيص */
+function ovRowChars(govId,govName){
+  try{const sp=ovSplitPayload(ov[govId]||{},govName||govId);
+      return ovChars(sp.main)+sp.parts.reduce((a,p)=>a+ovChars(p),0);}catch(e){return 0;}
+}
+/* تجميع صفوف التكملة فى صفّ إدارتها قبل أى دمج — الترع اتحادٌ لا استبدال */
+function foldOvParts(list){
+  try{
+    const parts={};const mains=[];
+    (list||[]).forEach(o=>{
+      let inc=null;try{inc=(typeof o.data==='string')?JSON.parse(o.data):o.data;}catch(e){}
+      if(inc&&inc._for){(parts[inc._for]=parts[inc._for]||[]).push(inc);return;}
+      mains.push(o);});
+    window.__ovPartMiss=[];
+    return mains.map(o=>{
+      const ps=parts[o.govId];
+      let inc=null;try{inc=(typeof o.data==='string')?JSON.parse(o.data):o.data;}catch(e){}
+      if(!inc||typeof inc!=='object')return o;
+      const want=inc._np||0;
+      if(want&&(!ps||ps.length<want))window.__ovPartMiss.push(o.govId);
+      if(!ps||!ps.length)return o;
+      const acc=Array.isArray(inc.addedCanals)?inc.addedCanals.slice():[];
+      ps.sort((a,b)=>(a._pi||0)-(b._pi||0)).forEach(p=>{(p.addedCanals||[]).forEach(c=>{if(c&&c.id)acc.push(c);});});
+      const merged={};Object.keys(inc).forEach(k=>{merged[k]=inc[k];});
+      merged.addedCanals=acc;
+      return {govId:o.govId,govName:o.govName,data:merged};
+    });
+  }catch(e){return list;}
+}
+function ovAlertHide(){const el=document.getElementById('ovAlert');if(el)el.style.display='none';}
+/* شريط أحمر: دفعةٌ لم تصل بعد ثلاث دورات سحب — الفشل الصامت يصير مرئياً */
+function renderOvAlert(){
+  try{
+    const bad=Object.keys(OVTRY).filter(id=>OVTRY[id]>=3);
+    let el=document.getElementById('ovAlert');
+    if(!bad.length){if(el)el.style.display='none';return;}
+    if(!el){el=document.createElement('div');el.id='ovAlert';el.className='ov-alert';document.body.appendChild(el);}
+    const names=bad.map(id=>{const g=(PROJECT.govs||[]).find(x=>x.id===id);return (g&&g.name)||id;}).join('، ');
+    let tries=0;bad.forEach(id=>{if(OVTRY[id]>tries)tries=OVTRY[id];});
+    const big=bad.filter(id=>ovRowChars(id)>OV_ROW_SAFE).length;
+    el.style.display='block';
+    el.innerHTML='<b>تعديلات لم تصل إلى السحابة:</b> '+names+' — بعد '+tries+' دورات سحب.'
+      +(big?' الصفّ أكبر من الحدّ الآمن؛ يُقسَّم تلقائياً فى الدفعة التالية.':'')
+      +' <button class="ov-alert-b" onclick="exportJSON()">احفظ نسخة احتياطية الآن</button>'
+      +'<button class="ov-alert-b" onclick="openSyncDiag()">تشخيص</button>'
+      +'<button class="ov-alert-b" onclick="ovAlertHide()">إخفاء</button>';
+  }catch(e){}
+}
 // دفع تعديل إدارة مركزية للسحابة
 async function pushOverride(govId,govName,data,isRetry){
   const url=getSyncUrl();if(!url)return;
@@ -4217,13 +4321,21 @@ async function pushOverride(govId,govName,data,isRetry){
     DIRTY.add(govId);delete OVDEL[govId];saveDirty();updateSyncStatus();
   }}catch(e){}
   try{
-    // يُرفَق مع كل دفعة آخرُ قيود سجل التغييرات الخاصة بهذه الإدارة —
-    // فتصل قيود أجهزة الإدارات إلى المفوض وتُدمج لديه (انظر pullReports)
-    let payload=data;
-    try{const au=loadAudit().filter(x=>x.gov===govName).slice(0,40);
-        if(au.length)payload={...data,_audit:au};}catch(e){}
-    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'override',govId,govName,data:JSON.stringify(payload)})});
+    // يُرفَق مع كل دفعة ذيلٌ مقلَّم من سجل التغييرات (كان 40 قيداً بلا تقليم =
+    // خُمس الصفّ) فتصل قيود أجهزة الإدارات إلى المفوض دون أن تزاحم الترع.
+    // ثم تُقسَّم الدفعة: صفٌّ رئيسى + صفوف تكملة gov~pN عند تجاوز الحدّ الآمن.
+    const prevNp=(ov[govId]&&ov[govId]._np)||0;
+    const sp=ovSplitPayload(data,govName);
+    let okAll=await ovPostRow(url,govId,govName,sp.main);
+    for(let i=0;i<sp.parts.length;i++){
+      const okp=await ovPostRow(url,govId+'~p'+(i+1),govName+' — تكملة '+(i+1),
+        {_for:govId,_pi:(i+1),_ts:sp.main._ts||Date.now(),addedCanals:sp.parts[i]});
+      if(!okp)okAll=false;
+    }
+    // أجزاء لم تعد لازمة (انكمش الصف) تُمحى وإلا أعادت السحابةُ ترعاً قديمة
+    for(let j=sp.parts.length+1;j<=prevNp;j++){try{pushOverrideDelete(govId+'~p'+j,true);}catch(e){}}
+    try{if(okAll&&ov[govId]&&typeof ov[govId]==='object'&&ov[govId]._np!==sp.parts.length){
+      ov[govId]._np=sp.parts.length;saveOv(ov);}}catch(e){}
   }catch(e){console.warn('pushOverride',e);}
 }
 async function pushOverrideDelete(govId,isRetry){
@@ -4235,6 +4347,8 @@ async function pushOverrideDelete(govId,isRetry){
 // ═══ دمج آمن: «المحلي غير المؤكَّد لا يُمَس» + «الأحدث طابعاً يغلب» ═══
 function applyCloudOverrides(list){
   if(!Array.isArray(list))return 0;
+  const rawCount=list.length;
+  list=foldOvParts(list);                                  // صفوف التكملة تعود لإدارتها أولاً
   snapshotOv('قبل دمج سحابي');
   const merged={...ov};const cloudIds=new Set();const heal=new Set();
   list.forEach(o=>{try{
@@ -4277,8 +4391,14 @@ function applyCloudOverrides(list){
   // إعادة دفع غير المؤكَّد — حلقة شفاء ذاتي تتقارب حتى بعد فشل صامت
   DIRTY.forEach(id=>{const g=PROJECT.govs.find(x=>x.id===id);try{pushOverride(id,(g&&g.name)||id,ov[id],true);}catch(e){}});
   Object.keys(OVDEL).forEach(id=>{try{pushOverrideDelete(id,true);}catch(e){}});
+  // ═══ عدّاد الدورات غير المؤكَّدة: ما لم يصل بعد ثلاث دورات يُعلَن بشريط أحمر ═══
+  try{
+    DIRTY.forEach(id=>{OVTRY[id]=(OVTRY[id]||0)+1;});
+    Object.keys(OVTRY).forEach(id=>{if(!DIRTY.has(id))delete OVTRY[id];});
+    renderOvAlert();
+  }catch(e){}
   updateSyncStatus();
-  return list.length;
+  return rawCount;
 }
 function applyCloudReports(cloud){
   if(!Array.isArray(cloud))return 0;
@@ -4347,7 +4467,9 @@ function syncDiagRows(){
       added:((o.addedCanals||[]).length),
       ts:o._ts?new Date(o._ts).toLocaleString('ar-EG-u-nu-latn'):'—',
       dev:o._dev||'—',
-      state:(DIRTY.has(g.id)?'بانتظار الدفع':(o._sy?'مؤكَّد سحابياً':'محلي'))});
+      chars:ovRowChars(g.id,g.name),
+      np:((ovSplitPayload(o,g.name).parts)||[]).length,
+      state:(DIRTY.has(g.id)?('بانتظار الدفع'+(OVTRY[g.id]?' ('+OVTRY[g.id]+' دورات)':'')):(o._sy?'مؤكَّد سحابياً':'محلي'))});
   });
   return rows;
 }
@@ -4362,10 +4484,13 @@ function openSyncDiag(){
   if(rows.length){
     h+='<div class="doc-sec-h">لكل إدارة: ماذا يحمل صفُّ التعديلات فعلياً</div>'
       +'<table class="doc-tbl sm"><thead><tr><th>الإدارة</th><th>ترع الأساس</th><th>مواقف معدَّلة</th>'
-      +'<th>محذوفة</th><th>مُضافة</th><th>آخر تعديل</th><th>الجهاز</th><th>الحالة</th></tr></thead><tbody>';
+      +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>الحالة</th></tr></thead><tbody>';
     rows.forEach(r=>{h+='<tr><td>'+r.name+'</td><td>'+r.base+'</td><td>'+r.edited+'</td><td>'+r.removed
-      +'</td><td>'+r.added+'</td><td>'+r.ts+'</td><td>'+r.dev+'</td><td>'+r.state+'</td></tr>';});
-    h+='</tbody></table>';
+      +'</td><td>'+r.added+'</td><td>'+r.chars.toLocaleString('en-US')+'</td><td>'+r.np+'</td><td>'+r.ts
+      +'</td><td>'+r.dev+'</td><td>'+r.state+'</td></tr>';});
+    h+='</tbody></table><div class="doc-note-box">حدّ خلية جوجل شيت 50,000 حرف — والحدّ الآمن للصفّ الواحد '
+      +OV_ROW_SAFE.toLocaleString('en-US')+' حرف. ما زاد يُدفع تلقائياً فى صفوف تكملة (عمود «أجزاء») '
+      +'ويُجمَّع عند السحب، فلا تُفقد ترعة بسبب الحجم.</div>';
   } else {
     h+='<div class="doc-note-box">لا توجد أي تعديلات محلية على هذا الجهاز — كل المعروض أرقام رسمية من الملف.</div>';
   }
