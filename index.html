@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-16f · reset-gov-totals to official + totals diff column · sw deh-v21 -->
+<!-- build 2026-08-17a · canal-id never reuses a tombstoned id (Gharbia wipe loop)umn · sw deh-v21 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -3247,9 +3247,14 @@ function canalPrefix(g){
 // توليد معرّف ترعة فريد ضمن الإدارة (بادئة-رقم متسلسل)
 function suggestCanalId(g){
   const pre=canalPrefix(g);
+  // المعرّف الذى عليه شاهدة حذف محجوز للأبد: شاهدة الحذف تغلب فى الدمج السحابى بلا
+  // مقارنة طوابع، فإعادة استعماله تعنى محو الترعة الجديدة عند أول سحب (عطل الغربية 17/08).
+  const rem=(typeof ov!=='undefined'&&ov[g.id]&&ov[g.id].canals)?ov[g.id].canals:{};
   const taken=new Set((g.canals||[]).map(c=>c.id));
   let max=0;
-  (g.canals||[]).forEach(c=>{const m=/-(\d+)$/.exec(c.id||'');if(m)max=Math.max(max,+m[1]);});
+  const bump=function(id){const m=/-(\d+)$/.exec(id||'');if(m)max=Math.max(max,+m[1]);};
+  (g.canals||[]).forEach(c=>bump(c.id));
+  Object.keys(rem).forEach(k=>{ if(rem[k]&&rem[k]._removed){ taken.add(k); bump(k); } });
   let n=max+1,id;
   do{ id=pre+'-'+String(n).padStart(3,'0'); n++; }while(taken.has(id));
   return id;
@@ -3345,9 +3350,12 @@ function saveNewCanal(){
   const label=(STATUS_OPTIONS.find(o=>o[0]===statusCode)||[])[1]||statusCode;
   const stage=gateStep(statusCode,pct);
   const id=suggestCanalId(g);
-  // حارس الشاهدة: لو صادف المعرّف الجديد شاهدة حذف قديمة (لأي سبب) تُرفع فوراً،
-  // وإلا أخفت طبقة الدمج الترعة المضافة رغم حفظها — إحياءٌ صريح بالمعرّف الفعلي لا بعنصر غير موجود.
-  try{if(ov[govId]&&ov[govId].canals&&ov[govId].canals[id]&&ov[govId].canals[id]._removed)delete ov[govId].canals[id];}catch(e){}
+  /* مسح شاهدة الحذف محلياً لا يُلغيها سحابياً — تعود مع أول سحب وتمحو الترعة. فالمعرّف
+     المشهود محجوز، وsuggestCanalId يتخطّاه؛ وإن وقع تصادم رغم ذلك يُعلَن ولا يُحفَظ صامتاً. */
+  try{ if(ov[govId]&&ov[govId].canals&&ov[govId].canals[id]&&ov[govId].canals[id]._removed){
+    if(err){err.style.display='block';err.textContent='المعرّف '+id+' عليه شاهدة حذف سابقة — أغلق النافذة وافتحها ثم أعد الحفظ.';}
+    else toast('المعرّف '+id+' عليه شاهدة حذف سابقة');
+    return; } }catch(e){}
   const canal={id,name,op,contractor,sector,length,pct,statusCode,status:label,stage,phase,_custom:true,_gov:govId,_counted:null};
   // عكسها على إجماليات المرحلة عبر طبقة الأوفررايد (زيادة صافية محكومة، لا مساس بالرقم الرسمي عند عدم التفعيل)
   let phaseNote='بدون تعديل الإجماليات';
@@ -4255,7 +4263,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-16f';
+const BUILD_ID='2026-08-17a';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
@@ -4611,9 +4619,12 @@ function syncDiagRows(){
     const cm=o.canals||{};
     const keys=Object.keys(cm);
     const removed=keys.filter(k=>cm[k]&&cm[k]._removed).length;
+    const addIds={};((o.addedCanals)||[]).forEach(c=>{if(c&&c.id)addIds[c.id]=1;});
+    // شاهدة يتيمة: معرّف محذوف لا يقابله ترعة حية — معرّفه محجوز فلا يُعاد استعماله
+    const orph=keys.filter(k=>cm[k]&&cm[k]._removed&&cm[k]._custom&&!addIds[k]).length;
     rows.push({name:g.name,id:g.id,
       base:((g.canals||[]).filter(c=>!c._custom)).length,
-      edited:keys.length-removed,removed:removed,
+      edited:keys.length-removed,removed:removed,orph:orph,
       added:((o.addedCanals||[]).length),
       ts:o._ts?new Date(o._ts).toLocaleString('ar-EG-u-nu-latn'):'—',
       dev:o._dev||'—',
@@ -4638,6 +4649,7 @@ function openSyncDiag(){
       +'<table class="doc-tbl sm"><thead><tr><th>الإدارة</th><th>ترع الأساس</th><th>مواقف معدَّلة</th>'
       +'<th>محذوفة</th><th>مُضافة</th><th>حجم الصف</th><th>أجزاء</th><th>آخر تعديل</th><th>الجهاز</th><th>بيلد الكاتب</th><th>الحالة</th><th class="no-print">الإجماليات</th></tr></thead><tbody>';
     rows.forEach(r=>{h+='<tr><td>'+r.name+'</td><td>'+r.base+'</td><td>'+r.edited+'</td><td>'+r.removed
+      +(r.orph?' <span style=\u0022color:#c0392b;font-weight:800\u0022>(يتيمة '+r.orph+')</span>':'')
       +'</td><td>'+r.added+'</td><td>'+r.chars.toLocaleString('en-US')+'</td><td>'+r.np+'</td><td>'+r.ts
       +'</td><td>'+r.dev+'</td><td'+((r.bv==='قديم'||buildOlder(r.bv,BUILD_ID))?' style="color:#c0392b;font-weight:800"':'')
       +'>'+r.bv+'</td><td>'+r.state+'</td>'
@@ -4646,7 +4658,10 @@ function openSyncDiag(){
         : 'مطابقة')+'</td></tr>';});
     h+='</tbody></table><div class="doc-note-box">حدّ خلية جوجل شيت 50,000 حرف — والحدّ الآمن للصفّ الواحد '
       +OV_ROW_SAFE.toLocaleString('en-US')+' حرف. ما زاد يُدفع تلقائياً فى صفوف تكملة (عمود «أجزاء») '
-      +'ويُجمَّع عند السحب، فلا تُفقد ترعة بسبب الحجم.</div>';
+      +'ويُجمَّع عند السحب، فلا تُفقد ترعة بسبب الحجم.</div>'
+      +'<div class=\u0022doc-note-box\u0022>«يتيمة» = شاهدة حذف لترعة مضافة لم تعد موجودة. '
+      +'معرّفها يبقى محجوزاً ولا يُعاد استعماله إطلاقاً، لأن شاهدة الحذف تغلب فى الدمج السحابى '
+      +'فتمحو أى ترعة جديدة تأخذ نفس المعرّف. الترعة تُضاف من جديد برقم نظيف تالٍ.</div>';
   } else {
     h+='<div class="doc-note-box">لا توجد أي تعديلات محلية على هذا الجهاز — كل المعروض أرقام رسمية من الملف.</div>';
   }
