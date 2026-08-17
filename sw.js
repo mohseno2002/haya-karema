@@ -1,6 +1,6 @@
 // Service Worker — لوحة استلامات دار الهندسة
 // يتيح تثبيت التطبيق والعمل بلا إنترنت (عدا التزامن السحابي)
-const CACHE='deh-v23';
+const CACHE='deh-v24';
 const ASSETS=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{

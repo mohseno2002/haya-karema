@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-17b · Gharbia detail sheet (22 canals) as base dataumn · sw deh-v21 -->
+<!-- build 2026-08-17c · Gharbia detail sheet (22 canals) as base dataumn · sw deh-v21 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -4242,7 +4242,11 @@ function pruneAlienOv(){
     Object.keys(ov).forEach(id=>{
       if(known[id])return;
       hit++;delete ov[id];DIRTY.delete(id);
-      if(!/~p[0-9]+$/.test(id)){try{pushOverrideDelete(id,true);}catch(e){}}
+      const pm=/^(.*)~p[0-9]+$/.exec(id);
+      /* الصف العادى المجهول يُمسح سحابياً؛ وصف التكملة يُمسح فقط إن كان أساسه
+         نفسه إدارةً مجهولة (بقايا اختبار مثل ztest~p1) — أما تكملة إدارة معروفة
+         فلا تُمَسّ أبداً وإلا ضاعت ترعها من كل الأجهزة */
+      if(!pm||!known[pm[1]]){try{pushOverrideDelete(id,true);}catch(e){}}
     });
     if(hit){saveOv(ov);saveDirty();}
     return hit;
@@ -4263,7 +4267,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-17b';
+const BUILD_ID='2026-08-17c';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
@@ -4306,6 +4310,9 @@ async function checkAppVersion(){
    (٢) تقسيم فائض الترع المُضافة على صفوف تكملة «gov~pN» تُجمَّع عند السحب،
    (٣) عدّاد محاولات: ما لم يُؤكَّد بعد ثلاث دورات سحب يظهر شريطاً أحمر. */
 const OV_CELL_MAX=50000;
+const OV_ROW_WARN=45000; /* صفٌّ سحابى فوق هذا الحجم كُتب بأسلوب قديم بلا تقسيم — قنبلة موقوتة تتجمّد عند 50000 (عطل المنيا 16/08) */
+const SLIMMED={};        /* الإدارات التى أُعيد تقسيم صفّها هذه الجلسة — مرة لكل جلسة كى لا نغرق السكربت */
+const SLIM={};           /* ما يُعرض فى شريط التنحيف: govId ← الحجم القديم */
 const OV_ROW_SAFE=42000;
 const OV_AUDIT_TAIL=8;
 const OV_AUDIT_STR=140;
@@ -4326,7 +4333,14 @@ function ovSplitPayload(data,govName){
   Object.keys(data||{}).forEach(k=>{base[k]=data[k];});
   const au=ovAuditTail(govName);
   if(au.length)base._audit=au; else delete base._audit;
-  const all=Array.isArray(base.addedCanals)?base.addedCanals.slice():[];
+  delete base._sy; /* شاهدة تأكيد محلية لا تُدفع للسحابة — كانت تتسرّب من دمج صفوف الأجهزة القديمة */
+  /* إسقاط تكرار المعرّفات قبل التقسيم: التكرار بين الصف الرئيسى والأجزاء (MNY-151..153)
+     يُهدر حروفاً فى صفوف قريبة أصلاً من حدّ خلية جوجل شيت — الأحدث _t يبقى */
+  const _seen={};
+  (Array.isArray(base.addedCanals)?base.addedCanals:[]).forEach(c=>{
+    if(!c||!c.id)return;const p=_seen[c.id];
+    if(!p||(c._t||0)>=(p._t||0))_seen[c.id]=c;});
+  const all=Object.keys(_seen).map(k=>_seen[k]);
   delete base.addedCanals;
   base._np=0;
   const room=OV_ROW_SAFE-ovChars(base)-40;
@@ -4374,13 +4388,32 @@ function foldOvParts(list){
       const acc=Array.isArray(inc.addedCanals)?inc.addedCanals.slice():[];
       ps.sort((a,b)=>(a._pi||0)-(b._pi||0)).forEach(p=>{(p.addedCanals||[]).forEach(c=>{if(c&&c.id)acc.push(c);});});
       const merged={};Object.keys(inc).forEach(k=>{merged[k]=inc[k];});
-      merged.addedCanals=acc;
+      const accMap={};acc.forEach(c=>{if(!c||!c.id)return;const p=accMap[c.id];
+        if(!p||(c._t||0)>=(p._t||0))accMap[c.id]=c;});
+      merged.addedCanals=Object.keys(accMap).map(k=>accMap[k]);
       return {govId:o.govId,govName:o.govName,data:merged};
     });
   }catch(e){return list;}
 }
 function ovAlertHide(){const el=document.getElementById('ovAlert');if(el)el.style.display='none';}
 const SHRINK={};
+/* إعلان التنحيف: صفٌّ سمين ورثناه من بيلد قديم أُعيد تقسيمه — يُقال ولا يُبتلع */
+function renderSlimNote(){
+  try{
+    const ids=Object.keys(SLIM);
+    let el=document.getElementById('slimBar');
+    if(!ids.length){if(el)el.style.display='none';return;}
+    if(!el){el=document.createElement('div');el.id='slimBar';el.className='ov-alert info';document.body.appendChild(el);}
+    const parts=ids.map(id=>{const g=(PROJECT.govs||[]).find(x=>x.id===id);
+      return ((g&&g.name)||id)+' ('+SLIM[id]+' من 50000 حرفاً)';});
+    el.style.display='block';
+    el.innerHTML='<b>صفوف قريبة من حدّ جوجل شيت أُعيد تقسيمها وقائياً:</b> '+parts.join('، ')
+      +' — حدّثوا أجهزة هذه الإدارات كى لا تعيد كتابتها بالأسلوب القديم.'
+      +' <button class="ov-alert-b" onclick="openSyncDiag()">تشخيص</button>'
+      +' <button class="ov-alert-b" onclick="slimHide()">إخفاء</button>';
+  }catch(e){}
+}
+function slimHide(){const el=document.getElementById('slimBar');if(el)el.style.display='none';}
 /* إعلان الشفاء: نقصٌ اكتُشف فى السحابة وأُعيد دفعه — لا يُبتلع بصمت */
 function renderShrinkNote(){
   try{
@@ -4423,13 +4456,17 @@ async function pushOverride(govId,govName,data,isRetry){
   // ختم الدفعة الأصلية بطابع زمني وتسجيلها بالصندوق الصادر حتى يتأكد وصولها
   // (إعادة المحاولة لا تُعيد الختم كي لا يتجدد الطابع فلا يتحقق التأكيد أبداً)
   try{if(!isRetry){
-    if(ov[govId]&&typeof ov[govId]==='object'){ov[govId]._ts=Date.now();ov[govId]._dev=DEVICE_ID;ov[govId]._bv=BUILD_ID;saveOv(ov);data=ov[govId];}
+    if(ov[govId]&&typeof ov[govId]==='object'){ov[govId]._ts=Date.now();ov[govId]._dev=DEVICE_ID;saveOv(ov);data=ov[govId];}
     DIRTY.add(govId);delete OVDEL[govId];saveDirty();updateSyncStatus();
   }}catch(e){}
   try{
     // يُرفَق مع كل دفعة ذيلٌ مقلَّم من سجل التغييرات (كان 40 قيداً بلا تقليم =
     // خُمس الصفّ) فتصل قيود أجهزة الإدارات إلى المفوض دون أن تزاحم الترع.
     // ثم تُقسَّم الدفعة: صفٌّ رئيسى + صفوف تكملة gov~pN عند تجاوز الحدّ الآمن.
+    /* بصمة بيلد الكاتب تُختم فى كل دفعة — حتى إعادة الدفع والتنحيف — كى تصدق
+       لوحة التشخيص عن آخر كاتب فعلى. الطابع _ts لا يُمَسّ فى إعادة المحاولة
+       وإلا لم يتحقق تأكيد الوصول أبداً */
+    try{if(ov[govId]&&typeof ov[govId]==='object'&&ov[govId]._bv!==BUILD_ID){ov[govId]._bv=BUILD_ID;saveOv(ov);}}catch(e){}
     const prevNp=(ov[govId]&&ov[govId]._np)||0;
     const sp=ovSplitPayload(data,govName);
     let okAll=await ovPostRow(url,govId,govName,sp.main);
@@ -4455,6 +4492,14 @@ async function pushOverrideDelete(govId,isRetry){
 function applyCloudOverrides(list){
   if(!Array.isArray(list))return 0;
   const rawCount=list.length;
+  /* حجم خلية كل صفّ رئيسى كما وصل من الشيت — يُقاس قبل الطى لأن الطى يستبدل
+     النص بكائن مدموج. الصف فوق OV_ROW_WARN كتبه جهاز قديم بلا تقسيم وسيتجمّد
+     صامتاً عند 50000 حرف (أسيوط وقنا والمنيا كانت على بُعد أقل من 2100 حرف) */
+  const RAWSZ={};
+  (list||[]).forEach(o=>{try{
+    if(o&&o.govId&&!/~p[0-9]+$/.test(o.govId))
+      RAWSZ[o.govId]=(typeof o.data==='string')?o.data.length:JSON.stringify(o.data||{}).length;
+  }catch(e){}});
   list=foldOvParts(list);                                  // صفوف التكملة تعود لإدارتها أولاً
   pruneAlienOv();                                          // صفوف لا تخصّ إدارة معروفة لا تُبعث من جديد
   snapshotOv('قبل دمج سحابي');
@@ -4499,7 +4544,17 @@ function applyCloudOverrides(list){
     if(ovHasPayload(merged[id])){heal.add(id);return;}
     delete merged[id];
   });
+  /* ═══ تنحيف وقائى: الصفّ القريب من حدّ الخلية يُعاد دفعه مقسَّماً (رئيسى + أجزاء)
+     فتنزل كل خلية تحت الحدّ الآمن ولا يتكرر تجمّد المنيا — مرة واحدة لكل جلسة
+     لكل إدارة، والدمج اتحادى فلا يفقد أى جهاز شيئاً ═══ */
+  try{
+    Object.keys(RAWSZ).forEach(id=>{
+      if(RAWSZ[id]>OV_ROW_WARN&&merged[id]&&!SLIMMED[id]&&(PROJECT.govs||[]).some(g=>g.id===id)){
+        SLIMMED[id]=1;SLIM[id]=RAWSZ[id];heal.add(id);
+      }});
+  }catch(e){}
   heal.forEach(id=>{if(merged[id])DIRTY.add(id);});
+  try{renderSlimNote();}catch(e){}
   ov=merged;saveOv(ov);
   Object.keys(OVDEL).forEach(id=>{if(!cloudIds.has(id))delete OVDEL[id];}); // غاب الصف ⇒ تأكد الحذف
   saveDirty();
