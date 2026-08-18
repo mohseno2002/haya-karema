@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-18a · Gharbia contractor dues (8 budget rows) as base data + ops union-merge · sw deh-v25 -->
+<!-- build 2026-08-18b · server-side merge endpoint + legacy URL auto-migration · sw deh-v26 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -3091,6 +3091,8 @@ function resetOpsEdits(govId){
   if(!ov[govId]||!ov[govId].operations)return;
   if(!confirm('استرجاع بنود المستحقات الرسمية لـ«'+g.name+'» وإلغاء تعديلاتكم عليها؟'))return;
   delete ov[govId].operations;
+  // الخادم يدمج الآن: حذف المفتاح محلياً لا يكفى — يُرسَل أمر محو صريح للمجموعة
+  ov[govId]._wipe=['operations'];
   // مفاتيح المزامنة الوصفية (_ts/_dev/_sy/_audit) ليست «تعديلاً» — لا تمنع حذف الصف الفارغ،
   // وإلا بقيت الإدارة موسومة «مُعدَّلة ✎» للأبد بصفٍّ أجوف يُزامَن بلا داعٍ.
   const META_OV_KEYS=['lastUpdate','_ts','_dev','_sy','_audit'];
@@ -4229,9 +4231,14 @@ function saveReports(r){localStorage.setItem(REPORTS,JSON.stringify(r))}
 // ═══════════ التزامن مع Google Sheets ═══════════
 const SYNC_URL_KEY='deh_sync_url';
 // الرابط المدمج مسبقاً — كل من يفتح الملف يكون متزامناً تلقائياً دون إعداد
-const DEFAULT_SYNC_URL='https://script.google.com/macros/s/AKfycbwLHTof8afydmlSNrcRCsKcgiwdQBftgMrpkNUEuJGeFAfWjZYEVr3NN44wIwtc577OpA/exec';
+/* 18b: نُقلت القاعدة إلى نشرٍ يدمج على الخادم — فلا يمحو جهازٌ عملَ غيره.
+   الرابط القديم يُرحَّل تلقائياً على كل جهاز كان يستخدمه (لا تدخّل من الإدارات). */
+const LEGACY_SYNC_URL='https://script.google.com/macros/s/AKfycbwLHTof8afydmlSNrcRCsKcgiwdQBftgMrpkNUEuJGeFAfWjZYEVr3NN44wIwtc577OpA/exec';
+const DEFAULT_SYNC_URL='https://script.google.com/macros/s/AKfycbxUcRzKBKSNqYtR8OjjDK1lAW0btgny7qRBlLxKeRgPJffZdjenl8x3Q_gP5SPQ-xDqPQ/exec';
 function getSyncUrl(){
-  const saved=localStorage.getItem(SYNC_URL_KEY);
+  let saved=localStorage.getItem(SYNC_URL_KEY);
+  // ترحيل صامت: جهازٌ يحمل الرابط القديم محفوظاً ينتقل للجديد من نفسه
+  if(saved&&saved===LEGACY_SYNC_URL){try{localStorage.removeItem(SYNC_URL_KEY);}catch(e){}saved=null;}
   // إن مسح المستخدم الرابط صراحةً (قيمة فارغة محفوظة) نحترم اختياره (وضع محلي)
   if(saved===''&&localStorage.getItem(SYNC_URL_KEY+'_cleared')==='1')return '';
   return saved||DEFAULT_SYNC_URL;
@@ -4430,7 +4437,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-18a';
+const BUILD_ID='2026-08-18b';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
