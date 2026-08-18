@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-19c · baseline canals promoted to base (no _custom) · sw deh-v29 -->
+<!-- build 2026-08-19d · visible version chip · sw deh-v30 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -4451,7 +4451,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-19c';
+const BUILD_ID='2026-08-19d';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
@@ -8011,6 +8011,25 @@ try{pruneAlienOv();}catch(e){}
 </script>
 <script>
 initAuth();
+/* شارة النسخة: رقم البيلد ظاهر دائماً أسفل الشاشة — تشخيص أى جهاز بلقطة
+   شاشة واحدة، والضغط عليها يفحص التحديث فوراً بدل انتظار الدورة. */
+(function versionChip(){
+  try{
+    var e=document.createElement('div');
+    e.id='verChip';
+    e.textContent='نسخة '+BUILD_ID;
+    e.setAttribute('style','position:fixed;inset-inline-start:8px;bottom:8px;z-index:9990;'
+      +'background:rgba(255,255,255,.92);border:1px solid #d8e3e0;color:#4a6b64;'
+      +'font-family:Cairo,system-ui,sans-serif;font-size:10.5px;font-weight:700;'
+      +'padding:5px 9px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer');
+    e.onclick=function(){
+      e.textContent='جارٍ الفحص…';
+      try{checkAppVersion();}catch(_){}
+      setTimeout(function(){e.textContent='نسخة '+BUILD_ID;},1800);
+    };
+    document.body.appendChild(e);
+  }catch(err){}
+})();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 </script>
 </body>
