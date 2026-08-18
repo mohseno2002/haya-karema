@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-19d · visible version chip · sw deh-v30 -->
+<!-- build 2026-08-19e · pre-baseline row purge (order-independent) · sw deh-v31 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1910,12 +1910,18 @@ let customCanals=loadCustomCanals();
 /* ═══ ختم الأساس المثبَّت ═══ وضع 18/08/2026 صار بيانات أساس داخل التطبيق،
    والشيت فُرِّغ ليستقبل الجديد فقط. لولا هذا المسح لأعاد كل جهاز دفع طبقته
    القديمة فيتكرر كل شىء مرة ثانية. يجرى مرة واحدة لكل جهاز ثم يُختم. */
-const BASELINE_STAMP='2026-08-18';
+const BASELINE_STAMP='2026-08-18b';
+/* لحظة التثبيت. الصفّ الأقدم منها بقيّةٌ من الحقبة السابقة: بياناته كلها صارت
+   داخل التطبيق أساساً، فقراءته تعنى حسابها مرتين، ودفعه يُعيد ملء الشيت.
+   الحارس مستقلٌّ عن ترتيب تحديث الأجهزة: أى جهاز محدَّث يتجاهله ويمحوه. */
+const BASELINE_TS=Date.parse('2026-08-18T14:00:00Z');
+function isPreBaseline(o){try{return !!(o&&typeof o==='object'&&(+o._ts||0)>0&&(+o._ts||0)<BASELINE_TS);}catch(e){return false;}}
 (function applyBaseline(){
   try{
     if(localStorage.getItem('deh_baseline')===BASELINE_STAMP)return;
     var n=Object.keys(ov||{}).length;
     ov={};try{saveOv(ov);}catch(e){}
+    try{sessionStorage.removeItem('deh_force_2026-08-19d');}catch(e){}
     ['deh_dirty','deh_ovdel','deh_rdirty','deh_rdel'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
     localStorage.setItem('deh_baseline',BASELINE_STAMP);
     console.log('baseline applied, cleared '+n+' override rows');
@@ -4451,7 +4457,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-19d';
+const BUILD_ID='2026-08-19e';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
@@ -4704,6 +4710,21 @@ async function pushOverrideDelete(govId,isRetry){
 // ═══ دمج آمن: «المحلي غير المؤكَّد لا يُمَس» + «الأحدث طابعاً يغلب» ═══
 function applyCloudOverrides(list){
   if(!Array.isArray(list))return 0;
+  // بقايا ما قبل التثبيت: تُتجاهَل هنا وتُمحى من الشيت مرة واحدة من أول جهاز محدَّث
+  try{
+    const stale=(list||[]).filter(function(o){
+      try{const d=(typeof o.data==='string')?JSON.parse(o.data):o.data;return isPreBaseline(d);}catch(e){return false;}
+    });
+    if(stale.length){
+      list=(list||[]).filter(function(o){return stale.indexOf(o)<0;});
+      stale.forEach(function(o){
+        try{delete ov[o.govId];}catch(e){}
+        try{if(!isReadOnly()&&typeof pushOverrideDelete==='function')pushOverrideDelete(o.govId,true);}catch(e){}
+      });
+      try{saveOv(ov);}catch(e){}
+      console.log('pre-baseline rows purged: '+stale.length);
+    }
+  }catch(e){console.warn('baseline purge',e);}
   const rawCount=list.length;
   /* حجم خلية كل صفّ رئيسى كما وصل من الشيت — يُقاس قبل الطى لأن الطى يستبدل
      النص بكائن مدموج. الصف فوق OV_ROW_WARN كتبه جهاز قديم بلا تقسيم وسيتجمّد
