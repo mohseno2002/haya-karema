@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build 2026-08-19f · Sohag dues unit fix (thousand to million) · sw deh-v32 -->
+<!-- build 2026-08-19g · ops merge: tagged edit beats untouched baseline copy · sw deh-v33 -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -4336,19 +4336,47 @@ function opAlive(list){return (list||[]).filter(function(x){return x&&typeof x==
 function opTombs(list){return (list||[]).filter(function(x){return x&&typeof x==='object'&&!!x._x;});}
 /* اتحاد قائمتَى بنود: مفتاحاً بمفتاح، والأحدث (_t) يحسم التعارض — وشاهدة الحذف
    بندٌ كسائر البنود يحكمها الزمن، فإعادة الإضافة بعد الحذف تعمل ولا تُبعث المحذوفات. */
+/* اتحاد قائمتَى بنود — قاعدة الحسم (صُحّحت 19/08 بعد إثبات المحو بالاختبار):
+   البندُ الموسوم بـ_t هو الوحيد الذى عُدّل فعلاً؛ والبند بلا وسم نسخةٌ من الأساس
+   لم يمسّها أحد. كان الأخير يرث طابع الصفّ (_ts) فيغلب تعديلاً حقيقياً أحدث منه،
+   فيمحو جهازٌ متأخر لم يسحب تعديلَ غيره صامتاً (أُثبت: 11.111 ⇦ 0).
+   الآن: الموسوم يغلب غير الموسوم دائماً مهما كان طابع الصفّ، وبين موسومَين
+   الأحدث يغلب، وبين غير موسومَين الوارد يغلب (القيمة واحدة فلا أثر). */
 function mergeOpsLists(a,ats,b,bts){
   var out=[],pos={};
   function put(x,ts){
     if(!x||typeof x!=='object')return;
     var k=opKey(x);if(!k||k==='k:|')return;
-    var t=(+x._t||+ts||0);
-    if(pos[k]==null){pos[k]=out.length;out.push(Object.assign({},x,{_t:t}));return;}
-    var p=out[pos[k]],pt=(+p._t||0);
-    if(t>=pt)out[pos[k]]=Object.assign({},x,{_t:t});
+    var own=(typeof x._t==='number'&&isFinite(x._t)&&x._t>0);
+    var t=own?+x._t:0;
+    var rec=Object.assign({},x);
+    if(own)rec._t=t;else delete rec._t;
+    if(pos[k]==null){pos[k]=out.length;out.push(rec);return;}
+    var p=out[pos[k]];
+    var pOwn=(typeof p._t==='number'&&isFinite(p._t)&&p._t>0),pt=pOwn?+p._t:0;
+    if(!own&&pOwn)return;                    /* نسخة أساس لا تمحو تعديلاً موسوماً */
+    if(own&&!pOwn){out[pos[k]]=rec;return;}  /* التعديل الموسوم يغلب نسخة الأساس */
+    if(t>=pt)out[pos[k]]=rec;                /* موسومان: الأحدث يغلب */
   }
   (a||[]).forEach(function(x){put(x,ats);});
   (b||[]).forEach(function(x){put(x,bts);});
   return out;
+}
+/* هل عندنا بندٌ أحدث ممّا فى الوارد؟ (قيمةً لا عدداً) — يلزم إعادة دفعه كى تتقارب
+   السحابة حتى لو كان الدمج على الخادم ما زال يرث طابع الصفّ. */
+function opsNewerThan(mine,theirs){
+  try{
+    var idx={};(theirs||[]).forEach(function(o){var k=opKey(o);if(k)idx[k]=o;});
+    return (mine||[]).some(function(o){
+      var k=opKey(o);if(!k)return false;
+      var mt=(typeof o._t==='number'&&isFinite(o._t))?o._t:0;
+      if(!mt)return false;
+      var t=idx[k];
+      if(!t)return true;
+      var tt=(typeof t._t==='number'&&isFinite(t._t))?t._t:0;
+      return mt>tt;
+    });
+  }catch(e){return false;}
 }
 /* تنبيهات البند: قيمة تبدو بالجنيه أو بالألف داخل حقل بالمليون، أو بند مكرر داخل الإدارة */
 function opDupKey(o){
@@ -4447,6 +4475,7 @@ function ovRicherThan(m,inc){
     if(ma.length>ia.length)return true;
     const mops=(m&&m.operations)||[],iops=(inc&&inc.operations)||[];
     if(mops.length>iops.length)return true;
+    if(opsNewerThan(mops,iops))return true;   /* بندٌ عندنا أحدث من نظيره السحابى ⇒ يُعاد دفعه */
     const mk=Object.keys((m&&m.canals)||{}),ik=Object.keys((inc&&inc.canals)||{});
     return mk.length>ik.length;
   }catch(e){return false;}
@@ -4457,7 +4486,7 @@ function ovRicherThan(m,inc){
    (١) كل دفعة تحمل بصمة بيلد جهازها فى _bv فيظهر المتأخر فى لوحة التشخيص،
    (٢) فحص دورى لملف version.json يعرض شريط «نسخة جديدة» بضغطة تحديث،
    (٣) أقل بيلد مسموح بالكتابة: الأقدم منه يعمل قراءةً فقط ولا يدفع شيئاً. */
-const BUILD_ID='2026-08-19f';
+const BUILD_ID='2026-08-19g';
 let MIN_BUILD='';
 let READ_ONLY=false;
 function isReadOnly(){return READ_ONLY===true;}
